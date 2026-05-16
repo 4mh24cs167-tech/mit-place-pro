@@ -47,19 +47,19 @@ export default function CompanyOffersPage() {
       <div className="px-8 pb-10 space-y-6">
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="glass-card p-4 text-center">
+          <div className="i-card p-4 text-center">
             <p className="text-2xl font-bold text-foreground">{offers.length}</p>
             <p className="text-[10px] text-muted-foreground mt-1">Total Offers</p>
           </div>
-          <div className="glass-card p-4 text-center">
+          <div className="i-card p-4 text-center">
             <p className="text-2xl font-bold text-emerald-600">{acceptedCount}</p>
             <p className="text-[10px] text-muted-foreground mt-1">Accepted</p>
           </div>
-          <div className="glass-card p-4 text-center">
+          <div className="i-card p-4 text-center">
             <p className="text-2xl font-bold text-amber-600">{pendingCount}</p>
             <p className="text-[10px] text-muted-foreground mt-1">Pending</p>
           </div>
-          <div className="glass-card p-4 text-center">
+          <div className="i-card p-4 text-center">
             <p className="text-2xl font-bold text-indigo-600">
               {formatLPA(Math.max(...offers.map((o) => o.ctcLPA)))}
             </p>
@@ -82,7 +82,7 @@ export default function CompanyOffersPage() {
             const st = statusMap[offer.status];
             const StatusIcon = st.icon;
             return (
-              <div key={offer.id} className="glass-card p-5">
+              <div key={offer.id} className="i-card p-5">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-sm font-bold text-indigo-700">

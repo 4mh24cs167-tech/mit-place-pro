@@ -67,7 +67,7 @@ export default function StudentApplicationsPage() {
               key={s.label}
               onClick={() => setFilter(s.filter)}
               className={cn(
-                "glass-card p-3 text-center transition-all cursor-pointer",
+                "i-card p-3 text-center transition-all cursor-pointer",
                 s.active && "ring-2 ring-primary/30"
               )}
             >
@@ -82,7 +82,7 @@ export default function StudentApplicationsPage() {
           {filtered.map((app) => {
             const st = statusMap[app.status];
             return (
-              <div key={app.id} className="glass-card p-5 group cursor-pointer">
+              <div key={app.id} className="i-card p-5 group cursor-pointer">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-base font-bold text-indigo-700">

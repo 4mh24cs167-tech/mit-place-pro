@@ -89,7 +89,7 @@ export default function PrincipalAnalyticsPage() {
 
         {/* Year comparison + CTC distribution */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="glass-card p-6">
+          <div className="i-card p-6">
             <h3 className="text-base font-semibold text-foreground mb-1">Year-on-Year Comparison</h3>
             <p className="text-xs text-muted-foreground mb-5">Placement numbers over the last 4 years</p>
             <ResponsiveContainer width="100%" height={280}>
@@ -111,7 +111,7 @@ export default function PrincipalAnalyticsPage() {
             </ResponsiveContainer>
           </div>
 
-          <div className="glass-card p-6">
+          <div className="i-card p-6">
             <h3 className="text-base font-semibold text-foreground mb-1">CTC Distribution</h3>
             <p className="text-xs text-muted-foreground mb-5">Package ranges of placed students</p>
             <ResponsiveContainer width="100%" height={280}>
@@ -139,7 +139,7 @@ export default function PrincipalAnalyticsPage() {
         </div>
 
         {/* Department performance table */}
-        <div className="glass-card p-6">
+        <div className="i-card p-6">
           <h3 className="text-base font-semibold text-foreground mb-1">Department-wise Performance</h3>
           <p className="text-xs text-muted-foreground mb-5">Detailed breakdown by department</p>
           <div className="overflow-x-auto">
@@ -192,7 +192,7 @@ export default function PrincipalAnalyticsPage() {
         </div>
 
         {/* Company performance */}
-        <div className="glass-card p-6">
+        <div className="i-card p-6">
           <h3 className="text-base font-semibold text-foreground mb-1">Top Recruiters</h3>
           <p className="text-xs text-muted-foreground mb-5">Companies with highest placements</p>
           <ResponsiveContainer width="100%" height={280}>

@@ -101,7 +101,7 @@ export default function AdminStudentsPage() {
             return (
               <div
                 key={student.id}
-                className="glass-card p-5 cursor-pointer group"
+                className="i-card p-5 cursor-pointer group"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">

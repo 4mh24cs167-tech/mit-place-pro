@@ -83,7 +83,7 @@ export default function CompanyRoundsPage() {
 
       <div className="px-8 pb-10 space-y-6">
         {/* Pipeline visual */}
-        <div className="glass-card p-6">
+        <div className="i-card p-6">
           <h3 className="text-sm font-semibold text-foreground mb-5">Recruitment Pipeline</h3>
           <div className="flex items-center gap-2 overflow-x-auto pb-2">
             {rounds.map((round, i) => {
@@ -128,7 +128,7 @@ export default function CompanyRoundsPage() {
             const Icon = tc.icon;
             const qualifiedPercent = round.totalCandidates > 0 ? Math.round((round.qualified / round.totalCandidates) * 100) : 0;
             return (
-              <div key={round.id} className="glass-card p-6">
+              <div key={round.id} className="i-card p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
                     <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center", tc.bg)}>

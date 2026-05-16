@@ -3,58 +3,45 @@
 import Header from "@/components/layout/Header";
 import { cn } from "@/lib/utils";
 import {
+  Plus,
+  ArrowUpRight,
+  Calendar,
   CheckCircle2,
-  Circle,
-  FileText,
-  Briefcase,
-  CalendarClock,
-  Award,
-  ArrowRight,
-  Download,
   Clock,
-  MapPin,
-  Building2,
   Star,
+  MapPin,
+  IndianRupee,
+  Briefcase,
   TrendingUp,
+  SlidersHorizontal,
+  FileText,
 } from "lucide-react";
 
-// Journey steps
-const journeySteps = [
-  { label: "Profile Complete", icon: CheckCircle2, done: true },
-  { label: "Shortlisted", icon: Briefcase, done: true },
-  { label: "Interview Scheduled", icon: CalendarClock, done: true },
-  { label: "Under Evaluation", icon: Clock, done: false, active: true },
-  { label: "Offer Received", icon: Award, done: false },
-];
-
 const upcomingInterviews = [
-  {
-    id: "1",
-    company: "Infosys Technologies",
-    role: "Software Engineer",
-    date: "May 18, 2026",
-    time: "10:30 AM - 11:00 AM",
-    round: "Technical Interview",
-    venue: "Room 301, Admin Block",
-    duration: "30 min",
-  },
-  {
-    id: "2",
-    company: "TCS",
-    role: "Systems Engineer",
-    date: "May 19, 2026",
-    time: "2:00 PM - 2:20 PM",
-    round: "Coding Round",
-    venue: "Computer Lab 2",
-    duration: "20 min",
-  },
+  { company: "Infosys", role: "Software Engineer", date: "May 19", time: "10:30 AM", round: "Technical", venue: "Room 301" },
+  { company: "Wipro", role: "Project Engineer", date: "May 21", time: "02:00 PM", round: "Online Assessment", venue: "Lab 2" },
 ];
 
-const myApplications = [
-  { company: "Infosys", role: "Software Engineer", status: "Interview Scheduled", ctc: "4.5 - 6.0 LPA", atsScore: 82 },
-  { company: "TCS", role: "Systems Engineer", status: "Shortlisted", ctc: "3.6 - 7.0 LPA", atsScore: 74 },
-  { company: "Wipro", role: "Project Engineer", status: "Shortlisted", ctc: "3.8 - 5.5 LPA", atsScore: 68 },
+const applicationStats = [
+  { label: "Applied", count: 5 },
+  { label: "In Progress", count: 3 },
+  { label: "Offers", count: 1 },
+  { label: "ATS Avg", count: 79, suffix: "%" },
 ];
+
+const recentActivity = [
+  { action: "Applied to Google SDE Intern", time: "2 hours ago", type: "applied" as const },
+  { action: "TCS — Offer Letter Released", time: "5 hours ago", type: "offer" as const },
+  { action: "Infosys — Advanced to Round 2", time: "1 day ago", type: "advanced" as const },
+  { action: "Bosch — ATS Screening Failed", time: "2 days ago", type: "rejected" as const },
+];
+
+const activityColors = {
+  applied: "bg-blue-100 text-blue-600",
+  offer: "bg-accent-green text-green-700",
+  advanced: "bg-accent-purple text-purple-700",
+  rejected: "bg-red-100 text-red-600",
+};
 
 export default function StudentDashboardPage() {
   return (
@@ -62,176 +49,178 @@ export default function StudentDashboardPage() {
       <Header
         userName="Arjun Sharma"
         userRole="Student"
-        subtitle="Your placement journey is progressing well!"
+        greeting="Good morning, Arjun!"
+        subtitle="Let's make this day productive."
       />
 
-      <div className="px-8 pb-10 space-y-7">
-        {/* Journey Progress */}
-        <div className="glass-card p-6">
-          <h3 className="text-base font-semibold text-foreground mb-5">Your Placement Journey</h3>
-          <div className="flex items-center justify-between relative">
-            {/* Connecting line */}
-            <div className="absolute top-5 left-0 right-0 h-0.5 bg-border z-0" />
-            <div className="absolute top-5 left-0 h-0.5 bg-indigo-500 z-0" style={{ width: "55%" }} />
-
-            {journeySteps.map((step, i) => {
-              const Icon = step.icon;
-              return (
-                <div key={step.label} className="flex flex-col items-center z-10 relative">
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center border-2 transition-all",
-                    step.done
-                      ? "bg-indigo-500 border-indigo-500 text-white"
-                      : step.active
-                        ? "bg-white border-indigo-500 text-indigo-500 status-pulse"
-                        : "bg-white border-border text-muted-foreground"
-                  )}>
-                    {step.done ? (
-                      <CheckCircle2 className="w-5 h-5" />
-                    ) : (
-                      <Icon className="w-4 h-4" />
-                    )}
-                  </div>
-                  <p className={cn(
-                    "text-[11px] font-medium mt-2 text-center max-w-[80px]",
-                    step.done ? "text-indigo-600" : step.active ? "text-foreground" : "text-muted-foreground"
-                  )}>
-                    {step.label}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
+      <div className="px-8 pb-10">
+        {/* Stats row */}
+        <div className="flex items-center gap-8 mb-8 -mt-2">
+          <div className="flex-1" />
+          {applicationStats.map((s) => (
+            <div key={s.label}>
+              <p className="text-sm text-muted-foreground">{s.label}</p>
+              <p className="text-4xl font-bold text-foreground tracking-tight">
+                {s.count}{s.suffix || ""}
+                <span className="stat-arrow text-muted-foreground">↗</span>
+              </p>
+            </div>
+          ))}
+          <button className="i-btn-dark">
+            <Plus className="w-4 h-4" />
+            Browse Jobs
+          </button>
         </div>
 
-        {/* Stats + Profile completion */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="glass-card p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center">
-              <FileText className="w-5 h-5 text-indigo-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">3</p>
-              <p className="text-xs text-muted-foreground">CVs Uploaded</p>
-            </div>
-          </div>
-
-          <div className="glass-card p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center">
-              <Briefcase className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">3</p>
-              <p className="text-xs text-muted-foreground">Applications</p>
-            </div>
-          </div>
-
-          <div className="glass-card p-5 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-violet-50 flex items-center justify-center">
-              <CalendarClock className="w-5 h-5 text-violet-600" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">2</p>
-              <p className="text-xs text-muted-foreground">Upcoming Interviews</p>
-            </div>
-          </div>
-
-          <div className="glass-card p-5">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs text-muted-foreground">Profile Completion</p>
-              <p className="text-xs font-semibold text-emerald-600">80%</p>
-            </div>
-            <div className="h-2 rounded-full bg-muted overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 rounded-full progress-fill" style={{ width: "80%" }} />
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-2">Add certifications & achievements to reach 100%</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* Upcoming interviews */}
-          <div className="lg:col-span-3 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-foreground">Upcoming Interviews</h3>
-              <button className="text-xs text-primary hover:underline font-medium flex items-center gap-1">
-                View all <ArrowRight className="w-3 h-3" />
+        {/* Two-column layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+          {/* Upcoming Interviews */}
+          <div className="lg:col-span-2 i-card p-6">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Upcoming Interviews</h2>
+                <p className="text-sm text-muted-foreground">Your next scheduled rounds</p>
+              </div>
+              <button className="i-btn-icon">
+                <Calendar className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
 
-            {upcomingInterviews.map((interview) => (
-              <div key={interview.id} className="glass-card p-5">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-sm font-bold text-indigo-700">
+            <div className="space-y-4">
+              {upcomingInterviews.map((interview, i) => (
+                <div key={i} className="p-4 rounded-xl border border-border hover:bg-muted/30 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground">{interview.company}</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">{interview.role} — {interview.round}</p>
+                    </div>
+                    <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center text-xs font-bold text-foreground">
                       {interview.company.charAt(0)}
                     </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-foreground">{interview.company}</h4>
-                      <p className="text-xs text-muted-foreground mt-0.5">{interview.role}</p>
-                      <div className="flex items-center gap-3 mt-2.5">
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <CalendarClock className="w-3.5 h-3.5" />
-                          {interview.date}
-                        </div>
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Clock className="w-3.5 h-3.5" />
-                          {interview.time}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 mt-1.5">
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <MapPin className="w-3.5 h-3.5" />
-                          {interview.venue}
-                        </div>
-                      </div>
-                    </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-violet-50 text-violet-600">
-                      {interview.round}
-                    </span>
-                    <p className="text-[10px] text-muted-foreground mt-2">{interview.duration}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* My applications */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-foreground">My Applications</h3>
-            </div>
-            <div className="space-y-3">
-              {myApplications.map((app, i) => (
-                <div key={i} className="glass-card p-4 cursor-pointer">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-indigo-500" />
-                      <span className="text-sm font-semibold text-foreground">{app.company}</span>
-                    </div>
-                    <div className={cn(
-                      "flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full",
-                      app.atsScore >= 80 ? "bg-emerald-50 text-emerald-600" :
-                      app.atsScore >= 65 ? "bg-blue-50 text-blue-600" :
-                      "bg-amber-50 text-amber-600"
-                    )}>
-                      <Star className="w-3 h-3" />
-                      ATS: {app.atsScore}%
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{app.role}</p>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-[10px] text-muted-foreground">CTC: {app.ctc}</span>
-                    <span className={cn(
-                      "text-[10px] font-semibold px-2 py-0.5 rounded-full",
-                      app.status === "Interview Scheduled" ? "bg-violet-50 text-violet-600" : "bg-blue-50 text-blue-600"
-                    )}>
-                      {app.status}
-                    </span>
+                  <div className="flex items-center gap-3 mt-3 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1"><Calendar className="w-3 h-3" />{interview.date}</div>
+                    <div className="flex items-center gap-1"><Clock className="w-3 h-3" />{interview.time}</div>
+                    <div className="flex items-center gap-1"><MapPin className="w-3 h-3" />{interview.venue}</div>
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Activity Feed */}
+          <div className="lg:col-span-3 i-card p-6">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Recent Activity</h2>
+                <p className="text-sm text-muted-foreground">Your placement journey updates</p>
+              </div>
+              <button className="i-btn-icon">
+                <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+
+            <div className="space-y-0">
+              {recentActivity.map((item, i) => (
+                <div key={i} className="flex items-start gap-3 relative py-4 border-b border-border last:border-0">
+                  <div className="flex flex-col items-center">
+                    <div className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0",
+                      activityColors[item.type]
+                    )}>
+                      {item.type === "applied" && "📤"}
+                      {item.type === "offer" && "🎉"}
+                      {item.type === "advanced" && "⬆️"}
+                      {item.type === "rejected" && "❌"}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{item.action}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{item.time}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5">
+          {/* Quick actions — like To-do */}
+          <div className="i-card p-6">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">To-do list</h2>
+                <p className="text-sm text-muted-foreground">
+                  {new Date().toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" })}
+                </p>
+              </div>
+              <button className="i-btn-icon">
+                <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              {[
+                { task: "Complete Infosys prep quiz", done: true },
+                { task: "Upload updated resume for Wipro", done: false },
+                { task: "Practice system design questions", done: false },
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-3 pb-4 border-b border-border last:border-0 last:pb-0">
+                  <div className={cn(
+                    "w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0",
+                    item.done ? "bg-accent-green" : "border-2 border-border"
+                  )}>
+                    {item.done && <CheckCircle2 className="w-4 h-4 text-foreground" />}
+                  </div>
+                  <p className={cn("text-sm", item.done ? "text-muted-foreground line-through" : "text-foreground font-medium")}>
+                    {item.task}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Profile completion */}
+          <div className="i-card p-6">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Profile Strength</h2>
+                <p className="text-sm text-muted-foreground">Complete your profile for better matches</p>
+              </div>
+              <button className="i-btn-icon">
+                <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-4 mb-6">
+              <div className="relative w-20 h-20">
+                <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 80 80">
+                  <circle cx="40" cy="40" r="32" stroke="oklch(0.92 0.01 280)" strokeWidth="6" fill="none" />
+                  <circle cx="40" cy="40" r="32" stroke="oklch(0.82 0.15 135)" strokeWidth="6" fill="none"
+                    strokeDasharray={`${0.78 * 201} ${201}`} strokeLinecap="round" />
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center text-lg font-bold text-foreground">78%</span>
+              </div>
+              <div className="space-y-1.5">
+                {[
+                  { label: "Basic Info", done: true },
+                  { label: "Academic Details", done: true },
+                  { label: "Skills & Projects", done: true },
+                  { label: "CV Uploaded", done: false },
+                  { label: "Experience", done: false },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center gap-2 text-xs">
+                    {item.done ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                    ) : (
+                      <div className="w-3.5 h-3.5 rounded-full border-2 border-border" />
+                    )}
+                    <span className={cn(item.done ? "text-muted-foreground" : "text-foreground font-medium")}>
+                      {item.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

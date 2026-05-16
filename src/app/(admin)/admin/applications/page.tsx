@@ -94,7 +94,7 @@ export default function AdminApplicationsPage() {
         </div>
 
         {/* Applications Table */}
-        <div className="glass-card overflow-hidden">
+        <div className="i-card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

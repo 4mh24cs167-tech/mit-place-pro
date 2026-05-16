@@ -40,7 +40,7 @@ export default function AdminPostersPage() {
 
       <div className="px-8 pb-10 space-y-6">
         {/* Info */}
-        <div className="glass-card p-5 flex items-start gap-4">
+        <div className="i-card p-5 flex items-start gap-4">
           <div className="w-12 h-12 rounded-xl bg-pink-50 flex items-center justify-center flex-shrink-0">
             <Palette className="w-6 h-6 text-pink-600" />
           </div>
@@ -63,7 +63,7 @@ export default function AdminPostersPage() {
             const sc = statusConfig[poster.status];
             const StatusIcon = sc.icon;
             return (
-              <div key={poster.id} className="glass-card overflow-hidden group cursor-pointer">
+              <div key={poster.id} className="i-card overflow-hidden group cursor-pointer">
                 {/* Poster preview */}
                 <div className={cn(
                   "h-48 bg-gradient-to-br relative flex flex-col items-center justify-center p-6 text-center",
@@ -106,7 +106,7 @@ export default function AdminPostersPage() {
         </div>
 
         {/* Template settings */}
-        <div className="glass-card p-6">
+        <div className="i-card p-6">
           <h3 className="text-base font-semibold text-foreground mb-4">Poster Templates</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {["Default MITM Template", "Minimal Corporate", "Vibrant Campus"].map((tmpl, i) => (

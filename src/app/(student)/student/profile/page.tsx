@@ -81,7 +81,7 @@ export default function StudentProfilePage() {
 
       <div className="px-8 pb-10 space-y-6">
         {/* Profile banner */}
-        <div className="glass-card overflow-hidden">
+        <div className="i-card overflow-hidden">
           <div className="h-32 bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 relative">
             <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23fff\' fill-opacity=\'0.1\'%3E%3Cpath d=\'M0 40L40 0H20L0 20M40 40V20L20 40\'/%3E%3C/g%3E%3C/svg%3E")' }} />
           </div>
@@ -117,7 +117,7 @@ export default function StudentProfilePage() {
           {/* Left column */}
           <div className="space-y-6">
             {/* Academics */}
-            <div className="glass-card p-5">
+            <div className="i-card p-5">
               <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
                 <GraduationCap className="w-4 h-4 text-indigo-500" /> Academics
               </h3>
@@ -146,7 +146,7 @@ export default function StudentProfilePage() {
             </div>
 
             {/* Skills */}
-            <div className="glass-card p-5">
+            <div className="i-card p-5">
               <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                 <Code className="w-4 h-4 text-indigo-500" /> Skills
               </h3>
@@ -160,7 +160,7 @@ export default function StudentProfilePage() {
             </div>
 
             {/* Languages */}
-            <div className="glass-card p-5">
+            <div className="i-card p-5">
               <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                 <Globe className="w-4 h-4 text-indigo-500" /> Languages
               </h3>
@@ -175,7 +175,7 @@ export default function StudentProfilePage() {
             </div>
 
             {/* Certifications */}
-            <div className="glass-card p-5">
+            <div className="i-card p-5">
               <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                 <Award className="w-4 h-4 text-indigo-500" /> Certifications
               </h3>
@@ -193,7 +193,7 @@ export default function StudentProfilePage() {
           {/* Right column */}
           <div className="lg:col-span-2 space-y-6">
             {/* About */}
-            <div className="glass-card p-5">
+            <div className="i-card p-5">
               <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                 <User className="w-4 h-4 text-indigo-500" /> About
               </h3>
@@ -201,7 +201,7 @@ export default function StudentProfilePage() {
             </div>
 
             {/* Experience */}
-            <div className="glass-card p-5">
+            <div className="i-card p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Briefcase className="w-4 h-4 text-indigo-500" /> Experience
@@ -227,7 +227,7 @@ export default function StudentProfilePage() {
             </div>
 
             {/* Projects */}
-            <div className="glass-card p-5">
+            <div className="i-card p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Code className="w-4 h-4 text-indigo-500" /> Projects
@@ -268,7 +268,7 @@ export default function StudentProfilePage() {
             </div>
 
             {/* Achievements */}
-            <div className="glass-card p-5">
+            <div className="i-card p-5">
               <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                 <Award className="w-4 h-4 text-indigo-500" /> Achievements
               </h3>

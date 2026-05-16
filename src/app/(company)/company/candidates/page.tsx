@@ -100,7 +100,7 @@ export default function CompanyCandidatesPage() {
         </div>
 
         {/* Candidate table */}
-        <div className="glass-card overflow-hidden">
+        <div className="i-card overflow-hidden">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/30">

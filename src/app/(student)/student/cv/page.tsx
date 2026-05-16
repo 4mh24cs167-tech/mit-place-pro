@@ -38,7 +38,7 @@ export default function StudentCVPage() {
         {/* Upload area */}
         <div
           className={cn(
-            "glass-card p-8 border-2 border-dashed transition-all text-center cursor-pointer",
+            "i-card p-8 border-2 border-dashed transition-all text-center cursor-pointer",
             dragActive ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
           )}
           onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
@@ -68,7 +68,7 @@ export default function StudentCVPage() {
         <div className="space-y-4">
           {cvs.map((cv) => (
             <div key={cv.id} className={cn(
-              "glass-card p-5 transition-all",
+              "i-card p-5 transition-all",
               cv.isActive && "ring-2 ring-primary/20"
             )}>
               <div className="flex items-start justify-between">

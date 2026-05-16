@@ -82,7 +82,7 @@ export default function AdminSlotsPage() {
 
       <div className="px-8 pb-10 space-y-6">
         {/* Algorithm info card */}
-        <div className="glass-card p-5 flex items-start gap-4">
+        <div className="i-card p-5 flex items-start gap-4">
           <div className="w-12 h-12 rounded-xl bg-violet-50 flex items-center justify-center flex-shrink-0">
             <Zap className="w-6 h-6 text-violet-600" />
           </div>
@@ -101,7 +101,7 @@ export default function AdminSlotsPage() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-          <div className="glass-card p-4 flex items-center gap-3">
+          <div className="i-card p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
               <CalendarClock className="w-5 h-5 text-indigo-600" />
             </div>
@@ -110,7 +110,7 @@ export default function AdminSlotsPage() {
               <p className="text-[10px] text-muted-foreground">Total Slots Generated</p>
             </div>
           </div>
-          <div className="glass-card p-4 flex items-center gap-3">
+          <div className="i-card p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             </div>
@@ -119,7 +119,7 @@ export default function AdminSlotsPage() {
               <p className="text-[10px] text-muted-foreground">Runs Completed</p>
             </div>
           </div>
-          <div className="glass-card p-4 flex items-center gap-3">
+          <div className="i-card p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
               <AlertTriangle className="w-5 h-5 text-amber-600" />
             </div>
@@ -128,7 +128,7 @@ export default function AdminSlotsPage() {
               <p className="text-[10px] text-muted-foreground">Conflicts Found</p>
             </div>
           </div>
-          <div className="glass-card p-4 flex items-center gap-3">
+          <div className="i-card p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center">
               <Clock className="w-5 h-5 text-violet-600" />
             </div>
@@ -148,7 +148,7 @@ export default function AdminSlotsPage() {
                 key={run.id}
                 onClick={() => setSelectedRun(run.id === selectedRun ? null : run.id)}
                 className={cn(
-                  "glass-card p-5 cursor-pointer transition-all",
+                  "i-card p-5 cursor-pointer transition-all",
                   selectedRun === run.id && "ring-2 ring-primary/30"
                 )}
               >
@@ -213,7 +213,7 @@ export default function AdminSlotsPage() {
           </div>
 
           {/* Today's timeline */}
-          <div className="lg:col-span-2 glass-card p-5">
+          <div className="lg:col-span-2 i-card p-5">
             <h3 className="text-base font-semibold text-foreground mb-4">Today&apos;s Schedule</h3>
             <div className="space-y-0">
               {timeline.map((slot, i) => (

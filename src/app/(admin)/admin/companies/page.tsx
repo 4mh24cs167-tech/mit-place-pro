@@ -71,7 +71,7 @@ export default function AdminCompaniesPage() {
         {/* Company Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {filtered.map((company) => (
-            <div key={company.id} className="glass-card p-6 group cursor-pointer">
+            <div key={company.id} className="i-card p-6 group cursor-pointer">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-lg font-bold text-emerald-700 border border-emerald-200/50">
