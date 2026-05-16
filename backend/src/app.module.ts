@@ -2,9 +2,38 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
-import { User } from './entities/user.entity';
-import { Student } from './entities/student.entity';
-import { Company } from './entities/company.entity';
+import { AdminModule } from './admin/admin.module';
+import { StudentModule } from './student/student.module';
+import { CompanyModule } from './company/company.module';
+import {
+  User,
+  Student,
+  Company,
+  Job,
+  CompanyAvailability,
+  Cv,
+  Application,
+  InterviewSlot,
+  OfferLetter,
+  PlacementPoster,
+  Notification,
+  AuditLog,
+} from './entities';
+
+const entities = [
+  User,
+  Student,
+  Company,
+  Job,
+  CompanyAvailability,
+  Cv,
+  Application,
+  InterviewSlot,
+  OfferLetter,
+  PlacementPoster,
+  Notification,
+  AuditLog,
+];
 
 @Module({
   imports: [
@@ -15,13 +44,16 @@ import { Company } from './entities/company.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
-        entities: [User, Student, Company],
-        synchronize: false, // We manage schema via Neon — never auto-sync
+        entities,
+        synchronize: false,
         ssl: { rejectUnauthorized: false },
         logging: config.get('NODE_ENV') === 'development',
       }),
     }),
     AuthModule,
+    AdminModule,
+    StudentModule,
+    CompanyModule,
   ],
 })
 export class AppModule {}

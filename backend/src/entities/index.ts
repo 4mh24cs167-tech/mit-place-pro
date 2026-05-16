@@ -1,3 +1,12 @@
 export { User, UserRole } from './user.entity';
 export { Student } from './student.entity';
 export { Company } from './company.entity';
+export { Job } from './job.entity';
+export { CompanyAvailability } from './company-availability.entity';
+export { Cv } from './cv.entity';
+export { Application } from './application.entity';
+export { InterviewSlot } from './interview-slot.entity';
+export { OfferLetter } from './offer-letter.entity';
+export { PlacementPoster } from './placement-poster.entity';
+export { Notification } from './notification.entity';
+export { AuditLog } from './audit-log.entity';
