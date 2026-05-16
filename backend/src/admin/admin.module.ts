@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
+import { BulkUploadService } from './bulk-upload.service';
 import { User } from '../entities/user.entity';
 import { Student } from '../entities/student.entity';
 import { Company } from '../entities/company.entity';
@@ -23,6 +24,6 @@ import { AuditLog } from '../entities/audit-log.entity';
     ]),
   ],
   controllers: [AdminController],
-  providers: [AdminService],
+  providers: [AdminService, BulkUploadService],
 })
 export class AdminModule {}

@@ -1,5 +1,8 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseInterceptors, UploadedFile, Res } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import type { Response } from 'express';
 import { AdminService } from './admin.service';
+import { BulkUploadService } from './bulk-upload.service';
 import { Auth, CurrentUser } from '../auth/auth.decorators';
 import { UserRole } from '../entities/user.entity';
 import { CreateCompanyDto, BulkApproveDto, UpdateStudentDto, PaginationDto } from './dto/admin.dto';
@@ -7,7 +10,10 @@ import { CreateCompanyDto, BulkApproveDto, UpdateStudentDto, PaginationDto } fro
 @Controller('api/v1/admin')
 @Auth(UserRole.ADMIN)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly bulkUploadService: BulkUploadService,
+  ) {}
 
   // ─── Dashboard ──────────────────────────────────
   @Get('dashboard')
@@ -52,6 +58,39 @@ export class AdminController {
   ) {
     const data = await this.adminService.deleteStudent(id, actorId);
     return { success: true, ...data };
+  }
+
+  // ─── Bulk Upload ────────────────────────────────
+  @Post('students/bulk-upload')
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  async bulkUploadStudents(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser('id') actorId: string,
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+  ) {
+    if (!file) {
+      return { success: false, message: 'No file uploaded' };
+    }
+    const validTypes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+    ];
+    if (!validTypes.includes(file.mimetype)) {
+      return { success: false, message: 'Only .xlsx or .xls files are accepted' };
+    }
+
+    const result = await this.bulkUploadService.processExcel(file.buffer, actorId);
+    return { success: true, data: result };
+  }
+
+  @Get('students/template')
+  async downloadTemplate(@Res() res: Response) {
+    const buffer = this.bulkUploadService.generateTemplate();
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename=student_upload_template.xlsx',
+    });
+    res.send(buffer);
   }
 
   // ─── Companies ──────────────────────────────────
