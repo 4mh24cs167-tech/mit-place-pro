@@ -174,6 +174,28 @@ export const adminApi = {
   getShortlist: (jobId: string) => apiFetch(`/api/v1/admin/jobs/${jobId}/shortlist`),
   approveShortlist: (jobId: string, studentIds: string[], approved: boolean) =>
     apiFetch(`/api/v1/admin/jobs/${jobId}/approve`, { method: 'POST', body: { studentIds, approved } }),
+
+  // Slots
+  listSlots: (params?: { jobId?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.jobId) query.set('jobId', params.jobId);
+    return apiFetch(`/api/v1/admin/slots?${query.toString()}`);
+  },
+  generateSlots: (jobId: string, round: number, config?: Record<string, unknown>) =>
+    apiFetch('/api/v1/admin/slots/generate', { method: 'POST', body: { jobId, round, ...config } }),
+  getSlotTimeline: (date?: string) => {
+    const query = new URLSearchParams();
+    if (date) query.set('date', date);
+    return apiFetch(`/api/v1/admin/slots/timeline?${query.toString()}`);
+  },
+
+  // Jobs (admin view)
+  listJobs: (params?: { page?: number; search?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.search) query.set('search', params.search);
+    return apiFetch(`/api/v1/admin/jobs?${query.toString()}`);
+  },
 };
 
 // ─── Student ─────────────────────────────────────
@@ -193,12 +215,14 @@ export const companyApi = {
   getDashboard: () => apiFetch('/api/v1/company/dashboard'),
   getProfile: () => apiFetch('/api/v1/company/profile'),
   createJob: (data: Record<string, unknown>) => apiFetch('/api/v1/company/jobs', { method: 'POST', body: data }),
+  getJobs: () => apiFetch('/api/v1/company/jobs'),
   listJobs: () => apiFetch('/api/v1/company/jobs'),
   getJob: (jobId: string) => apiFetch(`/api/v1/company/jobs/${jobId}`),
   publishJob: (jobId: string) => apiFetch(`/api/v1/company/jobs/${jobId}/publish`, { method: 'PATCH' }),
   addAvailability: (jobId: string, data: Record<string, unknown>) => apiFetch(`/api/v1/company/jobs/${jobId}/availability`, { method: 'POST', body: data }),
   getAvailability: (jobId: string) => apiFetch(`/api/v1/company/jobs/${jobId}/availability`),
   getCandidates: (jobId: string) => apiFetch(`/api/v1/company/jobs/${jobId}/candidates`),
+  getShortlist: () => apiFetch('/api/v1/company/shortlist'),
   markAttendance: (slotId: string, attendance: string) => apiFetch('/api/v1/company/attendance', { method: 'PATCH', body: { slotId, attendance } }),
   markRoundResult: (slotId: string, result: string) => apiFetch('/api/v1/company/round-result', { method: 'PATCH', body: { slotId, result } }),
 };
