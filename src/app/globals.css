@@ -1,26 +1,220 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-background: oklch(0.98 0.005 270);
+  --color-foreground: oklch(0.15 0.02 270);
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.15 0.02 270);
+  --color-primary: oklch(0.45 0.18 270);
+  --color-primary-foreground: oklch(0.98 0 0);
+  --color-secondary: oklch(0.95 0.01 270);
+  --color-secondary-foreground: oklch(0.25 0.02 270);
+  --color-muted: oklch(0.94 0.008 270);
+  --color-muted-foreground: oklch(0.55 0.02 270);
+  --color-accent: oklch(0.92 0.03 270);
+  --color-accent-foreground: oklch(0.25 0.02 270);
+  --color-destructive: oklch(0.55 0.22 25);
+  --color-destructive-foreground: oklch(0.98 0 0);
+  --color-border: oklch(0.90 0.01 270);
+  --color-input: oklch(0.90 0.01 270);
+  --color-ring: oklch(0.45 0.18 270);
+  --color-sidebar: oklch(0.14 0.03 270);
+  --color-sidebar-foreground: oklch(0.9 0.01 270);
+  --color-sidebar-accent: oklch(0.22 0.04 270);
+  --color-sidebar-muted: oklch(0.6 0.02 270);
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.25rem;
+
+  --font-sans: "Inter", "Outfit", system-ui, -apple-system, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-border);
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: oklch(0.45 0.18 270 / 0.2);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  /* Glassmorphism card */
+  .glass-card {
+    background: oklch(1 0 0 / 0.72);
+    backdrop-filter: blur(20px) saturate(1.4);
+    -webkit-backdrop-filter: blur(20px) saturate(1.4);
+    border: 1px solid oklch(1 0 0 / 0.25);
+    box-shadow:
+      0 1px 3px oklch(0 0 0 / 0.04),
+      0 4px 14px oklch(0 0 0 / 0.06);
+    border-radius: var(--radius-xl);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card:hover {
+    box-shadow:
+      0 2px 8px oklch(0 0 0 / 0.06),
+      0 8px 28px oklch(0 0 0 / 0.1);
+    transform: translateY(-1px);
+  }
+
+  /* Stats card gradient backgrounds */
+  .stat-card-indigo {
+    background: linear-gradient(135deg, oklch(0.55 0.2 270) 0%, oklch(0.45 0.22 280) 100%);
+  }
+
+  .stat-card-emerald {
+    background: linear-gradient(135deg, oklch(0.6 0.18 155) 0%, oklch(0.5 0.2 160) 100%);
+  }
+
+  .stat-card-amber {
+    background: linear-gradient(135deg, oklch(0.7 0.16 75) 0%, oklch(0.6 0.18 65) 100%);
+  }
+
+  .stat-card-rose {
+    background: linear-gradient(135deg, oklch(0.6 0.2 15) 0%, oklch(0.5 0.22 5) 100%);
+  }
+
+  /* Sidebar */
+  .sidebar-gradient {
+    background: linear-gradient(180deg, oklch(0.14 0.04 270) 0%, oklch(0.1 0.03 260) 100%);
+  }
+
+  /* Status badge animations */
+  .status-pulse {
+    animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-ring {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  /* Skeleton loader */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      oklch(0.94 0.008 270) 25%,
+      oklch(0.96 0.005 270) 37%,
+      oklch(0.94 0.008 270) 63%
+    );
+    background-size: 400% 100%;
+    animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-shimmer {
+    0% { background-position: 100% 50%; }
+    100% { background-position: 0 50%; }
+  }
+
+  /* Progress bar */
+  .progress-fill {
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Notification badge */
+  .notification-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: oklch(0.6 0.25 25);
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    animation: notification-pulse 2s infinite;
+  }
+
+  @keyframes notification-pulse {
+    0%, 100% {
+      box-shadow: 0 0 0 0 oklch(0.6 0.25 25 / 0.4);
+    }
+    70% {
+      box-shadow: 0 0 0 6px oklch(0.6 0.25 25 / 0);
+    }
+  }
+
+  /* Smooth page transitions */
+  .page-enter {
+    animation: fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Table row hover */
+  .table-row-hover {
+    transition: background-color 0.15s ease;
+  }
+
+  .table-row-hover:hover {
+    background-color: oklch(0.97 0.005 270);
+  }
+
+  /* Chart tooltip */
+  .chart-tooltip {
+    background: oklch(0.15 0.02 270) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    color: white !important;
+    font-size: 12px !important;
+    padding: 8px 12px !important;
+    box-shadow: 0 4px 12px oklch(0 0 0 / 0.2) !important;
+  }
+
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: oklch(0.8 0.01 270);
+    border-radius: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.7 0.01 270);
+  }
+
+  /* Login page gradient */
+  .login-gradient {
+    background: linear-gradient(135deg, oklch(0.15 0.05 270) 0%, oklch(0.12 0.04 250) 50%, oklch(0.18 0.06 280) 100%);
+  }
+
+  /* Floating label input */
+  .floating-input:focus + .floating-label,
+  .floating-input:not(:placeholder-shown) + .floating-label {
+    transform: translateY(-1.5rem) scale(0.85);
+    color: oklch(0.45 0.18 270);
+  }
 }
+
