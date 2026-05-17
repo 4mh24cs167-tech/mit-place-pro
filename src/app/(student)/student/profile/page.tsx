@@ -2,6 +2,7 @@
 
 import Header from "@/components/layout/Header";
 import { cn } from "@/lib/utils";
+import { studentApi } from "@/lib/api";
 import {
   User,
   Mail,
@@ -17,272 +18,446 @@ import {
   Plus,
   ExternalLink,
   GitBranch,
+  Loader2,
+  CheckCircle2,
+  AlertCircle,
+  Save,
 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 
-const profileData = {
-  fullName: "Arjun Sharma",
-  headline: "Final Year CSE Student | Full Stack Developer | Open Source Enthusiast",
-  usn: "4MT21CS001",
-  email: "arjun.sharma@mitm.edu.in",
-  phone: "+91 98765 43210",
-  dob: "March 15, 2003",
-  gender: "Male",
-  address: "42, MG Road, Mysuru, Karnataka - 570001",
-  department: "Computer Science & Engineering",
-  semester: 8,
-  cgpa: 8.75,
-  tenthPercent: 92.5,
-  tenthBoard: "CBSE",
-  tenthYear: 2019,
-  twelfthPercent: 88.0,
-  twelfthBoard: "Karnataka State Board",
-  twelfthYear: 2021,
-  twelfthStream: "Science",
-  backlogs: 0,
-  category: "General",
-  about: "Passionate full-stack developer with a strong foundation in data structures, algorithms, and system design. Experienced in building scalable web applications using React, Node.js, and cloud technologies. Active contributor to open-source projects with a keen interest in AI/ML applications.",
-  skills: ["React", "Next.js", "Node.js", "TypeScript", "Python", "PostgreSQL", "MongoDB", "Docker", "AWS", "Git", "System Design", "Data Structures"],
-  experience: [
-    { company: "Google Summer of Code", role: "Open Source Contributor", period: "May 2025 - Aug 2025", description: "Contributed to Mozilla Firefox's developer tools. Implemented 3 new features and fixed 12 bugs.", isCurrent: false },
-    { company: "TechStartup Inc.", role: "Full Stack Intern", period: "Jan 2025 - Apr 2025", description: "Built RESTful APIs using NestJS and designed frontend dashboards with React & Tailwind CSS.", isCurrent: false },
-  ],
-  projects: [
-    { title: "SmartBus — Real-Time Transit Tracker", description: "Full-stack app for tracking city buses in real-time using GPS + WebSockets.", tech: ["React Native", "Node.js", "Socket.io", "PostgreSQL"], github: "https://github.com", demo: "https://smartbus.app" },
-    { title: "CodeReview AI", description: "AI-powered code review assistant using GPT-4 API for automated PR reviews.", tech: ["Python", "FastAPI", "OpenAI", "React"], github: "https://github.com" },
-    { title: "MITM Attendance System", description: "QR-code based attendance system deployed across 12 departments.", tech: ["Next.js", "Firebase", "QR.js"], github: "https://github.com" },
-  ],
-  certifications: [
-    { name: "AWS Cloud Practitioner", issuer: "Amazon Web Services", date: "Dec 2025" },
-    { name: "Meta Front-End Developer", issuer: "Meta / Coursera", date: "Sep 2025" },
-    { name: "Google Data Analytics", issuer: "Google / Coursera", date: "Jun 2025" },
-  ],
-  achievements: [
-    "1st Place — National Hackathon (HackMIT 2025)",
-    "Published paper in IEEE Conference on IoT",
-    "College Coding Club President (2024-2026)",
-    "500+ problems solved on LeetCode",
-  ],
-  languages: [
-    { name: "English", proficiency: "Fluent" },
-    { name: "Hindi", proficiency: "Native" },
-    { name: "Kannada", proficiency: "Conversational" },
-  ],
-};
+interface StudentProfile {
+  id: string;
+  usn: string;
+  fullName: string;
+  phone: string | null;
+  dateOfBirth: string | null;
+  gender: string | null;
+  addressJson: Record<string, string> | null;
+  department: string;
+  semester: number | null;
+  cgpa: number | null;
+  tenthPercent: number | null;
+  tenthBoard: string | null;
+  tenthYear: number | null;
+  twelfthPercent: number | null;
+  twelfthBoard: string | null;
+  twelfthYear: number | null;
+  twelfthStream: string | null;
+  backlogs: number;
+  driveLink: string | null;
+  familyIncome: number | null;
+  category: string | null;
+  profileData: Record<string, unknown>;
+  profileComplete: boolean;
+  placementStatus: string;
+  user?: { email: string };
+}
 
 export default function StudentProfilePage() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [profile, setProfile] = useState<StudentProfile | null>(null);
+  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  // Editable fields
+  const [phone, setPhone] = useState("");
+  const [cgpa, setCgpa] = useState("");
+  const [tenthPercent, setTenthPercent] = useState("");
+  const [twelfthPercent, setTwelfthPercent] = useState("");
+  const [backlogs, setBacklogs] = useState("");
+
+  const fetchProfile = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await studentApi.getProfile();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = (res as any)?.data as StudentProfile;
+      if (data) {
+        setProfile(data);
+        setPhone(data.phone || "");
+        setCgpa(data.cgpa?.toString() || "");
+        setTenthPercent(data.tenthPercent?.toString() || "");
+        setTwelfthPercent(data.twelfthPercent?.toString() || "");
+        setBacklogs(data.backlogs?.toString() || "0");
+      }
+    } catch {
+      // silently handle
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  const handleSave = async () => {
+    if (!profile) return;
+    try {
+      setSaving(true);
+      await studentApi.updateProfile({
+        phone: phone || undefined,
+        cgpa: cgpa ? parseFloat(cgpa) : undefined,
+        tenthPercent: tenthPercent ? parseFloat(tenthPercent) : undefined,
+        twelfthPercent: twelfthPercent ? parseFloat(twelfthPercent) : undefined,
+        activeBacklogs: backlogs ? parseInt(backlogs) : undefined,
+      });
+      setToast({ type: "success", msg: "Profile updated successfully" });
+      setEditing(false);
+      fetchProfile();
+    } catch {
+      setToast({ type: "error", msg: "Failed to update profile" });
+    } finally {
+      setSaving(false);
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
+
+  const skills = (profile?.profileData?.skills as string[]) || [];
+  const certifications = (profile?.profileData?.certifications as string[]) || [];
+  const linkedin = (profile?.profileData?.linkedin as string) || "";
+  const github = (profile?.profileData?.github as string) || "";
+
+  const placementLabel: Record<string, { label: string; color: string; bg: string }> = {
+    none: { label: "Not Applied", color: "text-slate-500", bg: "bg-slate-50" },
+    shortlisted: { label: "Shortlisted", color: "text-blue-600", bg: "bg-blue-50" },
+    interview_scheduled: { label: "Interview", color: "text-violet-600", bg: "bg-violet-50" },
+    offered: { label: "Offered", color: "text-amber-600", bg: "bg-amber-50" },
+    placed: { label: "Placed", color: "text-emerald-600", bg: "bg-emerald-50" },
+    not_placed: { label: "Not Placed", color: "text-red-600", bg: "bg-red-50" },
+  };
+
   return (
     <div className="page-enter">
       <Header
-        userName="Arjun Sharma"
+        userName={profile?.fullName || "Student"}
         userRole="Student"
         greeting="My Profile"
-        subtitle="Your LinkedIn-style placement profile"
+        subtitle="Manage your academic and professional profile"
       />
 
-      <div className="px-8 pb-10 space-y-6">
-        {/* Profile banner */}
-        <div className="i-card overflow-hidden">
-          <div className="h-32 bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-600 relative">
-            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'40\' height=\'40\' viewBox=\'0 0 40 40\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23fff\' fill-opacity=\'0.1\'%3E%3Cpath d=\'M0 40L40 0H20L0 20M40 40V20L20 40\'/%3E%3C/g%3E%3C/svg%3E")' }} />
-          </div>
-          <div className="px-6 pb-6 relative">
-            <div className="flex items-end gap-5 -mt-12">
-              <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-2xl font-bold text-white border-4 border-white shadow-lg">
-                AS
-              </div>
-              <div className="pb-1 flex-1">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold text-foreground">{profileData.fullName}</h2>
-                    <p className="text-sm text-muted-foreground mt-0.5">{profileData.headline}</p>
-                  </div>
-                  <button className="flex items-center gap-2 px-4 py-2 rounded-xl border border-border bg-white text-sm font-medium text-foreground hover:bg-muted/50 transition-colors">
-                    <Edit3 className="w-4 h-4" />
-                    Edit Profile
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-6 mt-4 text-xs text-muted-foreground flex-wrap">
-              <div className="flex items-center gap-1.5"><GraduationCap className="w-3.5 h-3.5" /> {profileData.department} · Sem {profileData.semester}</div>
-              <div className="flex items-center gap-1.5"><Mail className="w-3.5 h-3.5" /> {profileData.email}</div>
-              <div className="flex items-center gap-1.5"><Phone className="w-3.5 h-3.5" /> {profileData.phone}</div>
-              <div className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> Mysuru, Karnataka</div>
-            </div>
-          </div>
+      {/* Toast */}
+      {toast && (
+        <div className={cn(
+          "fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium animate-in slide-in-from-top-2",
+          toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+        )}>
+          {toast.type === "success" ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+          {toast.msg}
         </div>
+      )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left column */}
-          <div className="space-y-6">
-            {/* Academics */}
-            <div className="i-card p-5">
-              <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
-                <GraduationCap className="w-4 h-4 text-indigo-500" /> Academics
-              </h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">CGPA</span>
-                  <span className="text-sm font-bold text-foreground">{profileData.cgpa}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">10th ({profileData.tenthBoard})</span>
-                  <span className="text-sm font-bold text-foreground">{profileData.tenthPercent}%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">12th ({profileData.twelfthBoard})</span>
-                  <span className="text-sm font-bold text-foreground">{profileData.twelfthPercent}%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Backlogs</span>
-                  <span className={cn("text-sm font-bold", profileData.backlogs === 0 ? "text-emerald-600" : "text-red-600")}>{profileData.backlogs}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">USN</span>
-                  <span className="text-xs font-mono font-medium text-foreground">{profileData.usn}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Skills */}
-            <div className="i-card p-5">
-              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <Code className="w-4 h-4 text-indigo-500" /> Skills
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {profileData.skills.map((skill) => (
-                  <span key={skill} className="text-[11px] px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-600 font-medium border border-indigo-100">
-                    {skill}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {/* Languages */}
-            <div className="i-card p-5">
-              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <Globe className="w-4 h-4 text-indigo-500" /> Languages
-              </h3>
-              <div className="space-y-2">
-                {profileData.languages.map((lang) => (
-                  <div key={lang.name} className="flex items-center justify-between">
-                    <span className="text-xs text-foreground font-medium">{lang.name}</span>
-                    <span className="text-[10px] text-muted-foreground">{lang.proficiency}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Certifications */}
-            <div className="i-card p-5">
-              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <Award className="w-4 h-4 text-indigo-500" /> Certifications
-              </h3>
-              <div className="space-y-3">
-                {profileData.certifications.map((cert) => (
-                  <div key={cert.name} className="pb-3 border-b border-border/50 last:border-0 last:pb-0">
-                    <p className="text-xs font-medium text-foreground">{cert.name}</p>
-                    <p className="text-[10px] text-muted-foreground">{cert.issuer} · {cert.date}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+      <div className="px-8 pb-10 space-y-6">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+            <p className="text-sm text-muted-foreground">Loading profile...</p>
           </div>
-
-          {/* Right column */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* About */}
-            <div className="i-card p-5">
-              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <User className="w-4 h-4 text-indigo-500" /> About
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{profileData.about}</p>
-            </div>
-
-            {/* Experience */}
-            <div className="i-card p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Briefcase className="w-4 h-4 text-indigo-500" /> Experience
-                </h3>
-                <button className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                  <Plus className="w-4 h-4 text-muted-foreground" />
-                </button>
-              </div>
-              <div className="space-y-5">
-                {profileData.experience.map((exp, i) => (
-                  <div key={i} className="flex gap-4 pb-5 border-b border-border/50 last:border-0 last:pb-0">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-xs font-bold text-slate-600 flex-shrink-0">
-                      {exp.company.charAt(0)}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-foreground">{exp.role}</h4>
-                      <p className="text-xs text-muted-foreground">{exp.company} · {exp.period}</p>
-                      <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{exp.description}</p>
+        ) : !profile ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <AlertCircle className="w-10 h-10 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">Profile not found</p>
+          </div>
+        ) : (
+          <>
+            {/* Profile header */}
+            <div className="i-card p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-5">
+                  <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-indigo-500/30">
+                    {profile.fullName?.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground">{profile.fullName}</h2>
+                    <p className="text-sm text-muted-foreground mt-0.5">{profile.usn} · {profile.department}</p>
+                    <div className="flex items-center gap-3 mt-2 flex-wrap">
+                      {(() => {
+                        const st = placementLabel[profile.placementStatus] || placementLabel.none;
+                        return (
+                          <span className={cn("text-[10px] font-semibold px-2.5 py-1 rounded-full", st.bg, st.color)}>
+                            {st.label}
+                          </span>
+                        );
+                      })()}
+                      {profile.profileComplete && (
+                        <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 inline-flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" /> Profile Complete
+                        </span>
+                      )}
                     </div>
                   </div>
-                ))}
+                </div>
+                <button
+                  onClick={() => {
+                    if (editing) handleSave();
+                    else setEditing(true);
+                  }}
+                  disabled={saving}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all",
+                    editing
+                      ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/20"
+                      : "bg-muted text-foreground hover:bg-muted/80"
+                  )}
+                >
+                  {saving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : editing ? (
+                    <Save className="w-4 h-4" />
+                  ) : (
+                    <Edit3 className="w-4 h-4" />
+                  )}
+                  {editing ? "Save" : "Edit Profile"}
+                </button>
               </div>
             </div>
 
-            {/* Projects */}
-            <div className="i-card p-5">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Code className="w-4 h-4 text-indigo-500" /> Projects
-                </h3>
-                <button className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                  <Plus className="w-4 h-4 text-muted-foreground" />
-                </button>
-              </div>
-              <div className="space-y-4">
-                {profileData.projects.map((proj, i) => (
-                  <div key={i} className="p-4 rounded-xl border border-border/50 hover:border-primary/20 hover:bg-muted/20 transition-all">
-                    <div className="flex items-start justify-between">
-                      <h4 className="text-sm font-semibold text-foreground">{proj.title}</h4>
-                      <div className="flex items-center gap-1.5">
-                        {proj.github && (
-                          <button className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                            <GitBranch className="w-3.5 h-3.5 text-muted-foreground" />
-                          </button>
-                        )}
-                        {proj.demo && (
-                          <button className="p-1.5 rounded-lg hover:bg-muted transition-colors">
-                            <ExternalLink className="w-3.5 h-3.5 text-muted-foreground" />
-                          </button>
-                        )}
-                      </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left: Contact & Personal */}
+              <div className="space-y-6">
+                <div className="i-card p-5 space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <User className="w-4 h-4 text-indigo-500" /> Contact
+                  </h3>
+                  <div className="space-y-3 text-xs">
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <Mail className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>{profile.user?.email || "—"}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">{proj.description}</p>
-                    <div className="flex flex-wrap gap-1.5 mt-2.5">
-                      {proj.tech.map((t) => (
-                        <span key={t} className="text-[10px] px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 font-medium">
-                          {t}
+                    <div className="flex items-center gap-3">
+                      <Phone className="w-3.5 h-3.5 flex-shrink-0 text-muted-foreground" />
+                      {editing ? (
+                        <input
+                          type="text"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          className="px-2 py-1.5 rounded-lg border border-border bg-white text-xs outline-none flex-1"
+                          placeholder="+91 XXXXX XXXXX"
+                        />
+                      ) : (
+                        <span className="text-muted-foreground">{profile.phone || "Not set"}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <Calendar className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>{profile.dateOfBirth ? new Date(profile.dateOfBirth).toLocaleDateString() : "Not set"}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-muted-foreground">
+                      <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>
+                        {profile.addressJson
+                          ? Object.values(profile.addressJson).filter(Boolean).join(", ")
+                          : "Not set"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Social links */}
+                <div className="i-card p-5 space-y-3">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-indigo-500" /> Links
+                  </h3>
+                  {linkedin && (
+                    <a href={linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-indigo-600 hover:underline">
+                      <ExternalLink className="w-3 h-3" /> LinkedIn
+                    </a>
+                  )}
+                  {github && (
+                    <a href={github} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-indigo-600 hover:underline">
+                      <GitBranch className="w-3 h-3" /> GitHub
+                    </a>
+                  )}
+                  {!linkedin && !github && (
+                    <p className="text-xs text-muted-foreground">No links added yet</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Center: Academics */}
+              <div className="space-y-6">
+                <div className="i-card p-5 space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-indigo-500" /> Academics
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 rounded-xl bg-muted/30">
+                      <p className="text-[10px] text-muted-foreground uppercase">CGPA</p>
+                      {editing ? (
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={cgpa}
+                          onChange={(e) => setCgpa(e.target.value)}
+                          className="w-full mt-1 px-2 py-1.5 rounded-lg border border-border bg-white text-sm font-bold outline-none"
+                          placeholder="0.00"
+                        />
+                      ) : (
+                        <p className="text-lg font-bold text-foreground">{profile.cgpa ?? "—"}</p>
+                      )}
+                    </div>
+                    <div className="p-3 rounded-xl bg-muted/30">
+                      <p className="text-[10px] text-muted-foreground uppercase">Semester</p>
+                      <p className="text-lg font-bold text-foreground">{profile.semester ?? "—"}</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-muted/30">
+                      <p className="text-[10px] text-muted-foreground uppercase">10th %</p>
+                      {editing ? (
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={tenthPercent}
+                          onChange={(e) => setTenthPercent(e.target.value)}
+                          className="w-full mt-1 px-2 py-1.5 rounded-lg border border-border bg-white text-sm font-bold outline-none"
+                          placeholder="0.00"
+                        />
+                      ) : (
+                        <p className="text-lg font-bold text-foreground">{profile.tenthPercent ?? "—"}%</p>
+                      )}
+                    </div>
+                    <div className="p-3 rounded-xl bg-muted/30">
+                      <p className="text-[10px] text-muted-foreground uppercase">12th %</p>
+                      {editing ? (
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={twelfthPercent}
+                          onChange={(e) => setTwelfthPercent(e.target.value)}
+                          className="w-full mt-1 px-2 py-1.5 rounded-lg border border-border bg-white text-sm font-bold outline-none"
+                          placeholder="0.00"
+                        />
+                      ) : (
+                        <p className="text-lg font-bold text-foreground">{profile.twelfthPercent ?? "—"}%</p>
+                      )}
+                    </div>
+                    <div className="p-3 rounded-xl bg-muted/30 col-span-2">
+                      <p className="text-[10px] text-muted-foreground uppercase">Active Backlogs</p>
+                      {editing ? (
+                        <input
+                          type="number"
+                          value={backlogs}
+                          onChange={(e) => setBacklogs(e.target.value)}
+                          className="w-full mt-1 px-2 py-1.5 rounded-lg border border-border bg-white text-sm font-bold outline-none"
+                          placeholder="0"
+                        />
+                      ) : (
+                        <p className="text-lg font-bold text-foreground">{profile.backlogs}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Education boards */}
+                <div className="i-card p-5 space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Award className="w-4 h-4 text-indigo-500" /> Education Details
+                  </h3>
+                  <div className="space-y-3 text-xs text-muted-foreground">
+                    <div className="flex justify-between items-center">
+                      <span>10th Board</span>
+                      <span className="font-medium text-foreground">{profile.tenthBoard || "—"}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>10th Year</span>
+                      <span className="font-medium text-foreground">{profile.tenthYear || "—"}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>12th Board</span>
+                      <span className="font-medium text-foreground">{profile.twelfthBoard || "—"}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>12th Year</span>
+                      <span className="font-medium text-foreground">{profile.twelfthYear || "—"}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>12th Stream</span>
+                      <span className="font-medium text-foreground">{profile.twelfthStream || "—"}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Skills & extra */}
+              <div className="space-y-6">
+                <div className="i-card p-5 space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Code className="w-4 h-4 text-indigo-500" /> Skills
+                  </h3>
+                  {skills.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {skills.map((skill) => (
+                        <span
+                          key={skill}
+                          className="text-[10px] font-semibold px-2.5 py-1.5 rounded-full bg-indigo-50 text-indigo-600"
+                        >
+                          {skill}
                         </span>
                       ))}
                     </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-xs text-muted-foreground">No skills added yet</p>
+                      <button className="text-xs text-indigo-600 mt-1 hover:underline inline-flex items-center gap-1">
+                        <Plus className="w-3 h-3" /> Add Skills
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="i-card p-5 space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Award className="w-4 h-4 text-indigo-500" /> Certifications
+                  </h3>
+                  {certifications.length > 0 ? (
+                    <div className="space-y-2">
+                      {certifications.map((cert) => (
+                        <div key={cert} className="flex items-center gap-2 text-xs text-foreground">
+                          <CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />
+                          {cert}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-xs text-muted-foreground">No certifications added</p>
+                      <button className="text-xs text-indigo-600 mt-1 hover:underline inline-flex items-center gap-1">
+                        <Plus className="w-3 h-3" /> Add Certification
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="i-card p-5 space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-indigo-500" /> Additional
+                  </h3>
+                  <div className="space-y-2 text-xs text-muted-foreground">
+                    <div className="flex justify-between items-center">
+                      <span>Category</span>
+                      <span className="font-medium text-foreground">{profile.category || "—"}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Family Income</span>
+                      <span className="font-medium text-foreground">
+                        {profile.familyIncome ? `₹${Number(profile.familyIncome).toLocaleString()}` : "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Gender</span>
+                      <span className="font-medium text-foreground capitalize">{profile.gender || "—"}</span>
+                    </div>
+                    {profile.driveLink && (
+                      <a href={profile.driveLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-indigo-600 hover:underline">
+                        <ExternalLink className="w-3 h-3" /> Resume Drive Link
+                      </a>
+                    )}
                   </div>
-                ))}
+                </div>
               </div>
             </div>
-
-            {/* Achievements */}
-            <div className="i-card p-5">
-              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <Award className="w-4 h-4 text-indigo-500" /> Achievements
-              </h3>
-              <ul className="space-y-2">
-                {profileData.achievements.map((ach, i) => (
-                  <li key={i} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 flex-shrink-0" />
-                    {ach}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
