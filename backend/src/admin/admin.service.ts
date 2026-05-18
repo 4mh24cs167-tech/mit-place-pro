@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import { Repository, Like, ILike, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User, UserRole } from '../entities/user.entity';
@@ -10,10 +11,13 @@ import { Application } from '../entities/application.entity';
 import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { AuditLog } from '../entities/audit-log.entity';
+import { EmailService } from './email.service';
 import { CreateCompanyDto, BulkApproveDto, UpdateStudentDto, PaginationDto } from './dto/admin.dto';
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
+
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
@@ -23,6 +27,8 @@ export class AdminService {
     @InjectRepository(Notification) private readonly notificationRepo: Repository<Notification>,
     @InjectRepository(AuditLog) private readonly auditRepo: Repository<AuditLog>,
     @InjectRepository(InterviewSlot) private readonly slotRepo: Repository<InterviewSlot>,
+    private readonly emailService: EmailService,
+    private readonly configService: ConfigService,
   ) {}
 
   // ─── Dashboard Stats ───────────────────────────
@@ -185,12 +191,23 @@ export class AdminService {
       newValue: { name: dto.name, email: dto.hrEmail } as unknown as Record<string, unknown>,
     });
 
+    // Send credentials via email (fire-and-forget, don't block response)
+    const loginUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000') + '/login';
+    const emailSent = await this.emailService.sendCompanyCredentials({
+      companyName: dto.name,
+      hrName: dto.hrName,
+      email: dto.hrEmail.toLowerCase(),
+      temporaryPassword: rawPassword,
+      loginUrl,
+    });
+
     return {
       company,
       credentials: {
         email: dto.hrEmail.toLowerCase(),
         temporaryPassword: rawPassword,
       },
+      emailSent,
     };
   }
 

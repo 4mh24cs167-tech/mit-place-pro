@@ -107,8 +107,28 @@ export default function AdminStudentsPage() {
     }
   };
 
-  const handleDownloadTemplate = () => {
-    window.open(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/v1/admin/students/template`, '_blank');
+  const handleDownloadTemplate = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/v1/admin/students/template`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'student_upload_template.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch {
+      alert('Failed to download template. Please try again.');
+    }
   };
 
   const totalPages = Math.ceil(totalCount / 12);

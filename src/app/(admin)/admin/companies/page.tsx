@@ -49,6 +49,7 @@ export default function AdminCompaniesPage() {
     website: "",
     hrEmail: "",
     hrName: "",
+    hrPhone: "",
   });
 
   const fetchCompanies = useCallback(async () => {
@@ -75,6 +76,13 @@ export default function AdminCompaniesPage() {
     return () => clearInterval(id);
   }, [fetchCompanies]);
 
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    email: string;
+    temporaryPassword: string;
+    emailSent: boolean;
+    companyName: string;
+  } | null>(null);
+
   const handleAddCompany = async () => {
     if (!formData.name || !formData.hrEmail) {
       setAddError("Company name and HR email are required");
@@ -83,9 +91,19 @@ export default function AdminCompaniesPage() {
     try {
       setAddLoading(true);
       setAddError("");
-      await adminApi.createCompany(formData);
+      const res = await adminApi.createCompany(formData);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = (res as any)?.data;
+      if (data?.credentials) {
+        setCreatedCredentials({
+          email: data.credentials.email,
+          temporaryPassword: data.credentials.temporaryPassword,
+          emailSent: data.emailSent ?? false,
+          companyName: formData.name,
+        });
+      }
       setShowAddModal(false);
-      setFormData({ name: "", sector: "Information Technology", hqCity: "", website: "", hrEmail: "", hrName: "" });
+      setFormData({ name: "", sector: "Information Technology", hqCity: "", website: "", hrEmail: "", hrName: "", hrPhone: "" });
       await fetchCompanies();
     } catch (err: unknown) {
       setAddError(err instanceof Error ? err.message : "Failed to add company");
@@ -311,10 +329,18 @@ export default function AdminCompaniesPage() {
                     className="w-full px-3 py-2 rounded-lg border border-border text-sm outline-none focus:ring-2 focus:ring-primary/20" />
                 </div>
               </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">HQ City</label>
-                <input value={formData.hqCity} onChange={e => setFormData(p => ({ ...p, hqCity: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-border text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">HQ City</label>
+                  <input value={formData.hqCity} onChange={e => setFormData(p => ({ ...p, hqCity: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border border-border text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">HR Phone</label>
+                  <input type="tel" value={formData.hrPhone} onChange={e => setFormData(p => ({ ...p, hrPhone: e.target.value }))}
+                    placeholder="9876543210"
+                    className="w-full px-3 py-2 rounded-lg border border-border text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+                </div>
               </div>
               <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Website</label>
@@ -334,6 +360,72 @@ export default function AdminCompaniesPage() {
                 Add Company
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Credentials Success Modal */}
+      {createdCredentials && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Company Created!</h3>
+                  <p className="text-xs text-muted-foreground">{createdCredentials.companyName}</p>
+                </div>
+              </div>
+              <button onClick={() => setCreatedCredentials(null)} className="p-1.5 rounded-lg hover:bg-muted">
+                <X className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </div>
+
+            <div className="space-y-3 mb-4">
+              <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-100">
+                <p className="text-[10px] uppercase font-semibold text-indigo-500 tracking-wider mb-1">Login Email</p>
+                <p className="text-sm font-mono font-semibold text-indigo-900">{createdCredentials.email}</p>
+              </div>
+              <div className="p-4 rounded-xl bg-violet-50 border border-violet-100">
+                <p className="text-[10px] uppercase font-semibold text-violet-500 tracking-wider mb-1">Temporary Password</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-mono font-semibold text-violet-900">{createdCredentials.temporaryPassword}</p>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(createdCredentials.temporaryPassword);
+                    }}
+                    className="text-[10px] px-2 py-1 rounded bg-violet-200 text-violet-700 font-medium hover:bg-violet-300 transition-colors"
+                  >
+                    Copy
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {createdCredentials.emailSent ? (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-50 border border-emerald-200 mb-4">
+                <Mail className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                <p className="text-xs text-emerald-700">
+                  Credentials have been sent to <strong>{createdCredentials.email}</strong>
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 mb-4">
+                <Mail className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                <p className="text-xs text-amber-700">
+                  Email delivery not configured. Please share credentials manually.
+                </p>
+              </div>
+            )}
+
+            <button
+              onClick={() => setCreatedCredentials(null)}
+              className="w-full px-4 py-2.5 rounded-xl bg-foreground text-white text-sm font-medium hover:bg-foreground/90 transition-colors"
+            >
+              Done
+            </button>
           </div>
         </div>
       )}
