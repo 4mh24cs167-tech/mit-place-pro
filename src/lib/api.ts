@@ -196,6 +196,15 @@ export const adminApi = {
     if (params?.search) query.set('search', params.search);
     return apiFetch(`/api/v1/admin/jobs?${query.toString()}`);
   },
+
+  // Applications (admin view)
+  listApplications: (params?: { page?: number; search?: string; status?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.search) query.set('search', params.search);
+    if (params?.status) query.set('status', params.status);
+    return apiFetch(`/api/v1/admin/applications?${query.toString()}`);
+  },
 };
 
 // ─── Student ─────────────────────────────────────

@@ -10,6 +10,7 @@ import { Job } from '../entities/job.entity';
 import { Application } from '../entities/application.entity';
 import { Notification } from '../entities/notification.entity';
 import { AuditLog } from '../entities/audit-log.entity';
+import { InterviewSlot } from '../entities/interview-slot.entity';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AuditLog } from '../entities/audit-log.entity';
       Application,
       Notification,
       AuditLog,
+      InterviewSlot,
     ]),
   ],
   controllers: [AdminController],

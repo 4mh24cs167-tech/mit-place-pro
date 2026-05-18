@@ -47,10 +47,8 @@ export default function AdminCompaniesPage() {
     sector: "Information Technology",
     hqCity: "",
     website: "",
-    email: "",
+    hrEmail: "",
     hrName: "",
-    description: "",
-    password: "",
   });
 
   const fetchCompanies = useCallback(async () => {
@@ -78,8 +76,8 @@ export default function AdminCompaniesPage() {
   }, [fetchCompanies]);
 
   const handleAddCompany = async () => {
-    if (!formData.name || !formData.email || !formData.password) {
-      setAddError("Name, email, and password are required");
+    if (!formData.name || !formData.hrEmail) {
+      setAddError("Company name and HR email are required");
       return;
     }
     try {
@@ -87,7 +85,7 @@ export default function AdminCompaniesPage() {
       setAddError("");
       await adminApi.createCompany(formData);
       setShowAddModal(false);
-      setFormData({ name: "", sector: "Information Technology", hqCity: "", website: "", email: "", hrName: "", description: "", password: "" });
+      setFormData({ name: "", sector: "Information Technology", hqCity: "", website: "", hrEmail: "", hrName: "" });
       await fetchCompanies();
     } catch (err: unknown) {
       setAddError(err instanceof Error ? err.message : "Failed to add company");
@@ -303,20 +301,8 @@ export default function AdminCompaniesPage() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Email *</label>
-                  <input type="email" value={formData.email} onChange={e => setFormData(p => ({ ...p, email: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-border text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1 block">Password *</label>
-                  <input type="password" value={formData.password} onChange={e => setFormData(p => ({ ...p, password: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-border text-sm outline-none focus:ring-2 focus:ring-primary/20" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground mb-1 block">HQ City</label>
-                  <input value={formData.hqCity} onChange={e => setFormData(p => ({ ...p, hqCity: e.target.value }))}
+                  <label className="text-xs font-medium text-muted-foreground mb-1 block">HR Email *</label>
+                  <input type="email" value={formData.hrEmail} onChange={e => setFormData(p => ({ ...p, hrEmail: e.target.value }))}
                     className="w-full px-3 py-2 rounded-lg border border-border text-sm outline-none focus:ring-2 focus:ring-primary/20" />
                 </div>
                 <div>
@@ -326,15 +312,16 @@ export default function AdminCompaniesPage() {
                 </div>
               </div>
               <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">HQ City</label>
+                <input value={formData.hqCity} onChange={e => setFormData(p => ({ ...p, hqCity: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border border-border text-sm outline-none focus:ring-2 focus:ring-primary/20" />
+              </div>
+              <div>
                 <label className="text-xs font-medium text-muted-foreground mb-1 block">Website</label>
                 <input value={formData.website} onChange={e => setFormData(p => ({ ...p, website: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg border border-border text-sm outline-none focus:ring-2 focus:ring-primary/20" />
               </div>
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-1 block">Description</label>
-                <textarea value={formData.description} onChange={e => setFormData(p => ({ ...p, description: e.target.value }))} rows={2}
-                  className="w-full px-3 py-2 rounded-lg border border-border text-sm outline-none focus:ring-2 focus:ring-primary/20 resize-none" />
-              </div>
+
             </div>
 
             <div className="flex items-center justify-end gap-3 mt-5">

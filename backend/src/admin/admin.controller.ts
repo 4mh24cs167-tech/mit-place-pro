@@ -29,6 +29,17 @@ export class AdminController {
   }
 
   // ─── Students ───────────────────────────────────
+  // IMPORTANT: Template route MUST come BEFORE :id route
+  @Get('students/template')
+  async downloadTemplate(@Res() res: Response) {
+    const buffer = this.bulkUploadService.generateTemplate();
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename=student_upload_template.xlsx',
+    });
+    res.send(buffer);
+  }
+
   @Get('students')
   async listStudents(@Query() query: PaginationDto) {
     const result = await this.adminService.listStudents(query);
@@ -83,16 +94,6 @@ export class AdminController {
     return { success: true, data: result };
   }
 
-  @Get('students/template')
-  async downloadTemplate(@Res() res: Response) {
-    const buffer = this.bulkUploadService.generateTemplate();
-    res.set({
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': 'attachment; filename=student_upload_template.xlsx',
-    });
-    res.send(buffer);
-  }
-
   // ─── Companies ──────────────────────────────────
   @Post('companies')
   async createCompany(
@@ -115,6 +116,20 @@ export class AdminController {
     return { success: true, data };
   }
 
+  // ─── Jobs (Admin View) ─────────────────────────
+  @Get('jobs')
+  async listJobs(@Query() query: PaginationDto) {
+    const result = await this.adminService.listJobs(query);
+    return { success: true, ...result };
+  }
+
+  // ─── Applications (Admin View) ─────────────────
+  @Get('applications')
+  async listApplications(@Query() query: PaginationDto) {
+    const result = await this.adminService.listApplications(query);
+    return { success: true, ...result };
+  }
+
   // ─── Shortlist Approval ─────────────────────────
   @Get('jobs/:jobId/shortlist')
   async getShortlist(@Param('jobId') jobId: string) {
@@ -129,6 +144,31 @@ export class AdminController {
     @CurrentUser('id') actorId: string,
   ) {
     const data = await this.adminService.bulkApprove(jobId, dto, actorId);
+    return { success: true, data };
+  }
+
+  // ─── Slot Management ───────────────────────────
+  @Get('slots')
+  async listSlots(@Query('jobId') jobId?: string) {
+    const data = await this.adminService.listSlots(jobId);
+    return { success: true, data };
+  }
+
+  @Post('slots/generate')
+  async generateSlots(
+    @Body() body: { jobId: string; round: number; venue?: string; durationMin?: number; startHour?: number },
+  ) {
+    const data = await this.adminService.generateSlots(body.jobId, body.round, {
+      venue: body.venue,
+      durationMin: body.durationMin,
+      startHour: body.startHour,
+    });
+    return { success: true, data };
+  }
+
+  @Get('slots/timeline')
+  async getSlotTimeline(@Query('date') date?: string) {
+    const data = await this.adminService.getSlotTimeline(date);
     return { success: true, data };
   }
 }

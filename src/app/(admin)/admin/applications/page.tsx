@@ -39,19 +39,18 @@ export default function AdminApplicationsPage() {
   const fetchApplications = useCallback(async () => {
     try {
       setLoading(true);
-      // Use admin shortlist/applications endpoint
-      const res = await adminApi.getDashboard();
+      const res = await adminApi.listApplications({
+        status: approvalFilter !== 'all' ? approvalFilter : undefined,
+      });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data = (res as any)?.data;
-      // If the backend returns applications in the dashboard, use them; otherwise empty
-      const apps = data?.recentApplications || data?.applications || [];
-      setApplications(Array.isArray(apps) ? apps : []);
+      setApplications(Array.isArray(data) ? data : []);
     } catch {
       setApplications([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [approvalFilter]);
 
   useEffect(() => {
     fetchApplications();
