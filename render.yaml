@@ -20,4 +20,4 @@ services:
       - key: PORT
         value: 3001
       - key: CORS_ORIGIN
-        value: https://mitm-placepro.netlify.app
+        value: https://mitm-placepro.vercel.app,https://mitm-placepro.netlify.app
