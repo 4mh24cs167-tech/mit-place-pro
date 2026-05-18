@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Patch, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginDto, ChangePasswordDto } from './dto/auth.dto';
+import { LoginDto, ChangePasswordDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto } from './dto/auth.dto';
 import { Auth, CurrentUser } from './auth.decorators';
 
 @Controller('api/v1/auth')
@@ -21,6 +21,30 @@ export class AuthController {
     @Body() dto: ChangePasswordDto,
   ) {
     const result = await this.authService.changePassword(userId, dto);
+    return { success: true, data: result };
+  }
+
+  // ── Public: Forgot Password (Send OTP) ──────────────────
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    const result = await this.authService.forgotPassword(dto);
+    return { success: true, data: result };
+  }
+
+  // ── Public: Verify OTP ──────────────────────────────────
+  @Post('verify-otp')
+  @HttpCode(HttpStatus.OK)
+  async verifyOtp(@Body() dto: VerifyOtpDto) {
+    const result = await this.authService.verifyOtp(dto);
+    return { success: true, data: result };
+  }
+
+  // ── Public: Reset Password with OTP ─────────────────────
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    const result = await this.authService.resetPassword(dto);
     return { success: true, data: result };
   }
 }

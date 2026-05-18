@@ -118,6 +118,27 @@ export const authApi = {
     });
   },
 
+  async forgotPassword(email: string) {
+    return apiFetch('/api/v1/auth/forgot-password', {
+      method: 'POST',
+      body: { email },
+    });
+  },
+
+  async verifyOtp(email: string, otp: string) {
+    return apiFetch<{ verified: boolean }>('/api/v1/auth/verify-otp', {
+      method: 'POST',
+      body: { email, otp },
+    });
+  },
+
+  async resetPassword(email: string, otp: string, newPassword: string) {
+    return apiFetch('/api/v1/auth/reset-password', {
+      method: 'POST',
+      body: { email, otp, newPassword },
+    });
+  },
+
   logout() {
     removeToken();
     if (typeof window !== 'undefined') {

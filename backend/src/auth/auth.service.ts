@@ -1,17 +1,22 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { User } from '../entities/user.entity';
-import { LoginDto, ChangePasswordDto } from './dto/auth.dto';
+import { LoginDto, ChangePasswordDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto } from './dto/auth.dto';
+import { EmailService } from '../admin/email.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     private readonly jwtService: JwtService,
+    private readonly emailService: EmailService,
   ) {}
 
   async login(dto: LoginDto) {
@@ -68,6 +73,104 @@ export class AuthService {
     });
 
     return { message: 'Password changed successfully' };
+  }
+
+  // ── Forgot Password: Send OTP ─────────────────────────────
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.userRepo.findOne({
+      where: { email: dto.email.toLowerCase(), isActive: true },
+    });
+
+    // Always return success to prevent email enumeration
+    if (!user) {
+      this.logger.warn(`Forgot password requested for non-existent email: ${dto.email}`);
+      return { message: 'If the email exists, an OTP has been sent.' };
+    }
+
+    // Generate 6-digit OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Save OTP to user record
+    await this.userRepo.update(user.id, {
+      resetOtp: otp,
+      resetOtpExpiresAt: expiresAt,
+    });
+
+    // Send OTP via email
+    const sent = await this.emailService.sendOtpEmail(user.email, otp);
+    if (!sent) {
+      this.logger.warn(`OTP email delivery failed for ${user.email}. OTP: ${otp}`);
+    }
+
+    this.logger.log(`OTP generated for ${user.email}, expires at ${expiresAt.toISOString()}`);
+
+    return { message: 'If the email exists, an OTP has been sent.' };
+  }
+
+  // ── Verify OTP ─────────────────────────────────────────────
+  async verifyOtp(dto: VerifyOtpDto) {
+    const user = await this.userRepo.findOne({
+      where: { email: dto.email.toLowerCase(), isActive: true },
+    });
+
+    if (!user || !user.resetOtp || !user.resetOtpExpiresAt) {
+      throw new BadRequestException('Invalid or expired OTP');
+    }
+
+    if (new Date() > user.resetOtpExpiresAt) {
+      // Clear expired OTP
+      await this.userRepo.update(user.id, {
+        resetOtp: null,
+        resetOtpExpiresAt: null,
+      });
+      throw new BadRequestException('OTP has expired. Please request a new one.');
+    }
+
+    if (user.resetOtp !== dto.otp) {
+      throw new BadRequestException('Invalid OTP');
+    }
+
+    return { verified: true, message: 'OTP verified successfully' };
+  }
+
+  // ── Reset Password with OTP ────────────────────────────────
+  async resetPassword(dto: ResetPasswordDto) {
+    const user = await this.userRepo.findOne({
+      where: { email: dto.email.toLowerCase(), isActive: true },
+    });
+
+    if (!user || !user.resetOtp || !user.resetOtpExpiresAt) {
+      throw new BadRequestException('Invalid or expired OTP');
+    }
+
+    if (new Date() > user.resetOtpExpiresAt) {
+      await this.userRepo.update(user.id, {
+        resetOtp: null,
+        resetOtpExpiresAt: null,
+      });
+      throw new BadRequestException('OTP has expired. Please request a new one.');
+    }
+
+    if (user.resetOtp !== dto.otp) {
+      throw new BadRequestException('Invalid OTP');
+    }
+
+    // Hash new password
+    const salt = await bcrypt.genSalt(12);
+    const newHash = await bcrypt.hash(dto.newPassword, salt);
+
+    // Update password and clear OTP
+    await this.userRepo.update(user.id, {
+      passwordHash: newHash,
+      mustChangePassword: false,
+      resetOtp: null,
+      resetOtpExpiresAt: null,
+    });
+
+    this.logger.log(`Password reset successfully for ${user.email}`);
+
+    return { message: 'Password has been reset successfully' };
   }
 
   async validateUser(userId: string) {
