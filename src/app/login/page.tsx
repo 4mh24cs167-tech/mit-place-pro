@@ -2,21 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/auth-context";
-import { GraduationCap, ArrowRight, AlertCircle, Eye, EyeOff } from "lucide-react";
-
-type Role = "admin" | "student" | "company" | "principal";
-
-const roles: { id: Role; label: string; emoji: string; description: string }[] = [
-  { id: "admin", label: "Placement Admin", emoji: "🏛️", description: "Manage drives, students, and companies" },
-  { id: "student", label: "Student", emoji: "🎓", description: "Apply to jobs and track progress" },
-  { id: "company", label: "Company HR", emoji: "🏢", description: "Post jobs and manage candidates" },
-  { id: "principal", label: "Principal", emoji: "📊", description: "View analytics and reports" },
-];
+import { GraduationCap, ArrowRight, AlertCircle, Eye, EyeOff, Mail, Lock, Sparkles } from "lucide-react";
 
 export default function LoginPage() {
-  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -26,123 +15,184 @@ export default function LoginPage() {
   const { login } = useAuth();
 
   const handleLogin = async () => {
-    if (!selectedRole || !email || !password) return;
+    if (!email || !password) return;
     setIsLoading(true);
     setError(null);
 
     try {
       const result = await login(email, password);
       if (result.success) {
-        if (result.mustChangePassword) {
-          router.push("/change-password");
-        } else {
-          const roleRoute = result.role || selectedRole;
-          router.push(`/${roleRoute}/dashboard`);
-        }
+        const role = result.role || "student";
+        router.push(`/${role}/dashboard`);
       } else {
-        setError("Invalid credentials. Please check your email and password.");
+        setError("Invalid email or password. Please try again.");
       }
     } catch {
-      setError("Connection error. Please try again.");
+      setError("Unable to connect. Please check your internet and try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-background purple-glow flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="flex items-center justify-center gap-3 mb-10">
-          <div className="w-11 h-11 rounded-full bg-foreground flex items-center justify-center">
-            <GraduationCap className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-xl font-bold text-foreground tracking-tight">MITM PlacePro</span>
-        </div>
+    <div className="min-h-screen flex">
+      {/* Left Panel - Branding (hidden on mobile) */}
+      <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden bg-gradient-to-br from-[#1a1a2e] via-[#16213e] to-[#0f3460]">
+        {/* Animated gradient orbs */}
+        <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-br from-violet-600/30 to-indigo-600/20 blur-3xl animate-pulse" />
+        <div className="absolute bottom-[-15%] right-[-5%] w-[400px] h-[400px] rounded-full bg-gradient-to-br from-cyan-500/20 to-blue-600/15 blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-[40%] left-[30%] w-[300px] h-[300px] rounded-full bg-gradient-to-br from-purple-500/15 to-pink-500/10 blur-3xl animate-pulse" style={{ animationDelay: "2s" }} />
 
-        {/* Login card */}
-        <div className="i-card p-8">
-          <h1 className="text-2xl font-bold text-foreground text-center mb-1">Welcome back</h1>
-          <p className="text-sm text-muted-foreground text-center mb-8">Select your role and sign in</p>
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.04]" style={{
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+          backgroundSize: "60px 60px",
+        }} />
+
+        {/* Content */}
+        <div className="relative z-10 flex flex-col justify-between p-12 w-full">
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center">
+              <GraduationCap className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <span className="text-xl font-bold text-white tracking-tight">MITM PlacePro</span>
+              <p className="text-xs text-white/40">Campus Placement Portal</p>
+            </div>
+          </div>
+
+          {/* Hero text */}
+          <div className="max-w-md">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/10 mb-6">
+              <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+              <span className="text-xs text-white/60 font-medium">AI-Powered Placement Management</span>
+            </div>
+            <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight mb-5">
+              Your career journey
+              <span className="block mt-1 bg-gradient-to-r from-violet-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                starts here.
+              </span>
+            </h1>
+            <p className="text-base text-white/50 leading-relaxed">
+              Connecting students, companies, and administrators in a seamless
+              placement ecosystem powered by intelligent matching.
+            </p>
+          </div>
+
+          {/* Stats */}
+          <div className="flex gap-8">
+            {[
+              { value: "500+", label: "Students" },
+              { value: "50+", label: "Companies" },
+              { value: "95%", label: "Placement Rate" },
+            ].map((stat) => (
+              <div key={stat.label}>
+                <p className="text-2xl font-bold text-white">{stat.value}</p>
+                <p className="text-xs text-white/40 mt-0.5">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Right Panel - Login Form */}
+      <div className="flex-1 flex items-center justify-center bg-background purple-glow p-6 sm:p-8">
+        <div className="w-full max-w-[420px]">
+          {/* Mobile logo */}
+          <div className="lg:hidden flex items-center justify-center gap-3 mb-10">
+            <div className="w-11 h-11 rounded-2xl bg-foreground flex items-center justify-center">
+              <GraduationCap className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <span className="text-xl font-bold text-foreground tracking-tight">MITM PlacePro</span>
+              <p className="text-xs text-muted-foreground">Campus Placement Portal</p>
+            </div>
+          </div>
+
+          {/* Welcome */}
+          <div className="mb-8">
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Welcome back</h2>
+            <p className="text-sm text-muted-foreground">Sign in to your account to continue</p>
+          </div>
 
           {/* Error */}
           {error && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200 mb-6">
-              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+            <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-50 border border-red-200 mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
+              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
 
-          {/* Role selector */}
-          <div className="grid grid-cols-2 gap-2 mb-6">
-            {roles.map((role) => (
-              <button
-                key={role.id}
-                onClick={() => setSelectedRole(role.id)}
-                className={cn(
-                  "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center",
-                  selectedRole === role.id
-                    ? "border-foreground bg-foreground/[0.03] shadow-sm"
-                    : "border-border hover:border-muted-foreground/30 hover:bg-muted/50"
-                )}
-              >
-                <span className="text-2xl">{role.emoji}</span>
-                <span className="text-xs font-semibold text-foreground leading-tight">{role.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Credential inputs */}
-          {selectedRole && (
-            <div className="space-y-4 mb-6 animate-in fade-in slide-in-from-top-2 duration-300">
-              <div>
-                <label htmlFor="email" className="block text-xs font-medium text-muted-foreground mb-1.5">
-                  Email Address
-                </label>
+          {/* Form */}
+          <div className="space-y-4 mb-6">
+            {/* Email */}
+            <div>
+              <label htmlFor="email" className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
+                Email Address
+              </label>
+              <div className="relative group">
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-foreground transition-colors" />
                 <input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@mitm.ac.in"
-                  className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-foreground transition-all"
+                  placeholder="you@example.com"
+                  className="w-full pl-11 pr-4 py-3 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-foreground transition-all placeholder:text-muted-foreground/50"
                   onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                  autoComplete="email"
                 />
               </div>
-              <div>
-                <label htmlFor="password" className="block text-xs font-medium text-muted-foreground mb-1.5">
+            </div>
+
+            {/* Password */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="password" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Password
                 </label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    className="w-full px-4 py-2.5 pr-10 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-foreground transition-all"
-                    onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => router.push("/change-password")}
+                  className="text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+                >
+                  Forgot password?
+                </button>
+              </div>
+              <div className="relative group">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-foreground transition-colors" />
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  className="w-full pl-11 pr-11 py-3 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-foreground transition-all placeholder:text-muted-foreground/50"
+                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Toggle password visibility"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Login button */}
           <button
             onClick={handleLogin}
-            disabled={!selectedRole || !email || !password || isLoading}
-            className={cn(
-              "w-full i-btn-dark justify-center py-3.5 text-base",
-              (!selectedRole || !email || !password || isLoading) && "opacity-40 cursor-not-allowed"
-            )}
+            disabled={!email || !password || isLoading}
+            className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+              !email || !password || isLoading
+                ? "bg-foreground/30 text-white/50 cursor-not-allowed"
+                : "bg-foreground text-white hover:bg-foreground/90 shadow-lg shadow-foreground/10 hover:shadow-foreground/20 active:scale-[0.99]"
+            }`}
           >
             {isLoading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -153,11 +203,35 @@ export default function LoginPage() {
               </>
             )}
           </button>
-        </div>
 
-        <p className="text-xs text-muted-foreground text-center mt-6">
-          MITM College, Mysuru · Placement Cell Portal
-        </p>
+          {/* Divider with role info */}
+          <div className="mt-8 pt-6 border-t border-border/50">
+            <p className="text-xs text-muted-foreground text-center mb-3">
+              Access for all roles
+            </p>
+            <div className="flex items-center justify-center gap-3 flex-wrap">
+              {[
+                { emoji: "🏛️", label: "Admin" },
+                { emoji: "🎓", label: "Student" },
+                { emoji: "🏢", label: "Company" },
+                { emoji: "📊", label: "Principal" },
+              ].map((role) => (
+                <div
+                  key={role.label}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 border border-border/50"
+                >
+                  <span className="text-sm">{role.emoji}</span>
+                  <span className="text-[10px] font-medium text-muted-foreground">{role.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <p className="text-[11px] text-muted-foreground text-center mt-8">
+            MITM College, Mysuru · Placement Cell Portal
+          </p>
+        </div>
       </div>
     </div>
   );
