@@ -32,7 +32,13 @@ export class EmailService {
   }
 
   async sendCompanyCredentials(credentials: CompanyCredentials): Promise<boolean> {
-    const fromEmail = this.configService.get<string>('SMTP_FROM', 'noreply@mitm-placepro.com');
+    const smtpUser = this.configService.get<string>('SMTP_USER', '');
+    if (!smtpUser) {
+      this.logger.warn('SMTP not configured (SMTP_USER is empty). Skipping email delivery.');
+      return false;
+    }
+
+    const fromEmail = this.configService.get<string>('SMTP_FROM', smtpUser);
     const fromName = this.configService.get<string>('SMTP_FROM_NAME', 'MITM PlacePro');
 
     const htmlContent = `

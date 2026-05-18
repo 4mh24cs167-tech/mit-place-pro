@@ -128,38 +128,39 @@ export default function AdminCompaniesPage() {
         subtitle={`${companies.length} companies registered for campus recruitment`}
       />
 
-      <div className="px-8 pb-10 space-y-6">
+      <div className="px-4 sm:px-6 md:px-8 pb-10 space-y-4 sm:space-y-6">
         {/* Action Bar */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 flex-1 max-w-lg">
-            <div className="flex items-center flex-1 bg-white rounded-xl border border-border px-3">
-              <Search className="w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search companies..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none text-foreground placeholder:text-muted-foreground"
-              />
-            </div>
+        <div className="space-y-3">
+          <div className="flex items-center bg-white rounded-xl border border-border px-3 w-full">
+            <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <input
+              type="text"
+              placeholder="Search companies..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none text-foreground placeholder:text-muted-foreground min-w-0"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
             <select
               value={sectorFilter}
               onChange={(e) => setSectorFilter(e.target.value)}
-              className="px-3 py-2.5 rounded-xl border border-border bg-white text-sm text-foreground outline-none cursor-pointer"
+              className="px-3 py-2 rounded-xl border border-border bg-white text-xs sm:text-sm text-foreground outline-none cursor-pointer"
             >
               <option value="all">All Sectors</option>
               {sectors.map(s => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all ml-auto"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Add Company</span>
+              <span className="sm:hidden">Add</span>
+            </button>
           </div>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all"
-          >
-            <Plus className="w-4 h-4" />
-            Add Company
-          </button>
         </div>
 
         {/* Loading skeleton */}
@@ -190,14 +191,14 @@ export default function AdminCompaniesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {filtered.map((company) => (
-              <div key={company.id} className="i-card p-6 group cursor-pointer">
+              <div key={company.id} className="i-card p-4 sm:p-6 group cursor-pointer">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-lg font-bold text-emerald-700 border border-emerald-200/50">
+                    <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-base sm:text-lg font-bold text-emerald-700 border border-emerald-200/50 flex-shrink-0">
                       {company.name.charAt(0)}
                     </div>
                     <div>
-                      <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors">
+                      <h3 className="text-sm sm:text-base font-semibold text-foreground group-hover:text-primary transition-colors">
                         {company.name}
                       </h3>
                       <div className="flex items-center gap-2 mt-0.5">
@@ -283,8 +284,8 @@ export default function AdminCompaniesPage() {
 
       {/* Add Company Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-lg p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-semibold text-foreground">Add New Company</h2>
               <button onClick={() => setShowAddModal(false)} className="p-1.5 rounded-lg hover:bg-muted">
@@ -297,7 +298,7 @@ export default function AdminCompaniesPage() {
             )}
 
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">Company Name *</label>
                   <input value={formData.name} onChange={e => setFormData(p => ({ ...p, name: e.target.value }))}
@@ -317,7 +318,7 @@ export default function AdminCompaniesPage() {
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">HR Email *</label>
                   <input type="email" value={formData.hrEmail} onChange={e => setFormData(p => ({ ...p, hrEmail: e.target.value }))}
@@ -329,7 +330,7 @@ export default function AdminCompaniesPage() {
                     className="w-full px-3 py-2 rounded-lg border border-border text-sm outline-none focus:ring-2 focus:ring-primary/20" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1 block">HQ City</label>
                   <input value={formData.hqCity} onChange={e => setFormData(p => ({ ...p, hqCity: e.target.value }))}
@@ -350,7 +351,7 @@ export default function AdminCompaniesPage() {
 
             </div>
 
-            <div className="flex items-center justify-end gap-3 mt-5">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 mt-5">
               <button onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors">
                 Cancel
               </button>
@@ -366,8 +367,8 @@ export default function AdminCompaniesPage() {
 
       {/* Credentials Success Modal */}
       {createdCredentials && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-md p-5 sm:p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center">

@@ -96,7 +96,7 @@ export default function StudentApplicationsPage() {
         subtitle={`${applications.length} total · ${activeCount} in progress · ${selectedCount} offers received`}
       />
 
-      <div className="px-8 pb-10 space-y-6">
+      <div className="px-4 sm:px-6 md:px-8 pb-10 space-y-4 sm:space-y-6">
         {/* Quick stats */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           {[
@@ -167,21 +167,21 @@ export default function StudentApplicationsPage() {
               const appliedDate = app.createdAt ? new Date(app.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
 
               return (
-                <div key={app.id} className="i-card p-5 group cursor-pointer">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-base font-bold text-indigo-700">
+                <div key={app.id} className="i-card p-4 sm:p-5 group cursor-pointer">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-sm sm:text-base font-bold text-indigo-700 flex-shrink-0">
                         {companyName.charAt(0)}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="text-sm font-semibold text-foreground">{companyName}</h3>
                           <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full", st.bg, st.color)}>
                             {st.label}
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">{app.job?.title || "—"}</p>
-                        <div className="flex items-center gap-4 mt-2 text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-3 sm:gap-4 mt-2 text-[10px] text-muted-foreground flex-wrap">
                           <div className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {app.job?.company?.hqCity || "—"}</div>
                           <div className="flex items-center gap-1"><IndianRupee className="w-3 h-3" /> {ctcLabel}</div>
                           <div className="flex items-center gap-1"><Clock className="w-3 h-3" /> Applied {appliedDate}</div>
@@ -189,7 +189,7 @@ export default function StudentApplicationsPage() {
                       </div>
                     </div>
 
-                    <div className="text-right flex flex-col items-end gap-2">
+                    <div className="flex sm:flex-col items-center sm:items-end gap-2">
                       <div className={cn(
                         "flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border",
                         (app.atsScore || 0) >= 80 ? "bg-emerald-50 text-emerald-600 border-emerald-200" :
@@ -199,7 +199,7 @@ export default function StudentApplicationsPage() {
                         <Star className="w-3 h-3" />
                         ATS: {app.atsScore ?? "—"}%
                       </div>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <ChevronRight className="w-4 h-4 text-muted-foreground hidden sm:block opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </div>
 

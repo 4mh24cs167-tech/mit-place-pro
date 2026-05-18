@@ -8,7 +8,7 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-background purple-glow">
       <Sidebar role="admin" />
-      <main className="ml-[72px]">{children}</main>
+      <main className="md:ml-[72px] pb-20 md:pb-0">{children}</main>
     </div>
   );
 }

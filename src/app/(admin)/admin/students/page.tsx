@@ -142,27 +142,29 @@ export default function AdminStudentsPage() {
         subtitle={`${totalCount} students registered`}
       />
 
-      <div className="px-8 pb-10 space-y-6">
+      <div className="px-4 sm:px-6 md:px-8 pb-10 space-y-4 sm:space-y-6">
         {/* Action Bar */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3 flex-1 w-full sm:w-auto">
-            <div className="flex items-center flex-1 max-w-md bg-white rounded-xl border border-border px-3">
-              <Search className="w-4 h-4 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search by name, USN..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none text-foreground placeholder:text-muted-foreground"
-              />
-            </div>
+        <div className="space-y-3">
+          {/* Search */}
+          <div className="flex items-center bg-white rounded-xl border border-border px-3 w-full">
+            <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <input
+              type="text"
+              placeholder="Search by name, USN..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none text-foreground placeholder:text-muted-foreground min-w-0"
+            />
+          </div>
 
+          {/* Filters + Actions */}
+          <div className="flex flex-wrap items-center gap-2">
             <select
               value={deptFilter}
               onChange={(e) => { setDeptFilter(e.target.value); setPage(1); }}
-              className="px-3 py-2.5 rounded-xl border border-border bg-white text-sm text-foreground outline-none cursor-pointer"
+              className="px-3 py-2 rounded-xl border border-border bg-white text-xs sm:text-sm text-foreground outline-none cursor-pointer flex-shrink-0"
             >
-              <option value="all">All Departments</option>
+              <option value="all">All Depts</option>
               <option value="CSE">CSE</option>
               <option value="ISE">ISE</option>
               <option value="ECE">ECE</option>
@@ -173,39 +175,39 @@ export default function AdminStudentsPage() {
             <select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-              className="px-3 py-2.5 rounded-xl border border-border bg-white text-sm text-foreground outline-none cursor-pointer"
+              className="px-3 py-2 rounded-xl border border-border bg-white text-xs sm:text-sm text-foreground outline-none cursor-pointer flex-shrink-0"
             >
               <option value="all">All Status</option>
               <option value="none">Not Started</option>
               <option value="shortlisted">Shortlisted</option>
-              <option value="interview_scheduled">Interview Scheduled</option>
+              <option value="interview_scheduled">Scheduled</option>
               <option value="offered">Offered</option>
               <option value="placed">Placed</option>
             </select>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleDownloadTemplate}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-white text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              Template
-            </button>
-            <button
-              onClick={() => setShowUpload(true)}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all"
-            >
-              <Upload className="w-4 h-4" />
-              Upload Excel
-            </button>
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                onClick={handleDownloadTemplate}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-white text-xs sm:text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Template</span>
+              </button>
+              <button
+                onClick={() => setShowUpload(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all"
+              >
+                <Upload className="w-3.5 h-3.5" />
+                Upload
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Upload Modal */}
         {showUpload && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl">
+          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-6">
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl p-5 sm:p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
@@ -440,8 +442,8 @@ export default function AdminStudentsPage() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between pt-4">
-            <p className="text-sm text-muted-foreground">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Page {page} of {totalPages} · {totalCount} total
             </p>
             <div className="flex items-center gap-1">

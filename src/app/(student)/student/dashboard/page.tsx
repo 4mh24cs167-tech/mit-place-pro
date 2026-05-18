@@ -136,29 +136,31 @@ export default function StudentDashboardPage() {
         subtitle="Let's make this day productive."
       />
 
-      <div className="px-8 pb-10">
+      <div className="px-4 sm:px-6 md:px-8 pb-10">
         {/* Stats row */}
-        <div className="flex items-center gap-8 mb-8 -mt-2">
-          <div className="flex-1" />
-          {loading ? (
-            [1, 2, 3, 4].map(i => (
-              <div key={i} className="animate-pulse">
-                <div className="h-3 bg-muted rounded w-16 mb-2" />
-                <div className="h-8 bg-muted rounded w-12" />
-              </div>
-            ))
-          ) : (
-            applicationStats.map((s) => (
-              <div key={s.label}>
-                <p className="text-sm text-muted-foreground">{s.label}</p>
-                <p className="text-4xl font-bold text-foreground tracking-tight">
-                  {s.count}{s.suffix || ""}
-                  <span className="stat-arrow text-muted-foreground">↗</span>
-                </p>
-              </div>
-            ))
-          )}
-          <button className="i-btn-dark">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 mb-6 sm:mb-8 -mt-2">
+          <div className="hidden sm:block flex-1" />
+          <div className="grid grid-cols-2 sm:flex gap-4 sm:gap-8 w-full sm:w-auto">
+            {loading ? (
+              [1, 2, 3, 4].map(i => (
+                <div key={i} className="animate-pulse">
+                  <div className="h-3 bg-muted rounded w-16 mb-2" />
+                  <div className="h-8 bg-muted rounded w-12" />
+                </div>
+              ))
+            ) : (
+              applicationStats.map((s) => (
+                <div key={s.label}>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{s.label}</p>
+                  <p className="text-2xl sm:text-4xl font-bold text-foreground tracking-tight">
+                    {s.count}{s.suffix || ""}
+                    <span className="stat-arrow text-muted-foreground">↗</span>
+                  </p>
+                </div>
+              ))
+            )}
+          </div>
+          <button className="i-btn-dark w-full sm:w-auto justify-center">
             <Plus className="w-4 h-4" />
             Browse Jobs
           </button>

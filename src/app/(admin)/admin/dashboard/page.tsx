@@ -94,7 +94,7 @@ export default function AdminDashboardPage() {
         subtitle="Let's make this day productive."
       />
 
-      <div className="px-8 pb-10">
+      <div className="px-4 sm:px-6 md:px-8 pb-10">
         {/* Stats Row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {statCards.map((card) => (
@@ -117,29 +117,29 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Placement Rate Banner */}
-        <div className="i-card p-6 mb-8 bg-gradient-to-r from-foreground to-foreground/90 text-white">
-          <div className="flex items-center justify-between">
+        <div className="i-card p-4 sm:p-6 mb-6 sm:mb-8 bg-gradient-to-r from-foreground to-foreground/90 text-white">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <p className="text-sm text-white/70">Overall Placement Rate</p>
+              <p className="text-xs sm:text-sm text-white/70">Overall Placement Rate</p>
               {isLoading ? (
                 <div className="h-10 w-24 rounded bg-white/20 animate-pulse mt-1" />
               ) : (
-                <p className="text-4xl font-bold tracking-tight">
+                <p className="text-3xl sm:text-4xl font-bold tracking-tight">
                   {stats?.placementRate ?? 0}%
                   <span className="text-white/50 ml-2">↗</span>
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <button
                 onClick={() => fetchData(true)}
                 disabled={isRefreshing}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all"
+                className="flex items-center justify-center gap-2 flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all"
               >
                 <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
                 Refresh
               </button>
-              <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-foreground text-sm font-medium hover:bg-white/90 transition-all">
+              <button className="flex items-center justify-center gap-2 flex-1 sm:flex-initial px-3 sm:px-4 py-2 rounded-xl bg-white text-foreground text-sm font-medium hover:bg-white/90 transition-all">
                 <Plus className="w-4 h-4" />
                 Add Drive
               </button>

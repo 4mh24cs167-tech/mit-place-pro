@@ -97,34 +97,36 @@ export default function CompanyDashboardPage() {
         subtitle="Let's make this day productive."
       />
 
-      <div className="px-8 pb-10">
+      <div className="px-4 sm:px-6 md:px-8 pb-10">
         {/* Stats row */}
-        <div className="flex items-center gap-8 mb-8 -mt-2">
-          <div className="flex-1" />
-          {loading ? (
-            [1, 2].map(i => (
-              <div key={i} className="animate-pulse">
-                <div className="h-3 bg-muted rounded w-20 mb-2" />
-                <div className="h-8 bg-muted rounded w-12" />
-              </div>
-            ))
-          ) : (
-            <>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Applicants</p>
-                <p className="text-4xl font-bold text-foreground tracking-tight">
-                  {totalApplicants}<span className="stat-arrow text-muted-foreground">↗</span>
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Offers Sent</p>
-                <p className="text-4xl font-bold text-foreground tracking-tight">
-                  {totalSelected}<span className="stat-arrow text-muted-foreground">↗</span>
-                </p>
-              </div>
-            </>
-          )}
-          <button className="i-btn-dark">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 mb-6 sm:mb-8 -mt-2">
+          <div className="hidden sm:block flex-1" />
+          <div className="grid grid-cols-2 sm:flex gap-4 sm:gap-8 w-full sm:w-auto">
+            {loading ? (
+              [1, 2].map(i => (
+                <div key={i} className="animate-pulse">
+                  <div className="h-3 bg-muted rounded w-20 mb-2" />
+                  <div className="h-8 bg-muted rounded w-12" />
+                </div>
+              ))
+            ) : (
+              <>
+                <div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Total Applicants</p>
+                  <p className="text-2xl sm:text-4xl font-bold text-foreground tracking-tight">
+                    {totalApplicants}<span className="stat-arrow text-muted-foreground">↗</span>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Offers Sent</p>
+                  <p className="text-2xl sm:text-4xl font-bold text-foreground tracking-tight">
+                    {totalSelected}<span className="stat-arrow text-muted-foreground">↗</span>
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+          <button className="i-btn-dark w-full sm:w-auto justify-center">
             <Plus className="w-4 h-4" />
             Post Job
           </button>
@@ -156,7 +158,7 @@ export default function CompanyDashboardPage() {
               <div className="space-y-3">
                 {pipelineStages.map((stage) => (
                   <div key={stage.name} className="flex items-center gap-4">
-                    <span className="text-xs text-muted-foreground w-24 text-right">{stage.name}</span>
+                    <span className="text-xs text-muted-foreground w-16 sm:w-24 text-right flex-shrink-0">{stage.name}</span>
                     <div className="flex-1 h-10 bg-muted/50 rounded-xl overflow-hidden relative">
                       <div
                         className={cn("h-full rounded-xl flex items-center px-4 transition-all duration-700", stage.color)}
