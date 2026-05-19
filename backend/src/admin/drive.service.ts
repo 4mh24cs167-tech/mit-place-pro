@@ -251,7 +251,7 @@ export class DriveService {
     return { approved: updated.affected || 0 };
   }
 
-  // ─── Allocate Slots (department-wise with classroom) ──
+  // ─── Allocate Slots (department-wise with classroom, optimized) ──
   async allocateSlots(driveId: string, slots: Array<{
     timeSlot: string;
     classroom: string;
@@ -263,35 +263,38 @@ export class DriveService {
     // Clear existing slots
     await this.slotRepo.delete({ driveId });
 
-    const savedSlots: DriveSlot[] = [];
+    // Pre-load ALL approved registrations + student departments in a SINGLE query
+    const approvedStudents: Array<{ student_id: string; department: string }> = await this.regRepo
+      .createQueryBuilder('r')
+      .innerJoin('students', 's', 's.id = r.student_id')
+      .select('r.student_id', 'student_id')
+      .addSelect('s.department', 'department')
+      .where('r.drive_id = :driveId', { driveId })
+      .andWhere('r.status = :status', { status: 'approved' })
+      .getRawMany();
 
-    for (const slotData of slots) {
-      // Count approved students for these departments
-      const approvedRegs = await this.regRepo.find({
-        where: { driveId, status: 'approved' },
-      });
+    // Build a department → count map for fast lookups
+    const deptCounts = new Map<string, number>();
+    for (const row of approvedStudents) {
+      deptCounts.set(row.department, (deptCounts.get(row.department) || 0) + 1);
+    }
 
-      const studentIds = approvedRegs.map((r) => r.studentId);
-      let studentCount = 0;
-
-      if (studentIds.length > 0) {
-        studentCount = await this.studentRepo
-          .createQueryBuilder('s')
-          .where('s.id IN (:...ids)', { ids: studentIds })
-          .andWhere('s.department IN (:...depts)', { depts: slotData.departments })
-          .getCount();
-      }
-
-      const slot = await this.slotRepo.save({
+    // Build slot entities in-memory, compute counts without any extra queries
+    const slotEntities = slots.map((slotData) => {
+      const studentCount = slotData.departments.reduce(
+        (sum, dept) => sum + (deptCounts.get(dept) || 0), 0,
+      );
+      return {
         driveId,
         timeSlot: slotData.timeSlot,
         classroom: slotData.classroom,
         departments: slotData.departments,
         studentCount,
-      });
+      };
+    });
 
-      savedSlots.push(slot);
-    }
+    // Bulk insert all slots at once instead of one-at-a-time
+    const savedSlots = await this.slotRepo.save(slotEntities);
 
     // Update drive status
     drive.status = 'scheduled';
