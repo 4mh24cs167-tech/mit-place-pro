@@ -17,7 +17,5 @@ services:
         value: 15m
       - key: JWT_REFRESH_EXPIRES_IN
         value: 7d
-      - key: PORT
-        value: 3001
       - key: CORS_ORIGIN
         value: https://mitm-placepro.vercel.app,https://mitm-placepro.netlify.app
