@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import {
   Search, Download, Upload, Loader2, AlertCircle, CheckCircle2, X,
   FileSpreadsheet, UserPlus, GraduationCap, Hash, Building2,
-  ChevronDown, ChevronRight, Users,
+  ChevronDown, ChevronRight, Users, Trash2,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
@@ -53,6 +53,7 @@ export default function AdminStudentsPage() {
   const [uploadDept, setUploadDept] = useState("");
   const [uploadBatch, setUploadBatch] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchStudents = useCallback(async () => {
@@ -428,10 +429,28 @@ export default function AdminStudentsPage() {
                               <div className="p-4 sm:p-5">
                                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                                   {deptStudents.map(student => {
-                                    const statusCfg = getStatusConfig(student.placementStatus);
+                                      const statusCfg = getStatusConfig(student.placementStatus);
                                     const completionPct = student.profileComplete ? 100 : 35;
                                     return (
-                                      <div key={student.id} className="p-4 rounded-xl border border-border/60 bg-white hover:shadow-md transition-all group cursor-pointer">
+                                      <div key={student.id} className="p-4 rounded-xl border border-border/60 bg-white hover:shadow-md transition-all group relative">
+                                        {/* Delete button */}
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (deletingId === student.id) return;
+                                            if (!confirm(`Delete ${student.fullName} (${student.usn})? This cannot be undone.`)) return;
+                                            setDeletingId(student.id);
+                                            adminApi.deleteStudent(student.id)
+                                              .then(() => { fetchStudents(); })
+                                              .catch(() => alert('Failed to delete student'))
+                                              .finally(() => setDeletingId(null));
+                                          }}
+                                          disabled={deletingId === student.id}
+                                          className="absolute top-3 right-3 w-7 h-7 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-all disabled:opacity-50"
+                                          title="Delete student"
+                                        >
+                                          {deletingId === student.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                                        </button>
                                         <div className="flex items-start justify-between mb-3">
                                           <div className="flex items-center gap-2.5">
                                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-xs font-bold text-indigo-700">
@@ -442,7 +461,7 @@ export default function AdminStudentsPage() {
                                               <p className="text-[10px] text-muted-foreground">{student.usn}</p>
                                             </div>
                                           </div>
-                                          <span className={cn("text-[9px] font-semibold px-2 py-0.5 rounded-full", statusCfg.bg, statusCfg.color)}>{statusCfg.label}</span>
+                                          <span className={cn("text-[9px] font-semibold px-2 py-0.5 rounded-full mr-8", statusCfg.bg, statusCfg.color)}>{statusCfg.label}</span>
                                         </div>
                                         <div className="grid grid-cols-3 gap-2 mb-3">
                                           <div className="text-center p-1.5 rounded-lg bg-muted/40">
