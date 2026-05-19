@@ -50,11 +50,11 @@ const navConfigs = {
   ],
   student: [
     { label: "Dashboard", href: "/student/dashboard", icon: Home },
+    { label: "Jobs", href: "/student/jobs", icon: Eye },
+    { label: "Applications", href: "/student/applications", icon: Briefcase },
     { label: "Profile", href: "/student/profile", icon: UserCircle },
     { label: "CVs", href: "/student/cv", icon: FileText },
-    { label: "Applications", href: "/student/applications", icon: Briefcase },
     { label: "Allocations", href: "/student/allocations", icon: CalendarClock },
-    { label: "Slots", href: "/student/slots", icon: CalendarClock },
   ],
   principal: [
     { label: "Analytics", href: "/principal/analytics", icon: BarChart3 },

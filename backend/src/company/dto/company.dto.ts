@@ -81,6 +81,21 @@ export class CreateJobDto {
   @IsOptional()
   @IsString()
   joiningDate?: string;
+
+  @IsOptional()
+  @IsString()
+  jobType?: string; // 'placement' | 'internship'
+
+  @IsOptional()
+  isUnpaid?: boolean;
+
+  @IsOptional()
+  @IsString()
+  internshipDuration?: string; // e.g. "3 months"
+
+  @IsOptional()
+  @IsNumber()
+  stipendAmount?: number;
 }
 
 export class AddAvailabilityDto {

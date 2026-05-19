@@ -72,6 +72,18 @@ export class Job {
   @Column({ type: 'varchar', length: 50, nullable: true, name: 'joining_date' })
   joiningDate: string | null;
 
+  @Column({ type: 'varchar', length: 20, default: 'placement', name: 'job_type' })
+  jobType: string; // 'placement' | 'internship'
+
+  @Column({ type: 'boolean', default: false, name: 'is_unpaid' })
+  isUnpaid: boolean;
+
+  @Column({ type: 'varchar', length: 50, nullable: true, name: 'internship_duration' })
+  internshipDuration: string | null; // e.g. "3 months", "6 months"
+
+  @Column({ type: 'decimal', precision: 8, scale: 2, nullable: true, name: 'stipend_amount' })
+  stipendAmount: number | null; // monthly stipend in INR
+
   @Column({ type: 'enum', enum: ['draft', 'open', 'closed'], default: 'draft' })
   status: string;
 

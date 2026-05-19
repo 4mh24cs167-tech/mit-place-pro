@@ -160,10 +160,10 @@ export default function StudentDashboardPage() {
               ))
             )}
           </div>
-          <button className="i-btn-dark w-full sm:w-auto justify-center">
+          <a href="/student/jobs" className="i-btn-dark w-full sm:w-auto justify-center">
             <Plus className="w-4 h-4" />
             Browse Jobs
-          </button>
+          </a>
         </div>
 
         {/* Two-column layout */}
@@ -287,7 +287,7 @@ export default function StudentDashboardPage() {
             </div>
             <div className="space-y-3">
               {[
-                { label: "View Eligible Jobs", icon: Briefcase, href: "/student/applications" },
+                { label: "View Eligible Jobs", icon: Briefcase, href: "/student/jobs" },
                 { label: "Update Your CV", icon: FileText, href: "/student/cv" },
                 { label: "Complete Profile", icon: SlidersHorizontal, href: "/student/profile" },
               ].map((action) => (
