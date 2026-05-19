@@ -28,6 +28,51 @@ const CATEGORY_OPTIONS = ["General", "OBC", "SC", "ST", "EWS", "Other"];
 const STREAM_OPTIONS = ["Science", "Commerce", "Arts"];
 const BOARD_OPTIONS = ["CBSE", "ICSE", "State Board", "IB", "Other"];
 
+// Extracted outside the component to prevent re-creation on every render (fixes mobile focus loss)
+function InputField({ label, value, onChange, editing, type = "text", placeholder = "", required = false, disabled = false }: {
+  label: string; value: string; onChange: (v: string) => void; editing: boolean; type?: string;
+  placeholder?: string; required?: boolean; disabled?: boolean;
+}) {
+  return (
+    <div>
+      <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      {editing && !disabled ? (
+        <input type={type} value={value} onChange={(e) => onChange(e.target.value)}
+          className={cn("w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors bg-white",
+            required && !value ? "border-amber-300 focus:border-amber-500" : "border-border focus:border-indigo-500"
+          )} placeholder={placeholder} step={type === "number" ? "0.01" : undefined} />
+      ) : (
+        <p className="text-sm font-medium text-foreground">{value || "—"}</p>
+      )}
+    </div>
+  );
+}
+
+function SelectField({ label, value, onChange, editing, options, required = false }: {
+  label: string; value: string; onChange: (v: string) => void; editing: boolean; options: string[]; required?: boolean;
+}) {
+  return (
+    <div>
+      <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      {editing ? (
+        <select value={value} onChange={(e) => onChange(e.target.value)}
+          className={cn("w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors bg-white",
+            required && !value ? "border-amber-300" : "border-border"
+          )}>
+          <option value="">Select...</option>
+          {options.map((o) => <option key={o} value={o}>{o}</option>)}
+        </select>
+      ) : (
+        <p className="text-sm font-medium text-foreground capitalize">{value || "—"}</p>
+      )}
+    </div>
+  );
+}
+
 export default function StudentProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -138,46 +183,7 @@ export default function StudentProfilePage() {
     not_placed: { label: "Not Placed", color: "text-red-600", bg: "bg-red-50" },
   };
 
-  // Reusable input component
-  const InputField = ({ label, value, onChange, type = "text", placeholder = "", required = false, disabled = false }: {
-    label: string; value: string; onChange: (v: string) => void; type?: string;
-    placeholder?: string; required?: boolean; disabled?: boolean;
-  }) => (
-    <div>
-      <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {editing && !disabled ? (
-        <input type={type} value={value} onChange={(e) => onChange(e.target.value)}
-          className={cn("w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors bg-white",
-            required && !value ? "border-amber-300 focus:border-amber-500" : "border-border focus:border-indigo-500"
-          )} placeholder={placeholder} step={type === "number" ? "0.01" : undefined} />
-      ) : (
-        <p className="text-sm font-medium text-foreground">{value || "—"}</p>
-      )}
-    </div>
-  );
-
-  const SelectField = ({ label, value, onChange, options, required = false }: {
-    label: string; value: string; onChange: (v: string) => void; options: string[]; required?: boolean;
-  }) => (
-    <div>
-      <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {editing ? (
-        <select value={value} onChange={(e) => onChange(e.target.value)}
-          className={cn("w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors bg-white",
-            required && !value ? "border-amber-300" : "border-border"
-          )}>
-          <option value="">Select...</option>
-          {options.map((o) => <option key={o} value={o}>{o}</option>)}
-        </select>
-      ) : (
-        <p className="text-sm font-medium text-foreground capitalize">{value || "—"}</p>
-      )}
-    </div>
-  );
+  // Form sections use the extracted components below
 
   return (
     <div className="page-enter">
@@ -263,12 +269,12 @@ export default function StudentProfilePage() {
                   <User className="w-4 h-4 text-indigo-500" /> Personal Information
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <InputField label="Full Name" value={form.fullName} onChange={(v) => setField("fullName", v)} required placeholder="John Doe" />
-                  <InputField label="Phone" value={form.phone} onChange={(v) => setField("phone", v)} required placeholder="+91 9876543210" />
-                  <InputField label="Date of Birth" value={form.dateOfBirth} onChange={(v) => setField("dateOfBirth", v)} type="date" required />
-                  <SelectField label="Gender" value={form.gender} onChange={(v) => setField("gender", v)} options={GENDER_OPTIONS} required />
-                  <SelectField label="Category" value={form.category} onChange={(v) => setField("category", v)} options={CATEGORY_OPTIONS} />
-                  <InputField label="Family Income (₹/yr)" value={form.familyIncome} onChange={(v) => setField("familyIncome", v)} type="number" placeholder="500000" />
+                  <InputField label="Full Name" value={form.fullName} onChange={(v) => setField("fullName", v)} editing={editing} required placeholder="John Doe" />
+                  <InputField label="Phone" value={form.phone} onChange={(v) => setField("phone", v)} editing={editing} required placeholder="+91 9876543210" />
+                  <InputField label="Date of Birth" value={form.dateOfBirth} onChange={(v) => setField("dateOfBirth", v)} editing={editing} type="date" required />
+                  <SelectField label="Gender" value={form.gender} onChange={(v) => setField("gender", v)} editing={editing} options={GENDER_OPTIONS} required />
+                  <SelectField label="Category" value={form.category} onChange={(v) => setField("category", v)} editing={editing} options={CATEGORY_OPTIONS} />
+                  <InputField label="Family Income (₹/yr)" value={form.familyIncome} onChange={(v) => setField("familyIncome", v)} editing={editing} type="number" placeholder="500000" />
                 </div>
                 <div className="pt-2 border-t border-border">
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Email</p>
@@ -282,27 +288,27 @@ export default function StudentProfilePage() {
                   <GraduationCap className="w-4 h-4 text-indigo-500" /> Academic Details
                 </h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  <InputField label="CGPA" value={form.cgpa} onChange={(v) => setField("cgpa", v)} type="number" required placeholder="8.50" />
-                  <InputField label="Semester" value={form.semester} onChange={(v) => setField("semester", v)} type="number" placeholder="6" />
-                  <InputField label="Backlogs" value={form.backlogs} onChange={(v) => setField("backlogs", v)} type="number" placeholder="0" />
+                  <InputField label="CGPA" value={form.cgpa} onChange={(v) => setField("cgpa", v)} editing={editing} type="number" required placeholder="8.50" />
+                  <InputField label="Semester" value={form.semester} onChange={(v) => setField("semester", v)} editing={editing} type="number" placeholder="6" />
+                  <InputField label="Backlogs" value={form.backlogs} onChange={(v) => setField("backlogs", v)} editing={editing} type="number" placeholder="0" />
                 </div>
                 <div className="pt-3 border-t border-border">
                   <p className="text-xs font-semibold text-foreground mb-3">10th Standard</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <InputField label="Percentage" value={form.tenthPercent} onChange={(v) => setField("tenthPercent", v)} type="number" required placeholder="92.4" />
-                    <SelectField label="Board" value={form.tenthBoard} onChange={(v) => setField("tenthBoard", v)} options={BOARD_OPTIONS} />
-                    <InputField label="Year" value={form.tenthYear} onChange={(v) => setField("tenthYear", v)} type="number" placeholder="2020" />
+                    <InputField label="Percentage" value={form.tenthPercent} onChange={(v) => setField("tenthPercent", v)} editing={editing} type="number" required placeholder="92.4" />
+                    <SelectField label="Board" value={form.tenthBoard} onChange={(v) => setField("tenthBoard", v)} editing={editing} options={BOARD_OPTIONS} />
+                    <InputField label="Year" value={form.tenthYear} onChange={(v) => setField("tenthYear", v)} editing={editing} type="number" placeholder="2020" />
                   </div>
                 </div>
                 <div className="pt-3 border-t border-border">
                   <p className="text-xs font-semibold text-foreground mb-3">12th Standard</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <InputField label="Percentage" value={form.twelfthPercent} onChange={(v) => setField("twelfthPercent", v)} type="number" required placeholder="88.6" />
-                    <SelectField label="Board" value={form.twelfthBoard} onChange={(v) => setField("twelfthBoard", v)} options={BOARD_OPTIONS} />
-                    <InputField label="Year" value={form.twelfthYear} onChange={(v) => setField("twelfthYear", v)} type="number" placeholder="2022" />
+                    <InputField label="Percentage" value={form.twelfthPercent} onChange={(v) => setField("twelfthPercent", v)} editing={editing} type="number" required placeholder="88.6" />
+                    <SelectField label="Board" value={form.twelfthBoard} onChange={(v) => setField("twelfthBoard", v)} editing={editing} options={BOARD_OPTIONS} />
+                    <InputField label="Year" value={form.twelfthYear} onChange={(v) => setField("twelfthYear", v)} editing={editing} type="number" placeholder="2022" />
                   </div>
                   <div className="mt-3">
-                    <SelectField label="Stream" value={form.twelfthStream} onChange={(v) => setField("twelfthStream", v)} options={STREAM_OPTIONS} />
+                    <SelectField label="Stream" value={form.twelfthStream} onChange={(v) => setField("twelfthStream", v)} editing={editing} options={STREAM_OPTIONS} />
                   </div>
                 </div>
               </div>
@@ -312,7 +318,7 @@ export default function StudentProfilePage() {
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <Globe className="w-4 h-4 text-indigo-500" /> Links & Resume
                 </h3>
-                <InputField label="Resume Drive Link" value={form.driveLink} onChange={(v) => setField("driveLink", v)} placeholder="https://drive.google.com/..." />
+                <InputField label="Resume Drive Link" value={form.driveLink} onChange={(v) => setField("driveLink", v)} editing={editing} placeholder="https://drive.google.com/..." />
                 {linkedin && <a href={linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-indigo-600 hover:underline"><ExternalLink className="w-3 h-3" /> LinkedIn</a>}
                 {github && <a href={github} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-indigo-600 hover:underline"><GitBranch className="w-3 h-3" /> GitHub</a>}
               </div>
