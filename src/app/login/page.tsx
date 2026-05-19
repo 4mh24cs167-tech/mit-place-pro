@@ -50,7 +50,7 @@ export default function LoginPage() {
         }} />
 
         {/* Content */}
-        <div className="relative z-10 flex flex-col justify-between p-12 w-full">
+        <div className="relative z-10 flex flex-col p-12 w-full h-full">
           {/* Logo */}
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center">
@@ -63,11 +63,7 @@ export default function LoginPage() {
           </div>
 
           {/* Hero text */}
-          <div className="max-w-md">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] border border-white/10 mb-6">
-              <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-              <span className="text-xs text-white/60 font-medium">AI-Powered Placement Management</span>
-            </div>
+          <div className="max-w-md my-auto">
             <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight mb-5">
               Your career journey
               <span className="block mt-1 bg-gradient-to-r from-violet-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
@@ -79,8 +75,6 @@ export default function LoginPage() {
               placement ecosystem powered by intelligent matching.
             </p>
           </div>
-
-
         </div>
       </div>
 
