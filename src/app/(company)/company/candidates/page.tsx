@@ -19,8 +19,11 @@ import {
   MapPin,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
+  GraduationCap,
+  Building2,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 interface Candidate {
   applicationId: string;
@@ -55,6 +58,8 @@ export default function CompanyCandidatesPage() {
   const [driveSlots, setDriveSlots] = useState<Array<{ timeSlot: string; classroom: string | null; departments: string[]; studentCount: number }>>([]);
   const [showSchedule, setShowSchedule] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
+  const [expandedDepts, setExpandedDepts] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   const showToast = (type: "success" | "error", msg: string) => {
@@ -120,6 +125,10 @@ export default function CompanyCandidatesPage() {
       const data = (res as any)?.data;
       if (Array.isArray(data)) {
         setCandidates(data);
+        const batches = new Set(data.map((c: Candidate) => c.batchName || "Unassigned"));
+        setExpandedBatches(batches);
+        const depts = new Set(data.map((c: Candidate) => `${c.batchName || "Unassigned"}__${c.department}`));
+        setExpandedDepts(depts);
       }
     } catch {
       // silently handle
@@ -173,6 +182,21 @@ export default function CompanyCandidatesPage() {
   const shortlistedCount = candidates.filter(
     (c) => c.finalResult !== "rejected" && c.finalResult !== "selected"
   ).length;
+
+  const toggleBatch = (b: string) => setExpandedBatches(prev => { const n = new Set(prev); n.has(b) ? n.delete(b) : n.add(b); return n; });
+  const toggleDept = (key: string) => setExpandedDepts(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
+
+  const grouped = useMemo(() => {
+    const map: Record<string, Record<string, Candidate[]>> = {};
+    filtered.forEach(c => {
+      const batch = c.batchName || "Unassigned";
+      const dept = c.department || "Unknown";
+      if (!map[batch]) map[batch] = {};
+      if (!map[batch][dept]) map[batch][dept] = [];
+      map[batch][dept].push(c);
+    });
+    return Object.entries(map).sort(([a], [b]) => b.localeCompare(a));
+  }, [filtered]);
 
   return (
     <div className="page-enter">
@@ -300,176 +324,120 @@ export default function CompanyCandidatesPage() {
           </button>
         </div>
 
-        {/* Candidate table */}
-        <div className="i-card overflow-hidden">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-              <p className="text-sm text-muted-foreground">Loading candidates...</p>
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <Users className="w-10 h-10 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">
-                {candidates.length === 0
-                  ? "No candidates for this job yet"
-                  : "No candidates match your filters"}
-              </p>
-            </div>
-          ) : (
-            <>
-              {/* Desktop table */}
-              <div className="hidden md:block">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/30">
-                      <th className="text-left py-3.5 px-5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Candidate</th>
-                      <th className="text-left py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Batch / Dept</th>
-                      <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">CGPA</th>
-                      <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">ATS</th>
-                      <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Match</th>
-                      <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Round</th>
-                      <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                      <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((c) => {
-                      const sc = statusColors[c.finalResult] || statusColors.pending;
-                      return (
-                        <tr key={c.applicationId} className="border-b border-border/50 table-row-hover">
-                          <td className="py-3 px-5">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-[10px] font-bold text-indigo-700">
-                                {getInitials(c.studentName || "?")}
-                              </div>
-                              <div>
-                                <p className="text-sm font-medium text-foreground">{c.studentName || "—"}</p>
-                                <p className="text-[10px] text-muted-foreground">{c.usn || "—"}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3">
-                            <div className="flex flex-col gap-1">
-                              {c.batchName && (
-                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 w-fit">
-                                  {c.batchName}
-                                </span>
-                              )}
-                              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                                {c.department || "—"}{c.semester ? ` · Sem ${c.semester}` : ""}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-center"><span className="text-sm font-semibold text-foreground">{c.cgpa ?? "—"}</span></td>
-                          <td className="py-3 px-3 text-center">
-                            <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full",
-                              (c.atsScore || 0) >= 80 ? "bg-emerald-50 text-emerald-600" :
-                                (c.atsScore || 0) >= 65 ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"
-                            )}>{c.atsScore ?? "—"}%</span>
-                          </td>
-                          <td className="py-3 px-3 text-center"><span className="text-xs text-muted-foreground">{c.matchScore}%</span></td>
-                          <td className="py-3 px-3 text-center"><span className="text-xs font-medium">{c.currentRound > 0 ? `R${c.currentRound}` : "—"}</span></td>
-                          <td className="py-3 px-3 text-center">
-                            <span className={cn("text-[10px] font-semibold px-2.5 py-1 rounded-full capitalize", sc.bg, sc.text)}>{c.finalResult || "pending"}</span>
-                          </td>
-                          <td className="py-3 px-3 text-center">
-                            <div className="flex items-center justify-center gap-1">
-                              <button onClick={() => showToast("success", `Viewing profile: ${c.studentName} (${c.usn})`)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="View Profile"><Eye className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                              <button onClick={() => showToast("success", "Resume view: coming soon")} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="View CV"><FileText className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                              {c.finalResult !== "rejected" && c.finalResult !== "selected" && (
-                                <>
-                                  <button
-                                    disabled={actionLoading === c.applicationId}
-                                    onClick={() => handleMarkResult(c.applicationId, "selected")}
-                                    className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition-colors disabled:opacity-50"
-                                    title="Shortlist"
-                                  >
-                                    {actionLoading === c.applicationId ? <Loader2 className="w-3.5 h-3.5 text-emerald-600 animate-spin" /> : <ThumbsUp className="w-3.5 h-3.5 text-emerald-600" />}
-                                  </button>
-                                  <button
-                                    disabled={actionLoading === c.applicationId}
-                                    onClick={() => handleMarkResult(c.applicationId, "rejected")}
-                                    className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
-                                    title="Reject"
-                                  >
-                                    <ThumbsDown className="w-3.5 h-3.5 text-red-600" />
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+        {/* Batch → Department Grouped Candidates */}
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2].map(i => (
+              <div key={i} className="i-card p-5">
+                <div className="h-6 w-48 bg-muted animate-pulse rounded mb-4" />
+                <div className="space-y-2">{[1, 2, 3].map(j => <div key={j} className="h-16 rounded-lg bg-muted animate-pulse" />)}</div>
               </div>
-
-              {/* Mobile card list */}
-              <div className="md:hidden divide-y divide-border">
-                {filtered.map((c) => {
-                  const sc = statusColors[c.finalResult] || statusColors.pending;
-                  return (
-                    <div key={c.applicationId} className="p-4 space-y-3">
-                        <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-[10px] font-bold text-indigo-700 flex-shrink-0">
-                            {getInitials(c.studentName || "?")}
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium text-foreground">{c.studentName || "—"}</p>
-                            <p className="text-[10px] text-muted-foreground">{c.usn || "—"}</p>
-                          </div>
-                        </div>
-                        <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize flex-shrink-0", sc.bg, sc.text)}>
-                          {c.finalResult || "pending"}
-                        </span>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="i-card flex flex-col items-center justify-center py-16 gap-3">
+            <Users className="w-10 h-10 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">
+              {candidates.length === 0 ? "No candidates for this job yet" : "No candidates match your filters"}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {grouped.map(([batchName, deptMap]) => {
+              const batchOpen = expandedBatches.has(batchName);
+              const batchCount = Object.values(deptMap).reduce((s, arr) => s + arr.length, 0);
+              const deptCount = Object.keys(deptMap).length;
+              return (
+                <div key={batchName} className="i-card overflow-hidden">
+                  <button onClick={() => toggleBatch(batchName)}
+                    className="w-full flex items-center justify-between p-4 sm:p-5 hover:bg-muted/20 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
+                        <GraduationCap className="w-5 h-5 text-white" />
                       </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {c.batchName && (
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                            {c.batchName}
-                          </span>
-                        )}
-                        <span className="text-[10px] font-medium text-muted-foreground uppercase">
-                          {c.department || "—"}{c.semester ? ` · Sem ${c.semester}` : ""}
-                        </span>
+                      <div className="text-left">
+                        <h3 className="text-sm sm:text-base font-bold text-foreground">Batch {batchName}</h3>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{deptCount} dept{deptCount !== 1 ? 's' : ''} · {batchCount} candidate{batchCount !== 1 ? 's' : ''}</p>
                       </div>
-                      <div className="flex items-center gap-3 flex-wrap text-[10px]">
-                        <span className="text-muted-foreground">CGPA: <strong className="text-foreground">{c.cgpa ?? "—"}</strong></span>
-                        <span className={cn("font-semibold px-2 py-0.5 rounded-full",
-                          (c.atsScore || 0) >= 80 ? "bg-emerald-50 text-emerald-600" :
-                            (c.atsScore || 0) >= 65 ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"
-                        )}>ATS: {c.atsScore ?? "—"}%</span>
-                        <span className="text-muted-foreground">Match: {c.matchScore}%</span>
-                        <span className="text-foreground font-medium">{c.currentRound > 0 ? `Round ${c.currentRound}` : "—"}</span>
-                      </div>
-                      {c.finalResult !== "rejected" && c.finalResult !== "selected" && (
-                        <div className="flex items-center gap-2 pt-1">
-                          <button
-                            disabled={actionLoading === c.applicationId}
-                            onClick={() => handleMarkResult(c.applicationId, "selected")}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold disabled:opacity-50"
-                          >
-                            {actionLoading === c.applicationId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ThumbsUp className="w-3.5 h-3.5" />} Shortlist
-                          </button>
-                          <button
-                            disabled={actionLoading === c.applicationId}
-                            onClick={() => handleMarkResult(c.applicationId, "rejected")}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-semibold disabled:opacity-50"
-                          >
-                            <ThumbsDown className="w-3.5 h-3.5" /> Reject
-                          </button>
-                        </div>
-                      )}
                     </div>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
+                    {batchOpen ? <ChevronDown className="w-5 h-5 text-muted-foreground" /> : <ChevronRight className="w-5 h-5 text-muted-foreground" />}
+                  </button>
+                  {batchOpen && (
+                    <div className="border-t border-border/50">
+                      {Object.entries(deptMap).sort(([a], [b]) => a.localeCompare(b)).map(([dept, deptCandidates]) => {
+                        const deptKey = `${batchName}__${dept}`;
+                        const deptOpen = expandedDepts.has(deptKey);
+                        return (
+                          <div key={deptKey}>
+                            <button onClick={() => toggleDept(deptKey)}
+                              className="w-full flex items-center justify-between px-5 sm:px-6 py-3 bg-muted/20 hover:bg-muted/40 transition-colors border-b border-border/30">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
+                                  <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                                </div>
+                                <span className="text-xs sm:text-sm font-semibold text-foreground">{dept}</span>
+                                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">{deptCandidates.length}</span>
+                              </div>
+                              {deptOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                            </button>
+                            {deptOpen && (
+                              <div className="divide-y divide-border/30">
+                                {deptCandidates.map(c => {
+                                  const sc = statusColors[c.finalResult] || statusColors.pending;
+                                  return (
+                                    <div key={c.applicationId} className="px-5 sm:px-6 py-3 hover:bg-muted/10 transition-colors">
+                                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-[10px] font-bold text-indigo-700 flex-shrink-0">
+                                            {getInitials(c.studentName || "?")}
+                                          </div>
+                                          <div className="min-w-0">
+                                            <p className="text-sm font-medium text-foreground truncate">{c.studentName || "—"}</p>
+                                            <p className="text-[10px] text-muted-foreground">{c.usn || "—"}</p>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                                          <span className="text-xs font-semibold text-foreground">{c.cgpa ?? "—"} CGPA</span>
+                                          <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full",
+                                            (c.atsScore || 0) >= 80 ? "bg-emerald-50 text-emerald-600" :
+                                              (c.atsScore || 0) >= 65 ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"
+                                          )}>ATS {c.atsScore ?? "—"}%</span>
+                                          <span className="text-[10px] text-muted-foreground">Match {c.matchScore}%</span>
+                                          {c.currentRound > 0 && <span className="text-[10px] font-medium">R{c.currentRound}</span>}
+                                          <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize", sc.bg, sc.text)}>{c.finalResult || "pending"}</span>
+                                          <div className="flex items-center gap-1">
+                                            <button onClick={() => showToast("success", `Viewing: ${c.studentName}`)} className="p-1 rounded hover:bg-muted" title="View"><Eye className="w-3.5 h-3.5 text-muted-foreground" /></button>
+                                            <button onClick={() => showToast("success", "Resume: coming soon")} className="p-1 rounded hover:bg-muted" title="CV"><FileText className="w-3.5 h-3.5 text-muted-foreground" /></button>
+                                            {c.finalResult !== "rejected" && c.finalResult !== "selected" && (
+                                              <>
+                                                <button disabled={actionLoading === c.applicationId} onClick={() => handleMarkResult(c.applicationId, "selected")}
+                                                  className="p-1 rounded bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50" title="Shortlist">
+                                                  {actionLoading === c.applicationId ? <Loader2 className="w-3.5 h-3.5 text-emerald-600 animate-spin" /> : <ThumbsUp className="w-3.5 h-3.5 text-emerald-600" />}
+                                                </button>
+                                                <button disabled={actionLoading === c.applicationId} onClick={() => handleMarkResult(c.applicationId, "rejected")}
+                                                  className="p-1 rounded bg-red-50 hover:bg-red-100 disabled:opacity-50" title="Reject">
+                                                  <ThumbsDown className="w-3.5 h-3.5 text-red-600" />
+                                                </button>
+                                              </>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
       {/* Toast */}
       {toast && (

@@ -161,13 +161,14 @@ export const adminApi = {
   getActivity: (limit = 10) => apiFetch(`/api/v1/admin/activity?limit=${limit}`),
 
   // Students
-  listStudents: (params?: { page?: number; limit?: number; search?: string; department?: string; status?: string }) => {
+  listStudents: (params?: { page?: number; limit?: number; search?: string; department?: string; status?: string; batch?: string }) => {
     const query = new URLSearchParams();
     if (params?.page) query.set('page', String(params.page));
     if (params?.limit) query.set('limit', String(params.limit));
     if (params?.search) query.set('search', params.search);
     if (params?.department) query.set('department', params.department);
     if (params?.status) query.set('status', params.status);
+    if (params?.batch) query.set('batch', params.batch);
     return apiFetch(`/api/v1/admin/students?${query.toString()}`);
   },
   getStudent: (id: string) => apiFetch(`/api/v1/admin/students/${id}`),

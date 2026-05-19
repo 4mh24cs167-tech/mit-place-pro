@@ -7,8 +7,9 @@ import { useAuth } from "@/lib/auth-context";
 import {
   Search, Download, Upload, Loader2, AlertCircle, CheckCircle2, X,
   FileSpreadsheet, UserPlus, GraduationCap, Hash, Building2,
+  ChevronDown, ChevronRight, Users,
 } from "lucide-react";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 interface StudentRecord {
   id: string; usn: string; fullName: string; department: string;
@@ -40,6 +41,8 @@ export default function AdminStudentsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
+  const [expandedDepts, setExpandedDepts] = useState<Set<string>>(new Set());
 
   // Upload state
   const [showUpload, setShowUpload] = useState(false);
@@ -55,18 +58,39 @@ export default function AdminStudentsPage() {
     setIsLoading(true);
     try {
       const res = await adminApi.listStudents({
-        page, limit: 12,
+        page, limit: 100,
         search: searchQuery || undefined,
         department: deptFilter !== "all" ? deptFilter : undefined,
         status: statusFilter !== "all" ? statusFilter : undefined,
       });
-      if (res.data) setStudents(res.data as StudentRecord[]);
+      if (res.data) {
+        setStudents(res.data as StudentRecord[]);
+        const batches = new Set((res.data as StudentRecord[]).map(s => s.batchName || "Unassigned"));
+        setExpandedBatches(batches);
+        const depts = new Set((res.data as StudentRecord[]).map(s => `${s.batchName || "Unassigned"}__${s.department}`));
+        setExpandedDepts(depts);
+      }
       if (res.meta) setTotalCount(res.meta.total);
     } catch { /* empty */ } finally { setIsLoading(false); }
   }, [page, searchQuery, deptFilter, statusFilter]);
 
   useEffect(() => { fetchStudents(); }, [fetchStudents]);
   useEffect(() => { const t = setTimeout(() => setPage(1), 300); return () => clearTimeout(t); }, [searchQuery]);
+
+  const toggleBatch = (b: string) => setExpandedBatches(prev => { const n = new Set(prev); n.has(b) ? n.delete(b) : n.add(b); return n; });
+  const toggleDept = (key: string) => setExpandedDepts(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
+
+  const grouped = useMemo(() => {
+    const map: Record<string, Record<string, StudentRecord[]>> = {};
+    students.forEach(s => {
+      const batch = s.batchName || "Unassigned";
+      const dept = s.department || "Unknown";
+      if (!map[batch]) map[batch] = {};
+      if (!map[batch][dept]) map[batch][dept] = [];
+      map[batch][dept].push(s);
+    });
+    return Object.entries(map).sort(([a], [b]) => b.localeCompare(a));
+  }, [students]);
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -312,22 +336,15 @@ export default function AdminStudentsPage() {
           </div>
         )}
 
-        {/* Student Cards Grid */}
+        {/* Batch → Department Grouped View */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {[...Array(6)].map((_, i) => (
+          <div className="space-y-4">
+            {[1, 2].map(i => (
               <div key={i} className="i-card p-5">
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-2xl bg-muted animate-pulse" />
-                  <div className="space-y-2 flex-1">
-                    <div className="h-4 w-3/4 bg-muted animate-pulse rounded" />
-                    <div className="h-3 w-1/2 bg-muted animate-pulse rounded" />
-                  </div>
+                <div className="h-6 w-48 bg-muted animate-pulse rounded mb-4" />
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {[1, 2, 3].map(j => <div key={j} className="h-32 rounded-lg bg-muted animate-pulse" />)}
                 </div>
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  {[1, 2, 3].map((j) => <div key={j} className="h-14 rounded-lg bg-muted animate-pulse" />)}
-                </div>
-                <div className="h-2 bg-muted animate-pulse rounded-full" />
               </div>
             ))}
           </div>
@@ -344,67 +361,105 @@ export default function AdminStudentsPage() {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {students.map((student) => {
-              const statusCfg = getStatusConfig(student.placementStatus);
-              const completionPct = student.profileComplete ? 100 : 35;
+          <div className="space-y-4">
+            {grouped.map(([batchName, deptMap]) => {
+              const batchOpen = expandedBatches.has(batchName);
+              const batchStudentCount = Object.values(deptMap).reduce((s, arr) => s + arr.length, 0);
+              const deptCount = Object.keys(deptMap).length;
               return (
-                <div key={student.id} className="i-card p-5 cursor-pointer group">
-                  <div className="flex items-start justify-between mb-4">
+                <div key={batchName} className="i-card overflow-hidden">
+                  {/* Batch Header */}
+                  <button onClick={() => toggleBatch(batchName)}
+                    className="w-full flex items-center justify-between p-4 sm:p-5 hover:bg-muted/20 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-sm font-bold text-indigo-700">
-                        {getInitials(student.fullName)}
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
+                        <GraduationCap className="w-5 h-5 text-white" />
                       </div>
-                      <div>
-                        <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                          {student.fullName}
-                        </h4>
-                        <p className="text-[11px] text-muted-foreground">{student.usn}</p>
+                      <div className="text-left">
+                        <h3 className="text-sm sm:text-base font-bold text-foreground">Batch {batchName}</h3>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">{deptCount} department{deptCount !== 1 ? 's' : ''} · {batchStudentCount} student{batchStudentCount !== 1 ? 's' : ''}</p>
                       </div>
                     </div>
-                    <span className={cn("text-[10px] font-semibold px-2.5 py-1 rounded-full", statusCfg.bg, statusCfg.color)}>
-                      {statusCfg.label}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3 mb-4">
-                    <div className="text-center p-2 rounded-lg bg-muted/40">
-                      <p className="text-lg font-bold text-foreground">{student.cgpa ?? '-'}</p>
-                      <p className="text-[10px] text-muted-foreground uppercase">CGPA</p>
+                    {batchOpen ? <ChevronDown className="w-5 h-5 text-muted-foreground" /> : <ChevronRight className="w-5 h-5 text-muted-foreground" />}
+                  </button>
+
+                  {batchOpen && (
+                    <div className="border-t border-border/50">
+                      {Object.entries(deptMap).sort(([a], [b]) => a.localeCompare(b)).map(([dept, deptStudents]) => {
+                        const deptKey = `${batchName}__${dept}`;
+                        const deptOpen = expandedDepts.has(deptKey);
+                        return (
+                          <div key={deptKey}>
+                            {/* Department Sub-header */}
+                            <button onClick={() => toggleDept(deptKey)}
+                              className="w-full flex items-center justify-between px-5 sm:px-6 py-3 bg-muted/20 hover:bg-muted/40 transition-colors border-b border-border/30">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
+                                  <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                                </div>
+                                <span className="text-xs sm:text-sm font-semibold text-foreground">{dept}</span>
+                                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-200">
+                                  {deptStudents.length} student{deptStudents.length !== 1 ? 's' : ''}
+                                </span>
+                              </div>
+                              {deptOpen ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                            </button>
+
+                            {deptOpen && (
+                              <div className="p-4 sm:p-5">
+                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                                  {deptStudents.map(student => {
+                                    const statusCfg = getStatusConfig(student.placementStatus);
+                                    const completionPct = student.profileComplete ? 100 : 35;
+                                    return (
+                                      <div key={student.id} className="p-4 rounded-xl border border-border/60 bg-white hover:shadow-md transition-all group cursor-pointer">
+                                        <div className="flex items-start justify-between mb-3">
+                                          <div className="flex items-center gap-2.5">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-xs font-bold text-indigo-700">
+                                              {getInitials(student.fullName)}
+                                            </div>
+                                            <div>
+                                              <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{student.fullName}</h4>
+                                              <p className="text-[10px] text-muted-foreground">{student.usn}</p>
+                                            </div>
+                                          </div>
+                                          <span className={cn("text-[9px] font-semibold px-2 py-0.5 rounded-full", statusCfg.bg, statusCfg.color)}>{statusCfg.label}</span>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2 mb-3">
+                                          <div className="text-center p-1.5 rounded-lg bg-muted/40">
+                                            <p className="text-sm font-bold text-foreground">{student.cgpa ?? '-'}</p>
+                                            <p className="text-[9px] text-muted-foreground">CGPA</p>
+                                          </div>
+                                          <div className="text-center p-1.5 rounded-lg bg-muted/40">
+                                            <p className="text-sm font-bold text-foreground">{student.tenthPercent ?? '-'}%</p>
+                                            <p className="text-[9px] text-muted-foreground">10th</p>
+                                          </div>
+                                          <div className="text-center p-1.5 rounded-lg bg-muted/40">
+                                            <p className="text-sm font-bold text-foreground">{student.twelfthPercent ?? '-'}%</p>
+                                            <p className="text-[9px] text-muted-foreground">12th</p>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <span className="text-[10px] text-muted-foreground">Sem {student.semester}</span>
+                                          {student.backlogs > 0 && <span className="text-[10px] text-red-500 font-medium">{student.backlogs} Backlog</span>}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                                            <div className={cn("h-full rounded-full", completionPct === 100 ? "bg-emerald-500" : "bg-amber-500")} style={{ width: `${completionPct}%` }} />
+                                          </div>
+                                          <span className="text-[9px] font-medium text-muted-foreground">{completionPct}%</span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                    <div className="text-center p-2 rounded-lg bg-muted/40">
-                      <p className="text-lg font-bold text-foreground">{student.tenthPercent ?? '-'}%</p>
-                      <p className="text-[10px] text-muted-foreground uppercase">10th</p>
-                    </div>
-                    <div className="text-center p-2 rounded-lg bg-muted/40">
-                      <p className="text-lg font-bold text-foreground">{student.twelfthPercent ?? '-'}%</p>
-                      <p className="text-[10px] text-muted-foreground uppercase">12th</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap mb-3">
-                    {student.batchName && (
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                        {student.batchName}
-                      </span>
-                    )}
-                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{student.department}</span>
-                    <span className="text-[10px] text-muted-foreground">Sem {student.semester}</span>
-                    {student.backlogs > 0 && (
-                      <><span className="text-muted-foreground">·</span>
-                      <span className="text-[10px] text-red-500 font-medium">{student.backlogs} Backlog</span></>
-                    )}
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {(student.profileData?.skills || []).slice(0, 4).map((skill) => (
-                      <span key={skill} className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 font-medium">{skill}</span>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                      <div className={cn("h-full rounded-full", completionPct === 100 ? "bg-emerald-500" : "bg-amber-500")}
-                        style={{ width: `${completionPct}%` }} />
-                    </div>
-                    <span className="text-[10px] font-medium text-muted-foreground">{completionPct}%</span>
-                  </div>
+                  )}
                 </div>
               );
             })}

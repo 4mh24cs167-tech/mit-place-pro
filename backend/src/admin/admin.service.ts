@@ -86,7 +86,7 @@ export class AdminService {
 
   // ─── Student Management ─────────────────────────
   async listStudents(query: PaginationDto) {
-    const { page = 1, limit = 20, search, department, status } = query;
+    const { page = 1, limit = 20, search, department, status, batch } = query;
     const where: Record<string, unknown> = {};
 
     if (department) where.department = department;
@@ -97,7 +97,9 @@ export class AdminService {
       .leftJoinAndSelect('student.batch', 'batch')
       .skip((page - 1) * limit)
       .take(limit)
-      .orderBy('student.createdAt', 'DESC');
+      .orderBy('batch.name', 'DESC')
+      .addOrderBy('student.department', 'ASC')
+      .addOrderBy('student.full_name', 'ASC');
 
     if (search) {
       queryBuilder.andWhere(
@@ -110,6 +112,9 @@ export class AdminService {
     }
     if (status) {
       queryBuilder.andWhere('student.placement_status = :status', { status });
+    }
+    if (batch) {
+      queryBuilder.andWhere('batch.name = :batch', { batch });
     }
 
     const [data, total] = await queryBuilder.getManyAndCount();
