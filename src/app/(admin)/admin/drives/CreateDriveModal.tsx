@@ -3,11 +3,12 @@
 import { cn } from "@/lib/utils";
 import { adminApi } from "@/lib/api";
 import {
-  Plus, X, Loader2, Briefcase, Building2, AlertTriangle,
+  Plus, X, Loader2, Briefcase, Building2, AlertTriangle, ChevronRight,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 
-interface Job { id: string; title: string; company?: { name: string }; allowedDepartments?: string[] }
+interface Company { id: string; name: string; industry?: string; }
+interface Job { id: string; title: string; companyId: string; company?: { name: string }; allowedDepartments?: string[] }
 
 const DEPARTMENTS = ["CSE", "ISE", "ECE", "EEE", "MECH", "CIVIL", "AI&ML", "AI&DS"];
 
@@ -20,26 +21,59 @@ interface Props {
 export default function CreateDriveModal({ onClose, onCreated, showToast }: Props) {
   const [title, setTitle] = useState("");
   const [driveType, setDriveType] = useState<"single" | "multiple">("single");
+
+  // Company → Job selection
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(true);
+  const [selectedCompanyId, setSelectedCompanyId] = useState("");
+
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [loadingJobs, setLoadingJobs] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState("");
+
   const [driveDate, setDriveDate] = useState("");
   const [description, setDescription] = useState("");
   const [selectedDepts, setSelectedDepts] = useState<string[]>([]);
   const [isCreating, setIsCreating] = useState(false);
-  const [loadingJobs, setLoadingJobs] = useState(true);
 
-  const fetchJobs = useCallback(async () => {
+  // Fetch companies on mount
+  const fetchCompanies = useCallback(async () => {
+    setLoadingCompanies(true);
+    try {
+      const res = await adminApi.listCompanies();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const d = res.data as any;
+      setCompanies(Array.isArray(d) ? d : d?.data || []);
+    } catch { /* ignore */ }
+    finally { setLoadingCompanies(false); }
+  }, []);
+
+  useEffect(() => { fetchCompanies(); }, [fetchCompanies]);
+
+  // Fetch jobs when a company is selected
+  const fetchJobsForCompany = useCallback(async (companyId: string) => {
     setLoadingJobs(true);
+    setSelectedJobId("");
     try {
       const res = await adminApi.listJobs();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const d = res.data as any;
-      setJobs(Array.isArray(d) ? d : d?.data || []);
+      const allJobs: Job[] = Array.isArray(d) ? d : d?.data || [];
+      // Filter jobs belonging to the selected company
+      const companyJobs = allJobs.filter((j) => j.companyId === companyId || j.company?.name === companies.find(c => c.id === companyId)?.name);
+      setJobs(companyJobs);
     } catch { /* ignore */ }
     finally { setLoadingJobs(false); }
-  }, []);
+  }, [companies]);
 
-  useEffect(() => { fetchJobs(); }, [fetchJobs]);
+  useEffect(() => {
+    if (selectedCompanyId) {
+      fetchJobsForCompany(selectedCompanyId);
+    } else {
+      setJobs([]);
+      setSelectedJobId("");
+    }
+  }, [selectedCompanyId, fetchJobsForCompany]);
 
   const toggleDept = (dept: string) => {
     setSelectedDepts((prev) =>
@@ -51,9 +85,10 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
     if (!selectedJobId) { showToast("error", "Please select a job listing"); return; }
     setIsCreating(true);
     try {
+      const company = companies.find((c) => c.id === selectedCompanyId);
       const job = jobs.find((j) => j.id === selectedJobId);
       await adminApi.createDrive({
-        title: title || `${job?.company?.name || "Company"} - ${job?.title || "Drive"}`,
+        title: title || `${company?.name || "Company"} - ${job?.title || "Drive"}`,
         type: driveType,
         jobId: selectedJobId,
         description: description || undefined,
@@ -69,19 +104,24 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
     }
   };
 
+  const selectedCompany = companies.find(c => c.id === selectedCompanyId);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-[#12121a] border border-white/[0.08] rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/50">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-white/[0.06] sticky top-0 bg-[#12121a] z-10">
+        <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-white z-10 rounded-t-2xl">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-orange-500/15 border border-orange-500/20">
-              <Plus className="w-5 h-5 text-orange-400" />
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+              <Plus className="w-5 h-5 text-indigo-600" />
             </div>
-            <h2 className="text-lg font-semibold text-white">Create New Drive</h2>
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">Create New Drive</h2>
+              <p className="text-xs text-muted-foreground">Select a company & job to start</p>
+            </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 text-white/40 hover:text-white/70 transition-colors">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center text-muted-foreground">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -89,15 +129,15 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
         <div className="p-5 space-y-5">
           {/* Drive Type */}
           <div>
-            <label className="block text-white/60 text-sm font-medium mb-2">Drive Type *</label>
+            <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-2">Drive Type *</label>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setDriveType("single")}
                 className={cn(
                   "px-4 py-3 rounded-xl border text-sm font-medium transition-all",
                   driveType === "single"
-                    ? "bg-orange-500/15 border-orange-500/30 text-orange-300"
-                    : "bg-white/[0.03] border-white/[0.06] text-white/50 hover:bg-white/[0.06]"
+                    ? "bg-indigo-50 border-indigo-200 text-indigo-700"
+                    : "bg-white border-border text-muted-foreground hover:border-indigo-200"
                 )}
               >
                 <Briefcase className="w-5 h-5 mx-auto mb-1" />
@@ -108,71 +148,119 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
                 className={cn(
                   "px-4 py-3 rounded-xl border text-sm font-medium transition-all relative overflow-hidden",
                   driveType === "multiple"
-                    ? "bg-orange-500/15 border-orange-500/30 text-orange-300"
-                    : "bg-white/[0.03] border-white/[0.06] text-white/50 hover:bg-white/[0.06]"
+                    ? "bg-indigo-50 border-indigo-200 text-indigo-700"
+                    : "bg-white border-border text-muted-foreground hover:border-indigo-200"
                 )}
               >
                 <Building2 className="w-5 h-5 mx-auto mb-1" />
                 Multiple Companies
-                <span className="absolute top-1 right-1 px-1.5 py-0.5 bg-amber-500/20 text-amber-300 text-[8px] font-bold rounded-md border border-amber-500/30">WIP</span>
+                <span className="absolute top-1 right-1 px-1.5 py-0.5 bg-amber-50 text-amber-600 text-[8px] font-bold rounded-md border border-amber-200">WIP</span>
               </button>
             </div>
           </div>
 
           {/* WIP Banner */}
           {driveType === "multiple" && (
-            <div className="flex items-center gap-3 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl">
-              <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0" />
-              <p className="text-amber-300 text-sm">Multi-company drives are a work in progress. Please use single company mode for now.</p>
+            <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0" />
+              <p className="text-amber-700 text-sm">Multi-company drives are a work in progress. Please use single company mode for now.</p>
             </div>
           )}
 
-          {/* Job Selection */}
-          <div>
-            <label className="block text-white/60 text-sm font-medium mb-2">Select Job Listing *</label>
-            {loadingJobs ? (
+          {/* ── Step 1: Select Company ── */}
+          <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-100">
+            <p className="text-xs font-semibold text-indigo-700 uppercase mb-3 flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5" /> Step 1: Select Company *
+            </p>
+            {loadingCompanies ? (
               <div className="flex items-center justify-center py-4 gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-white/40" />
-                <span className="text-white/40 text-sm">Loading jobs...</span>
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                <span className="text-muted-foreground text-sm">Loading companies...</span>
               </div>
-            ) : jobs.length === 0 ? (
-              <p className="text-white/30 text-sm py-3 text-center">No job listings found. Create a job first.</p>
+            ) : companies.length === 0 ? (
+              <p className="text-muted-foreground text-sm py-3 text-center">No companies found. Register a company first.</p>
             ) : (
-              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                {jobs.map((job) => (
+              <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
+                {companies.map((company) => (
                   <button
-                    key={job.id}
-                    onClick={() => setSelectedJobId(job.id)}
+                    key={company.id}
+                    onClick={() => setSelectedCompanyId(company.id)}
                     className={cn(
-                      "w-full text-left px-4 py-3 rounded-xl border transition-all text-sm",
-                      selectedJobId === job.id
-                        ? "bg-orange-500/15 border-orange-500/30"
-                        : "bg-white/[0.03] border-white/[0.06] hover:bg-white/[0.06]"
+                      "w-full text-left px-4 py-3 rounded-xl border transition-all text-sm flex items-center justify-between",
+                      selectedCompanyId === company.id
+                        ? "bg-indigo-600 border-indigo-600 text-white"
+                        : "bg-white border-border text-foreground hover:border-indigo-300"
                     )}
                   >
-                    <p className={cn("font-medium", selectedJobId === job.id ? "text-orange-300" : "text-white/70")}>{job.title}</p>
-                    <p className="text-white/30 text-xs mt-0.5">{job.company?.name || "Unknown Company"}</p>
+                    <div>
+                      <p className="font-medium">{company.name}</p>
+                      {company.industry && (
+                        <p className={cn("text-xs mt-0.5", selectedCompanyId === company.id ? "text-indigo-200" : "text-muted-foreground")}>{company.industry}</p>
+                      )}
+                    </div>
+                    <ChevronRight className={cn("w-4 h-4 flex-shrink-0", selectedCompanyId === company.id ? "text-white" : "text-muted-foreground")} />
                   </button>
                 ))}
               </div>
             )}
           </div>
 
+          {/* ── Step 2: Select Job (shows only after company selected) ── */}
+          {selectedCompanyId && (
+            <div className="p-4 rounded-xl bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-100">
+              <p className="text-xs font-semibold text-violet-700 uppercase mb-3 flex items-center gap-1.5">
+                <Briefcase className="w-3.5 h-3.5" /> Step 2: Select Job by {selectedCompany?.name} *
+              </p>
+              {loadingJobs ? (
+                <div className="flex items-center justify-center py-4 gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  <span className="text-muted-foreground text-sm">Loading jobs...</span>
+                </div>
+              ) : jobs.length === 0 ? (
+                <p className="text-muted-foreground text-sm py-3 text-center">No jobs posted by {selectedCompany?.name}. The company needs to post a job first.</p>
+              ) : (
+                <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
+                  {jobs.map((job) => (
+                    <button
+                      key={job.id}
+                      onClick={() => setSelectedJobId(job.id)}
+                      className={cn(
+                        "w-full text-left px-4 py-3 rounded-xl border transition-all text-sm",
+                        selectedJobId === job.id
+                          ? "bg-violet-600 border-violet-600 text-white"
+                          : "bg-white border-border text-foreground hover:border-violet-300"
+                      )}
+                    >
+                      <p className="font-medium">{job.title}</p>
+                      {job.allowedDepartments && job.allowedDepartments.length > 0 && (
+                        <p className={cn("text-xs mt-0.5", selectedJobId === job.id ? "text-violet-200" : "text-muted-foreground")}>
+                          Depts: {job.allowedDepartments.join(", ")}
+                        </p>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Title */}
           <div>
-            <label className="block text-white/60 text-sm font-medium mb-2">Drive Title (auto-generated if blank)</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. TCS Campus Drive 2026" className="w-full px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-orange-500/40" />
+            <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Drive Title (auto-generated if blank)</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. TCS Campus Drive 2026"
+              className="w-full px-3 py-2.5 rounded-lg border border-border text-sm outline-none bg-white text-foreground focus:border-indigo-400 transition-colors placeholder:text-muted-foreground" />
           </div>
 
           {/* Date */}
           <div>
-            <label className="block text-white/60 text-sm font-medium mb-2">Drive Date</label>
-            <input type="date" value={driveDate} onChange={(e) => setDriveDate(e.target.value)} className="w-full px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm focus:outline-none focus:border-orange-500/40" />
+            <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Drive Date</label>
+            <input type="date" value={driveDate} onChange={(e) => setDriveDate(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-lg border border-border text-sm outline-none bg-white text-foreground focus:border-indigo-400 transition-colors" />
           </div>
 
           {/* Departments */}
           <div>
-            <label className="block text-white/60 text-sm font-medium mb-2">Target Departments</label>
+            <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Target Departments</label>
             <div className="grid grid-cols-4 gap-2">
               {DEPARTMENTS.map((dept) => (
                 <button
@@ -181,39 +269,38 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
                   className={cn(
                     "px-3 py-2 rounded-lg text-xs font-semibold border transition-all",
                     selectedDepts.includes(dept)
-                      ? "bg-orange-500/20 border-orange-500/40 text-orange-300"
-                      : "bg-white/[0.03] border-white/[0.06] text-white/50 hover:bg-white/[0.06]"
+                      ? "bg-indigo-600 border-indigo-600 text-white"
+                      : "bg-white border-border text-foreground hover:border-indigo-300"
                   )}
                 >
                   {dept}
                 </button>
               ))}
             </div>
-            <p className="text-white/20 text-xs mt-1.5">Leave empty to use job&apos;s allowed departments</p>
+            <p className="text-muted-foreground text-xs mt-1.5">Leave empty to use job&apos;s allowed departments</p>
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-white/60 text-sm font-medium mb-2">Description</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Drive details, instructions, etc." className="w-full px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-orange-500/40 resize-none" />
+            <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Description</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Drive details, instructions, etc."
+              className="w-full px-3 py-2.5 rounded-lg border border-border text-sm outline-none bg-white text-foreground focus:border-indigo-400 transition-colors resize-none placeholder:text-muted-foreground" />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-3 p-5 border-t border-white/[0.06]">
-          <button onClick={onClose} className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 text-white/60 rounded-xl text-sm font-medium hover:bg-white/10 transition-all">Cancel</button>
+        <div className="flex flex-col gap-2 p-5 border-t border-border">
           <button
             onClick={handleCreate}
             disabled={isCreating || !selectedJobId || driveType === "multiple"}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
-              isCreating || !selectedJobId || driveType === "multiple"
-                ? "bg-orange-600/30 text-orange-300/50 cursor-not-allowed"
-                : "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg shadow-orange-500/20 hover:from-orange-500 hover:to-amber-500"
-            )}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
             {isCreating ? "Creating..." : "Create Drive"}
+          </button>
+          <button onClick={onClose}
+            className="w-full flex items-center justify-center px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted/50 transition-colors">
+            Cancel
           </button>
         </div>
       </div>

@@ -59,13 +59,13 @@ interface Props {
   userEmail: string;
 }
 
-const statusColors: Record<string, string> = {
-  draft: "bg-gray-500/15 text-gray-400 border-gray-500/20",
-  open: "bg-blue-500/15 text-blue-400 border-blue-500/20",
-  screening: "bg-amber-500/15 text-amber-400 border-amber-500/20",
-  scheduled: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20",
-  completed: "bg-purple-500/15 text-purple-400 border-purple-500/20",
-  cancelled: "bg-red-500/15 text-red-400 border-red-500/20",
+const statusConfig: Record<string, { bg: string; color: string }> = {
+  draft: { bg: "bg-gray-50", color: "text-gray-600" },
+  open: { bg: "bg-blue-50", color: "text-blue-600" },
+  screening: { bg: "bg-amber-50", color: "text-amber-600" },
+  scheduled: { bg: "bg-emerald-50", color: "text-emerald-600" },
+  completed: { bg: "bg-purple-50", color: "text-purple-600" },
+  cancelled: { bg: "bg-red-50", color: "text-red-600" },
 };
 
 export default function DriveDetail({ driveId, onBack, showToast, toast, setToast, userEmail }: Props) {
@@ -183,12 +183,16 @@ export default function DriveDetail({ driveId, onBack, showToast, toast, setToas
   const rejected = drive?.registrations.filter((r) => r.status === "rejected").length || 0;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
-      <Header userName={userEmail} userRole="admin" />
+    <div className="page-enter">
+      <Header userName={userEmail} userRole="Admin"
+        greeting="Drive Details" subtitle={drive?.title || "Loading..."} />
 
       {toast && (
         <div className="fixed top-6 right-6 z-50 animate-in slide-in-from-top-2 fade-in duration-300">
-          <div className={cn("flex items-center gap-3 px-5 py-3 rounded-xl border shadow-2xl backdrop-blur-xl", toast.type === "success" ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300" : "bg-red-500/10 border-red-500/30 text-red-300")}>
+          <div className={cn(
+            "flex items-center gap-3 px-5 py-3 rounded-xl border shadow-2xl",
+            toast.type === "success" ? "bg-green-50 border-green-200 text-green-700" : "bg-red-50 border-red-200 text-red-700"
+          )}>
             {toast.type === "success" ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
             <span className="text-sm font-medium">{toast.message}</span>
             <button onClick={() => setToast(null)} className="ml-2 opacity-60 hover:opacity-100"><X className="w-4 h-4" /></button>
@@ -196,51 +200,61 @@ export default function DriveDetail({ driveId, onBack, showToast, toast, setToas
         </div>
       )}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Back + Header */}
-        <button onClick={onBack} className="flex items-center gap-2 text-white/40 hover:text-white/70 text-sm mb-6 transition-colors">
+      <div className="px-4 sm:px-6 md:px-8 pb-10 space-y-4 sm:space-y-6">
+        {/* Back button */}
+        <button onClick={onBack} className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back to Drives
         </button>
 
+        {/* Loading */}
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 className="w-8 h-8 text-orange-400 animate-spin" />
-            <p className="text-white/40 text-sm">Loading drive details...</p>
+            <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+            <p className="text-muted-foreground text-sm">Loading drive details...</p>
           </div>
         )}
 
+        {/* Error */}
         {error && !isLoading && (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <AlertCircle className="w-8 h-8 text-red-400" />
-            <p className="text-red-300 text-sm">{error}</p>
-            <button onClick={fetchDrive} className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white/70 text-sm">Retry</button>
+            <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center">
+              <AlertCircle className="w-7 h-7 text-red-500" />
+            </div>
+            <p className="text-red-600 text-sm">{error}</p>
+            <button onClick={fetchDrive} className="px-4 py-2 bg-foreground text-white rounded-xl text-sm font-medium">Retry</button>
           </div>
         )}
 
         {drive && !isLoading && (
           <>
-            {/* Drive Info */}
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-5 sm:p-6 mb-6">
+            {/* Drive Info Card */}
+            <div className="i-card p-5 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-white">{drive.title}</h1>
-                  <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-white/40">
+                  <h1 className="text-xl sm:text-2xl font-bold text-foreground">{drive.title}</h1>
+                  <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" />{drive.company}</span>
                     {drive.driveDate && <span className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{new Date(drive.driveDate).toLocaleDateString()}</span>}
                   </div>
                   {drive.departments.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-3">
                       {drive.departments.map((d) => (
-                        <span key={d} className="px-2.5 py-0.5 bg-white/[0.05] border border-white/[0.08] rounded text-xs font-medium text-white/50">{d}</span>
+                        <span key={d} className="px-2.5 py-0.5 bg-indigo-50 border border-indigo-100 rounded text-xs font-medium text-indigo-600">{d}</span>
                       ))}
                     </div>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold border", statusColors[drive.status] || statusColors.draft)}>
-                    {drive.status.charAt(0).toUpperCase() + drive.status.slice(1)}
-                  </span>
-                  <select value={drive.status} onChange={(e) => handleStatusChange(e.target.value)} className="px-3 py-1.5 bg-white/[0.04] border border-white/[0.08] rounded-lg text-white text-xs focus:outline-none">
+                  {(() => {
+                    const sc = statusConfig[drive.status] || statusConfig.draft;
+                    return (
+                      <span className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold", sc.bg, sc.color)}>
+                        {drive.status.charAt(0).toUpperCase() + drive.status.slice(1)}
+                      </span>
+                    );
+                  })()}
+                  <select value={drive.status} onChange={(e) => handleStatusChange(e.target.value)}
+                    className="px-3 py-1.5 bg-white border border-border rounded-lg text-foreground text-xs focus:outline-none focus:border-indigo-400">
                     {["draft","open","screening","scheduled","completed","cancelled"].map((s) => (
                       <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
                     ))}
@@ -251,23 +265,23 @@ export default function DriveDetail({ driveId, onBack, showToast, toast, setToas
               {/* Quick Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
                 {[
-                  { label: "Total", value: drive.registrations.length, col: "text-white" },
-                  { label: "Pending", value: pending, col: "text-amber-400" },
-                  { label: "Approved", value: approved, col: "text-emerald-400" },
-                  { label: "Rejected", value: rejected, col: "text-red-400" },
+                  { label: "Total", value: drive.registrations.length, color: "text-foreground" },
+                  { label: "Pending", value: pending, color: "text-amber-600" },
+                  { label: "Approved", value: approved, color: "text-emerald-600" },
+                  { label: "Rejected", value: rejected, color: "text-red-600" },
                 ].map((s) => (
-                  <div key={s.label} className="bg-white/[0.03] rounded-xl p-3 text-center">
-                    <p className={cn("text-xl font-bold", s.col)}>{s.value}</p>
-                    <p className="text-[10px] text-white/30 uppercase tracking-wider mt-0.5">{s.label}</p>
+                  <div key={s.label} className="bg-muted/40 rounded-xl p-3 text-center">
+                    <p className={cn("text-xl font-bold", s.color)}>{s.value}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-0.5">{s.label}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 p-1 bg-white/[0.03] border border-white/[0.06] rounded-xl mb-6 w-fit">
+            <div className="flex gap-1 p-1 bg-muted/40 border border-border rounded-xl w-fit">
               {(["applicants", "slots"] as const).map((tab) => (
-                <button key={tab} onClick={() => setActiveTab(tab)} className={cn("px-5 py-2 rounded-lg text-sm font-medium transition-all", activeTab === tab ? "bg-white/[0.08] text-white" : "text-white/40 hover:text-white/60")}>
+                <button key={tab} onClick={() => setActiveTab(tab)} className={cn("px-5 py-2 rounded-lg text-sm font-medium transition-all", activeTab === tab ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>
                   {tab === "applicants" ? `Applicants (${drive.registrations.length})` : `Slots (${drive.slots.length})`}
                 </button>
               ))}
@@ -277,19 +291,22 @@ export default function DriveDetail({ driveId, onBack, showToast, toast, setToas
             {activeTab === "applicants" && (
               <>
                 {/* Actions Bar */}
-                <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-                    <input value={searchQ} onChange={(e) => setSearchQ(e.target.value)} placeholder="Search students..." className="w-full pl-10 pr-4 py-2 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-orange-500/40" />
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1 flex items-center bg-white rounded-xl border border-border px-3">
+                    <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <input value={searchQ} onChange={(e) => setSearchQ(e.target.value)} placeholder="Search students..."
+                      className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none text-foreground placeholder:text-muted-foreground min-w-0" />
                   </div>
                   <div className="flex gap-2 overflow-x-auto">
-                    <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)} className="px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm focus:outline-none min-w-[100px]">
+                    <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
+                      className="px-3 py-2 bg-white border border-border rounded-xl text-foreground text-sm focus:outline-none min-w-[100px]">
                       <option value="all">All Status</option>
                       <option value="pending">Pending</option>
                       <option value="approved">Approved</option>
                       <option value="rejected">Rejected</option>
                     </select>
-                    <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)} className="px-3 py-2 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm focus:outline-none min-w-[100px]">
+                    <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)}
+                      className="px-3 py-2 bg-white border border-border rounded-xl text-foreground text-sm focus:outline-none min-w-[100px]">
                       <option value="all">All Depts</option>
                       {departments.map((d) => <option key={d} value={d}>{d}</option>)}
                     </select>
@@ -298,21 +315,21 @@ export default function DriveDetail({ driveId, onBack, showToast, toast, setToas
 
                 {/* Bulk Actions */}
                 {pending > 0 && (
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-4 p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl">
-                    <button onClick={toggleSelectAll} className="flex items-center gap-2 px-3 py-1.5 bg-white/[0.05] border border-white/[0.08] rounded-lg text-white/60 text-xs font-medium hover:bg-white/[0.08] transition-all">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 i-card">
+                    <button onClick={toggleSelectAll} className="flex items-center gap-2 px-3 py-1.5 bg-muted/50 border border-border rounded-lg text-muted-foreground text-xs font-medium hover:bg-muted transition-all">
                       <input type="checkbox" readOnly checked={filteredRegs.filter(r => r.status === "pending").length > 0 && filteredRegs.filter(r => r.status === "pending").every(r => selectedIds.has(r.studentId))} className="rounded" />
                       Select All Pending
                     </button>
                     {selectedIds.size > 0 && (
-                      <span className="text-white/40 text-xs">{selectedIds.size} selected</span>
+                      <span className="text-muted-foreground text-xs">{selectedIds.size} selected</span>
                     )}
                     <div className="flex gap-2 sm:ml-auto">
                       {selectedIds.size > 0 && (
-                        <button onClick={() => setShowRejectModal(true)} className="flex items-center gap-1.5 px-4 py-1.5 bg-red-500/15 text-red-300 border border-red-500/20 rounded-lg text-xs font-medium hover:bg-red-500/25 transition-all">
+                        <button onClick={() => setShowRejectModal(true)} className="flex items-center gap-1.5 px-4 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded-lg text-xs font-medium hover:bg-red-100 transition-all">
                           <UserX className="w-3.5 h-3.5" /> Reject Selected ({selectedIds.size})
                         </button>
                       )}
-                      <button onClick={handleApproveAll} disabled={isApproving} className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/20 rounded-lg text-xs font-medium hover:bg-emerald-500/25 transition-all disabled:opacity-50">
+                      <button onClick={handleApproveAll} disabled={isApproving} className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-lg text-xs font-medium hover:bg-emerald-100 transition-all disabled:opacity-50">
                         {isApproving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserCheck className="w-3.5 h-3.5" />}
                         Approve All Pending ({pending})
                       </button>
@@ -323,8 +340,10 @@ export default function DriveDetail({ driveId, onBack, showToast, toast, setToas
                 {/* Student List */}
                 {filteredRegs.length === 0 ? (
                   <div className="flex flex-col items-center py-12 gap-3">
-                    <Users className="w-8 h-8 text-white/20" />
-                    <p className="text-white/30 text-sm">No students match filters</p>
+                    <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
+                      <Users className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <p className="text-muted-foreground text-sm">No students match filters</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -332,27 +351,27 @@ export default function DriveDetail({ driveId, onBack, showToast, toast, setToas
                       const s = reg.student;
                       const isPending = reg.status === "pending";
                       return (
-                        <div key={reg.id} className={cn("flex items-center gap-3 p-4 bg-white/[0.02] border rounded-xl transition-all", selectedIds.has(reg.studentId) ? "border-orange-500/30 bg-orange-500/[0.04]" : "border-white/[0.06] hover:bg-white/[0.04]")}>
+                        <div key={reg.id} className={cn("flex items-center gap-3 p-4 bg-white border rounded-xl transition-all", selectedIds.has(reg.studentId) ? "border-indigo-300 bg-indigo-50/30" : "border-border hover:border-indigo-200")}>
                           {isPending && (
                             <input type="checkbox" checked={selectedIds.has(reg.studentId)} onChange={() => toggleSelect(reg.studentId)} className="rounded flex-shrink-0" />
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                              <p className="text-sm font-medium text-white truncate">{s?.fullName || "Unknown"}</p>
-                              <span className="text-xs text-white/30 font-mono">{s?.usn}</span>
+                              <p className="text-sm font-medium text-foreground truncate">{s?.fullName || "Unknown"}</p>
+                              <span className="text-xs text-muted-foreground font-mono">{s?.usn}</span>
                             </div>
                             <div className="flex flex-wrap gap-2 mt-1">
-                              <span className="text-xs text-white/40">{s?.department}</span>
-                              <span className="text-xs text-white/20">•</span>
-                              <span className="text-xs text-white/40">Sem {s?.semester}</span>
-                              <span className="text-xs text-white/20">•</span>
-                              <span className="text-xs text-white/40">CGPA {s?.cgpa}</span>
+                              <span className="text-xs text-muted-foreground">{s?.department}</span>
+                              <span className="text-xs text-muted-foreground/40">•</span>
+                              <span className="text-xs text-muted-foreground">Sem {s?.semester}</span>
+                              <span className="text-xs text-muted-foreground/40">•</span>
+                              <span className="text-xs text-muted-foreground">CGPA {s?.cgpa}</span>
                             </div>
                           </div>
-                          <span className={cn("px-2.5 py-1 rounded-lg text-[10px] font-semibold border flex-shrink-0",
-                            reg.status === "approved" ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20" :
-                            reg.status === "rejected" ? "bg-red-500/15 text-red-400 border-red-500/20" :
-                            "bg-amber-500/15 text-amber-400 border-amber-500/20"
+                          <span className={cn("px-2.5 py-1 rounded-lg text-[10px] font-semibold flex-shrink-0",
+                            reg.status === "approved" ? "bg-emerald-50 text-emerald-600" :
+                            reg.status === "rejected" ? "bg-red-50 text-red-600" :
+                            "bg-amber-50 text-amber-600"
                           )}>
                             {reg.status.charAt(0).toUpperCase() + reg.status.slice(1)}
                           </span>
@@ -367,10 +386,10 @@ export default function DriveDetail({ driveId, onBack, showToast, toast, setToas
             {/* ── SLOTS TAB ── */}
             {activeTab === "slots" && (
               <>
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-white/40 text-sm">{drive.slots.length} slot(s) allocated</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-muted-foreground text-sm">{drive.slots.length} slot(s) allocated</p>
                   {approved > 0 && (
-                    <button onClick={() => setShowSlotAllocator(true)} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-xl text-sm font-medium shadow-lg shadow-orange-500/20 hover:from-orange-500 hover:to-amber-500 transition-all">
+                    <button onClick={() => setShowSlotAllocator(true)} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl text-sm font-medium shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all">
                       <Plus className="w-4 h-4" /> Allocate Slots
                     </button>
                   )}
@@ -378,30 +397,32 @@ export default function DriveDetail({ driveId, onBack, showToast, toast, setToas
 
                 {drive.slots.length === 0 ? (
                   <div className="flex flex-col items-center py-12 gap-3">
-                    <Clock className="w-8 h-8 text-white/20" />
-                    <p className="text-white/30 text-sm">{approved > 0 ? "No slots allocated yet. Click Allocate Slots to assign classrooms." : "Approve students first before allocating slots."}</p>
+                    <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center">
+                      <Clock className="w-6 h-6 text-muted-foreground" />
+                    </div>
+                    <p className="text-muted-foreground text-sm">{approved > 0 ? "No slots allocated yet. Click Allocate Slots to assign classrooms." : "Approve students first before allocating slots."}</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {drive.slots.map((slot) => (
-                      <div key={slot.id} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
+                      <div key={slot.id} className="i-card p-5">
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-orange-400" />
-                            <span className="text-white font-semibold text-sm">{slot.timeSlot}</span>
+                            <Clock className="w-4 h-4 text-indigo-500" />
+                            <span className="text-foreground font-semibold text-sm">{slot.timeSlot}</span>
                           </div>
-                          <span className="flex items-center gap-1 text-white/40 text-xs">
+                          <span className="flex items-center gap-1 text-muted-foreground text-xs">
                             <Users className="w-3.5 h-3.5" /> {slot.studentCount}
                           </span>
                         </div>
                         {slot.classroom && (
-                          <div className="flex items-center gap-1.5 text-white/50 text-sm mb-2">
+                          <div className="flex items-center gap-1.5 text-muted-foreground text-sm mb-2">
                             <MapPin className="w-3.5 h-3.5" /> {slot.classroom}
                           </div>
                         )}
                         <div className="flex flex-wrap gap-1.5">
                           {slot.departments.map((d) => (
-                            <span key={d} className="px-2 py-0.5 bg-orange-500/10 border border-orange-500/20 rounded text-[10px] font-medium text-orange-300">{d}</span>
+                            <span key={d} className="px-2 py-0.5 bg-indigo-50 border border-indigo-100 rounded text-[10px] font-medium text-indigo-600">{d}</span>
                           ))}
                         </div>
                       </div>
@@ -412,25 +433,26 @@ export default function DriveDetail({ driveId, onBack, showToast, toast, setToas
             )}
           </>
         )}
-      </main>
+      </div>
 
       {/* Reject Modal */}
       {showRejectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#12121a] border border-white/[0.08] rounded-2xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
-              <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-                <UserX className="w-5 h-5 text-red-400" /> Reject {selectedIds.size} Student(s)
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/50">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between p-5 border-b border-border">
+              <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <UserX className="w-5 h-5 text-red-500" /> Reject {selectedIds.size} Student(s)
               </h2>
-              <button onClick={() => setShowRejectModal(false)} className="p-2 rounded-lg hover:bg-white/5 text-white/40"><X className="w-5 h-5" /></button>
+              <button onClick={() => setShowRejectModal(false)} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center text-muted-foreground"><X className="w-4 h-4" /></button>
             </div>
             <div className="p-5">
-              <label className="block text-white/60 text-sm font-medium mb-2">Rejection Reason (optional)</label>
-              <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={3} placeholder="e.g. Does not meet criteria" className="w-full px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-red-500/40 resize-none" />
+              <label className="block text-muted-foreground text-sm font-medium mb-2">Rejection Reason (optional)</label>
+              <textarea value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={3} placeholder="e.g. Does not meet criteria"
+                className="w-full px-3 py-2.5 rounded-lg border border-border text-sm outline-none bg-white text-foreground focus:border-red-300 resize-none placeholder:text-muted-foreground" />
             </div>
-            <div className="flex items-center gap-3 p-5 border-t border-white/[0.06]">
-              <button onClick={() => setShowRejectModal(false)} className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 text-white/60 rounded-xl text-sm font-medium hover:bg-white/10">Cancel</button>
-              <button onClick={handleReject} disabled={isRejecting} className={cn("flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all", isRejecting ? "bg-red-600/30 text-red-300/50 cursor-not-allowed" : "bg-red-600 text-white hover:bg-red-500")}>
+            <div className="flex items-center gap-3 p-5 border-t border-border">
+              <button onClick={() => setShowRejectModal(false)} className="flex-1 px-4 py-2.5 border border-border text-foreground rounded-xl text-sm font-medium hover:bg-muted/50">Cancel</button>
+              <button onClick={handleReject} disabled={isRejecting} className={cn("flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all", isRejecting ? "bg-red-100 text-red-300 cursor-not-allowed" : "bg-red-600 text-white hover:bg-red-500")}>
                 {isRejecting ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserX className="w-4 h-4" />}
                 {isRejecting ? "Rejecting..." : "Reject"}
               </button>

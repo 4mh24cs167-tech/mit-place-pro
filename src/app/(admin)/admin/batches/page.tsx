@@ -6,7 +6,7 @@ import { adminApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import {
   Layers, Plus, ArrowUpCircle, Trash2, Loader2, AlertCircle,
-  GraduationCap, Users, Calendar, ChevronUp, Building2, X,
+  GraduationCap, Users, Calendar, Building2, X,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 
@@ -134,24 +134,32 @@ export default function AdminBatchesPage() {
   };
 
   const getSemesterColor = (sem: number) => {
-    if (sem <= 2) return "bg-emerald-500/15 text-emerald-400 border-emerald-500/20";
-    if (sem <= 4) return "bg-blue-500/15 text-blue-400 border-blue-500/20";
-    if (sem <= 6) return "bg-amber-500/15 text-amber-400 border-amber-500/20";
-    return "bg-purple-500/15 text-purple-400 border-purple-500/20";
+    if (sem <= 2) return "bg-emerald-50 text-emerald-600";
+    if (sem <= 4) return "bg-blue-50 text-blue-600";
+    if (sem <= 6) return "bg-amber-50 text-amber-600";
+    return "bg-purple-50 text-purple-600";
+  };
+
+  const getSemesterBarColor = (sem: number) => {
+    if (sem <= 2) return "bg-emerald-500";
+    if (sem <= 4) return "bg-blue-500";
+    if (sem <= 6) return "bg-amber-500";
+    return "bg-purple-500";
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f]">
-      <Header userName={user?.email || "Admin"} userRole="admin" />
+    <div className="page-enter">
+      <Header userName={user?.email || "Admin"} userRole="Admin"
+        greeting="Batch Management" subtitle="Create batches, assign semesters, and promote students" />
 
       {/* Toast */}
       {toast && (
         <div className="fixed top-6 right-6 z-50 animate-in slide-in-from-top-2 fade-in duration-300">
           <div className={cn(
-            "flex items-center gap-3 px-5 py-3 rounded-xl border shadow-2xl backdrop-blur-xl",
+            "flex items-center gap-3 px-5 py-3 rounded-xl border shadow-2xl",
             toast.type === "success"
-              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300"
-              : "bg-red-500/10 border-red-500/30 text-red-300"
+              ? "bg-green-50 border-green-200 text-green-700"
+              : "bg-red-50 border-red-200 text-red-700"
           )}>
             {toast.type === "success" ? <GraduationCap className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
             <span className="text-sm font-medium">{toast.message}</span>
@@ -162,63 +170,68 @@ export default function AdminBatchesPage() {
         </div>
       )}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 border border-purple-500/20">
-                <Layers className="w-6 h-6 text-purple-400" />
-              </div>
-              Batch Management
-            </h1>
-            <p className="text-white/50 mt-1.5 text-sm sm:text-base">
-              Create batches, assign semesters, and promote students
-            </p>
-          </div>
-          <button
-            onClick={() => setShowCreate(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-medium shadow-lg shadow-purple-500/20 transition-all duration-200 text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            Create Batch
-          </button>
-        </div>
-
-        {/* Stats Summary */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-8">
+      <div className="px-4 sm:px-6 md:px-8 pb-10 space-y-4 sm:space-y-6">
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: "Total Batches", value: batches.length, icon: Layers, color: "purple" },
-            { label: "Departments", value: new Set(batches.map(b => b.department)).size, icon: Building2, color: "blue" },
-            { label: "Total Students", value: batches.reduce((acc, b) => acc + (b.studentCount || 0), 0), icon: Users, color: "emerald" },
-            { label: "Avg Semester", value: batches.length > 0 ? (batches.reduce((acc, b) => acc + b.currentSemester, 0) / batches.length).toFixed(1) : "0", icon: GraduationCap, color: "amber" },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-xl p-4"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <stat.icon className={cn("w-4 h-4", `text-${stat.color}-400`)} />
-                <span className="text-white/40 text-xs font-medium uppercase tracking-wider">{stat.label}</span>
+            { label: "Total Batches", value: batches.length, icon: Layers, color: "bg-purple-50 text-purple-600" },
+            { label: "Departments", value: new Set(batches.map(b => b.department)).size, icon: Building2, color: "bg-blue-50 text-blue-600" },
+            { label: "Total Students", value: batches.reduce((acc, b) => acc + (b.studentCount || 0), 0), icon: Users, color: "bg-green-50 text-green-600" },
+            { label: "Avg Semester", value: batches.length > 0 ? (batches.reduce((acc, b) => acc + b.currentSemester, 0) / batches.length).toFixed(1) : "0", icon: GraduationCap, color: "bg-amber-50 text-amber-600" },
+          ].map((card) => (
+            <div key={card.label} className="i-card p-5 flex items-start gap-4">
+              <div className={cn("w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0", card.color)}>
+                <card.icon className="w-5 h-5" />
               </div>
-              <p className="text-2xl font-bold text-white">{stat.value}</p>
+              <div>
+                <p className="text-sm text-muted-foreground">{card.label}</p>
+                {isLoading ? (
+                  <div className="h-8 w-16 rounded bg-muted animate-pulse mt-1" />
+                ) : (
+                  <p className="text-2xl font-bold text-foreground tracking-tight">
+                    {card.value}
+                  </p>
+                )}
+              </div>
             </div>
           ))}
         </div>
 
-        {/* Loading / Error */}
+        {/* Create Button */}
+        <div className="flex items-center justify-end">
+          <button onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all">
+            <Plus className="w-3.5 h-3.5" /> Create Batch
+          </button>
+        </div>
+
+        {/* Loading */}
         {isLoading && (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
-            <p className="text-white/40 text-sm">Loading batches...</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="i-card p-5">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-2xl bg-muted animate-pulse" />
+                  <div className="space-y-2 flex-1">
+                    <div className="h-4 w-3/4 bg-muted animate-pulse rounded" />
+                    <div className="h-3 w-1/2 bg-muted animate-pulse rounded" />
+                  </div>
+                </div>
+                <div className="h-2 bg-muted animate-pulse rounded-full" />
+              </div>
+            ))}
           </div>
         )}
 
+        {/* Error */}
         {error && !isLoading && (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <AlertCircle className="w-8 h-8 text-red-400" />
-            <p className="text-red-300 text-sm">{error}</p>
-            <button onClick={fetchBatches} className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white/70 text-sm hover:bg-white/10 transition-colors">
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-4">
+              <AlertCircle className="w-7 h-7 text-red-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground mb-1">{error}</h3>
+            <button onClick={fetchBatches}
+              className="mt-4 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground text-white text-sm font-medium">
               Retry
             </button>
           </div>
@@ -226,43 +239,43 @@ export default function AdminBatchesPage() {
 
         {/* Empty State */}
         {!isLoading && !error && batches.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20">
-              <Layers className="w-10 h-10 text-purple-400" />
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+              <Layers className="w-7 h-7 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-semibold text-white">No Batches Yet</h3>
-            <p className="text-white/40 text-sm text-center max-w-md">
+            <h3 className="text-lg font-semibold text-foreground mb-1">No Batches Yet</h3>
+            <p className="text-sm text-muted-foreground mb-4">
               Create your first batch to start organizing students by department and semester.
             </p>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl font-medium text-sm mt-2"
-            >
-              <Plus className="w-4 h-4" />
-              Create Batch
+            <button onClick={() => setShowCreate(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-foreground text-white text-sm font-medium">
+              <Plus className="w-4 h-4" /> Create Batch
             </button>
           </div>
         )}
 
         {/* Batch Cards Grid */}
         {!isLoading && !error && batches.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {batches.map((batch) => (
-              <div
-                key={batch.id}
-                className="group bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-2xl p-5 hover:bg-white/[0.05] hover:border-white/[0.1] transition-all duration-300"
-              >
+              <div key={batch.id} className="i-card p-5 cursor-pointer group">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">{batch.name}</h3>
-                    <p className="text-white/40 text-sm flex items-center gap-1.5 mt-0.5">
-                      <Calendar className="w-3.5 h-3.5" />
-                      Batch {batch.year}
-                    </p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-sm font-bold text-indigo-700">
+                      {batch.department.slice(0, 3)}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                        {batch.name}
+                      </h4>
+                      <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Calendar className="w-3 h-3" /> Batch {batch.year}
+                      </p>
+                    </div>
                   </div>
                   <span className={cn(
-                    "px-3 py-1 rounded-lg text-xs font-semibold border",
+                    "text-[10px] font-semibold px-2.5 py-1 rounded-full",
                     getSemesterColor(batch.currentSemester)
                   )}>
                     Sem {batch.currentSemester}
@@ -270,27 +283,26 @@ export default function AdminBatchesPage() {
                 </div>
 
                 {/* Stats Row */}
-                <div className="flex items-center gap-4 mb-5">
-                  <div className="flex items-center gap-1.5">
-                    <Users className="w-4 h-4 text-white/30" />
-                    <span className="text-white/70 text-sm font-medium">{batch.studentCount || 0}</span>
-                    <span className="text-white/30 text-sm">students</span>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <div className="text-center p-2 rounded-lg bg-muted/40">
+                    <p className="text-lg font-bold text-foreground">{batch.studentCount || 0}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase">Students</p>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Building2 className="w-4 h-4 text-white/30" />
-                    <span className="text-white/70 text-sm">{batch.department}</span>
+                  <div className="text-center p-2 rounded-lg bg-muted/40">
+                    <p className="text-lg font-bold text-foreground">{batch.department}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase">Department</p>
                   </div>
                 </div>
 
                 {/* Semester Progress */}
-                <div className="mb-5">
+                <div className="mb-4">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-white/30 text-xs uppercase tracking-wider font-medium">Semester Progress</span>
-                    <span className="text-white/50 text-xs">{batch.currentSemester}/8</span>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Semester Progress</span>
+                    <span className="text-[10px] text-muted-foreground">{batch.currentSemester}/8</span>
                   </div>
-                  <div className="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                  <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
                     <div
-                      className="h-full rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-500"
+                      className={cn("h-full rounded-full transition-all duration-700", getSemesterBarColor(batch.currentSemester))}
                       style={{ width: `${(batch.currentSemester / 8) * 100}%` }}
                     />
                   </div>
@@ -302,10 +314,10 @@ export default function AdminBatchesPage() {
                     onClick={() => handlePromote(batch)}
                     disabled={promotingId === batch.id || batch.currentSemester >= 8}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
+                      "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
                       batch.currentSemester >= 8
-                        ? "bg-white/5 text-white/20 cursor-not-allowed"
-                        : "bg-gradient-to-r from-emerald-600/20 to-teal-600/20 text-emerald-300 border border-emerald-500/20 hover:from-emerald-600/30 hover:to-teal-600/30"
+                        ? "bg-muted text-muted-foreground cursor-not-allowed"
+                        : "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30"
                     )}
                   >
                     {promotingId === batch.id ? (
@@ -317,7 +329,7 @@ export default function AdminBatchesPage() {
                   </button>
                   <button
                     onClick={() => handleDelete(batch)}
-                    className="flex items-center justify-center p-2.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/15 hover:bg-red-500/20 transition-all duration-200"
+                    className="flex items-center justify-center p-2.5 rounded-xl border border-border hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-muted-foreground transition-all"
                     title="Delete Batch"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -327,43 +339,44 @@ export default function AdminBatchesPage() {
             ))}
           </div>
         )}
-      </main>
+      </div>
 
       {/* Create Batch Modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-[#12121a] border border-white/[0.08] rounded-2xl w-full max-w-md shadow-2xl">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-6">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl p-5 sm:p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
-            <div className="flex items-center justify-between p-5 border-b border-white/[0.06]">
+            <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-purple-500/15 border border-purple-500/20">
-                  <Plus className="w-5 h-5 text-purple-400" />
+                <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+                  <Layers className="w-5 h-5 text-indigo-600" />
                 </div>
-                <h2 className="text-lg font-semibold text-white">Create New Batch</h2>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Create New Batch</h3>
+                  <p className="text-xs text-muted-foreground">Organize students by department & semester</p>
+                </div>
               </div>
-              <button
-                onClick={() => setShowCreate(false)}
-                className="p-2 rounded-lg hover:bg-white/5 text-white/40 hover:text-white/70 transition-colors"
-              >
-                <X className="w-5 h-5" />
+              <button onClick={() => setShowCreate(false)} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center">
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-5 space-y-5">
+            <div className="space-y-4">
               {/* Department */}
-              <div>
-                <label className="block text-white/60 text-sm font-medium mb-2">Department *</label>
+              <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-100">
+                <p className="text-xs font-semibold text-indigo-700 uppercase mb-3 flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5" /> Department *
+                </p>
                 <div className="grid grid-cols-4 gap-2">
                   {DEPARTMENTS.map((dept) => (
                     <button
                       key={dept}
                       onClick={() => setCreateDept(dept)}
                       className={cn(
-                        "px-3 py-2 rounded-lg text-xs font-semibold border transition-all duration-200",
+                        "px-3 py-2 rounded-lg text-xs font-semibold border transition-all",
                         createDept === dept
-                          ? "bg-purple-500/20 border-purple-500/40 text-purple-300"
-                          : "bg-white/[0.03] border-white/[0.06] text-white/50 hover:bg-white/[0.06] hover:text-white/70"
+                          ? "bg-indigo-600 border-indigo-600 text-white"
+                          : "bg-white border-border text-foreground hover:border-indigo-300"
                       )}
                     >
                       {dept}
@@ -374,31 +387,31 @@ export default function AdminBatchesPage() {
 
               {/* Year */}
               <div>
-                <label className="block text-white/60 text-sm font-medium mb-2">Batch Year *</label>
+                <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Batch Year *</label>
                 <input
                   type="number"
                   min={2020}
                   max={2040}
                   value={createYear}
                   onChange={(e) => setCreateYear(parseInt(e.target.value) || new Date().getFullYear())}
-                  className="w-full px-4 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm focus:outline-none focus:border-purple-500/40 focus:ring-1 focus:ring-purple-500/20 transition-all"
+                  className="w-full px-3 py-2.5 rounded-lg border border-border text-sm outline-none bg-white text-foreground focus:border-indigo-400 transition-colors"
                   placeholder="e.g. 2026"
                 />
               </div>
 
               {/* Semester */}
               <div>
-                <label className="block text-white/60 text-sm font-medium mb-2">Current Semester *</label>
+                <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Current Semester *</label>
                 <div className="grid grid-cols-8 gap-1.5">
                   {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
                     <button
                       key={sem}
                       onClick={() => setCreateSemester(sem)}
                       className={cn(
-                        "py-2 rounded-lg text-xs font-bold border transition-all duration-200",
+                        "py-2 rounded-lg text-xs font-bold border transition-all",
                         createSemester === sem
-                          ? "bg-purple-500/25 border-purple-500/40 text-purple-300"
-                          : "bg-white/[0.03] border-white/[0.06] text-white/40 hover:bg-white/[0.06] hover:text-white/60"
+                          ? "bg-indigo-600 border-indigo-600 text-white"
+                          : "bg-white border-border text-foreground hover:border-indigo-300"
                       )}
                     >
                       {sem}
@@ -409,43 +422,36 @@ export default function AdminBatchesPage() {
 
               {/* Preview */}
               {createDept && (
-                <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-                  <p className="text-white/40 text-xs uppercase tracking-wider font-medium mb-2">Preview</p>
+                <div className="p-3 rounded-xl bg-muted/50 border border-border">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-2">Preview</p>
                   <div className="flex items-center gap-3">
-                    <span className="text-white font-semibold">{createDept} {createYear}</span>
-                    <span className="text-white/30">•</span>
-                    <span className={cn("px-2 py-0.5 rounded text-xs font-semibold border", getSemesterColor(createSemester))}>
+                    <span className="text-sm font-semibold text-foreground">{createDept} {createYear}</span>
+                    <span className="text-muted-foreground">•</span>
+                    <span className={cn("px-2 py-0.5 rounded text-xs font-semibold", getSemesterColor(createSemester))}>
                       Sem {createSemester}
                     </span>
                   </div>
-                  <p className="text-white/30 text-xs mt-1.5">
-                    Password format for students: <span className="text-purple-300 font-mono">{createDept}{createYear}</span>
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    Password format: <code className="font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">{createDept}{createYear}</code>
                   </p>
                 </div>
               )}
-            </div>
 
-            {/* Modal Footer */}
-            <div className="flex items-center gap-3 p-5 border-t border-white/[0.06]">
-              <button
-                onClick={() => setShowCreate(false)}
-                className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 text-white/60 rounded-xl text-sm font-medium hover:bg-white/10 transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreate}
-                disabled={isCreating || !createDept}
-                className={cn(
-                  "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
-                  isCreating || !createDept
-                    ? "bg-purple-600/30 text-purple-300/50 cursor-not-allowed"
-                    : "bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg shadow-purple-500/20 hover:from-purple-500 hover:to-indigo-500"
-                )}
-              >
-                {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                {isCreating ? "Creating..." : "Create Batch"}
-              </button>
+              {/* Actions */}
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={handleCreate}
+                  disabled={isCreating || !createDept}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  {isCreating ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</> :
+                    <><Plus className="w-4 h-4" /> Create Batch</>}
+                </button>
+                <button onClick={() => setShowCreate(false)}
+                  className="w-full flex items-center justify-center px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted/50 transition-colors">
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>

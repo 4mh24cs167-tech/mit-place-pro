@@ -80,35 +80,35 @@ export default function SlotAllocator({ driveId, departments, onClose, onAllocat
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-[#12121a] border border-white/[0.08] rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/50">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-white/[0.06] sticky top-0 bg-[#12121a] z-10">
+        <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-white z-10 rounded-t-2xl">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-orange-500/15 border border-orange-500/20">
-              <Clock className="w-5 h-5 text-orange-400" />
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+              <Clock className="w-5 h-5 text-indigo-600" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-white">Allocate Slots</h2>
-              <p className="text-white/40 text-xs">Assign time slots, classrooms & departments</p>
+              <h2 className="text-lg font-semibold text-foreground">Allocate Slots</h2>
+              <p className="text-xs text-muted-foreground">Assign time slots, classrooms & departments</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-white/5 text-white/40 hover:text-white/70 transition-colors">
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center text-muted-foreground">
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Body */}
         <div className="p-5 space-y-4">
           {slots.map((slot, index) => (
-            <div key={index} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4 space-y-4">
+            <div key={index} className="i-card p-4 space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold text-white flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-orange-500/20 text-orange-400 text-xs flex items-center justify-center font-bold">{index + 1}</span>
+                <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-indigo-50 text-indigo-600 text-xs flex items-center justify-center font-bold">{index + 1}</span>
                   Slot {index + 1}
                 </h4>
                 {slots.length > 1 && (
-                  <button onClick={() => removeSlot(index)} className="p-1.5 rounded-lg hover:bg-red-500/15 text-red-400 transition-colors">
+                  <button onClick={() => removeSlot(index)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 )}
@@ -116,14 +116,14 @@ export default function SlotAllocator({ driveId, departments, onClose, onAllocat
 
               {/* Time Slot */}
               <div>
-                <label className="block text-white/50 text-xs font-medium mb-1.5">
+                <label className="block text-muted-foreground text-xs font-medium mb-1.5">
                   <Clock className="w-3 h-3 inline mr-1" /> Time Slot *
                 </label>
                 <input
                   value={slot.timeSlot}
                   onChange={(e) => updateSlot(index, "timeSlot", e.target.value)}
                   placeholder="e.g. 11:00 AM - 2:00 PM"
-                  className="w-full px-4 py-2 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-orange-500/40 mb-2"
+                  className="w-full px-3 py-2 border border-border rounded-xl text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:border-indigo-400 mb-2"
                 />
                 <div className="flex flex-wrap gap-1.5">
                   {TIME_PRESETS.map((t) => (
@@ -133,8 +133,8 @@ export default function SlotAllocator({ driveId, departments, onClose, onAllocat
                       className={cn(
                         "px-2.5 py-1 rounded-lg text-[10px] font-medium border transition-all",
                         slot.timeSlot === t
-                          ? "bg-orange-500/15 border-orange-500/30 text-orange-300"
-                          : "bg-white/[0.03] border-white/[0.06] text-white/40 hover:bg-white/[0.06]"
+                          ? "bg-indigo-600 border-indigo-600 text-white"
+                          : "bg-white border-border text-muted-foreground hover:border-indigo-300"
                       )}
                     >
                       {t}
@@ -145,20 +145,20 @@ export default function SlotAllocator({ driveId, departments, onClose, onAllocat
 
               {/* Classroom */}
               <div>
-                <label className="block text-white/50 text-xs font-medium mb-1.5">
+                <label className="block text-muted-foreground text-xs font-medium mb-1.5">
                   <MapPin className="w-3 h-3 inline mr-1" /> Classroom
                 </label>
                 <input
                   value={slot.classroom}
                   onChange={(e) => updateSlot(index, "classroom", e.target.value)}
                   placeholder="e.g. Room 301, Seminar Hall A"
-                  className="w-full px-4 py-2 bg-white/[0.04] border border-white/[0.08] rounded-xl text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-orange-500/40"
+                  className="w-full px-3 py-2 border border-border rounded-xl text-foreground text-sm placeholder:text-muted-foreground focus:outline-none focus:border-indigo-400"
                 />
               </div>
 
               {/* Departments */}
               <div>
-                <label className="block text-white/50 text-xs font-medium mb-1.5">
+                <label className="block text-muted-foreground text-xs font-medium mb-1.5">
                   <Building2 className="w-3 h-3 inline mr-1" /> Departments * (combine multiple for this slot)
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -169,8 +169,8 @@ export default function SlotAllocator({ driveId, departments, onClose, onAllocat
                       className={cn(
                         "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
                         slot.departments.includes(dept)
-                          ? "bg-orange-500/20 border-orange-500/40 text-orange-300"
-                          : "bg-white/[0.03] border-white/[0.06] text-white/40 hover:bg-white/[0.06]"
+                          ? "bg-indigo-600 border-indigo-600 text-white"
+                          : "bg-white border-border text-foreground hover:border-indigo-300"
                       )}
                     >
                       {dept}
@@ -178,7 +178,7 @@ export default function SlotAllocator({ driveId, departments, onClose, onAllocat
                   ))}
                 </div>
                 {slot.departments.length > 1 && (
-                  <p className="text-orange-300/60 text-[10px] mt-1">
+                  <p className="text-indigo-600 text-[10px] mt-1">
                     Combined: {slot.departments.join(" + ")} for this time slot
                   </p>
                 )}
@@ -189,29 +189,25 @@ export default function SlotAllocator({ driveId, departments, onClose, onAllocat
           {/* Add Slot Button */}
           <button
             onClick={addSlot}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-white/[0.08] rounded-xl text-white/40 text-sm font-medium hover:bg-white/[0.03] hover:border-white/[0.12] hover:text-white/60 transition-all"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-border rounded-xl text-muted-foreground text-sm font-medium hover:bg-muted/30 hover:border-indigo-200 hover:text-foreground transition-all"
           >
             <Plus className="w-4 h-4" /> Add Another Slot
           </button>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-3 p-5 border-t border-white/[0.06] sticky bottom-0 bg-[#12121a]">
-          <button onClick={onClose} className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 text-white/60 rounded-xl text-sm font-medium hover:bg-white/10 transition-all">
-            Cancel
-          </button>
+        <div className="flex flex-col gap-2 p-5 border-t border-border sticky bottom-0 bg-white">
           <button
             onClick={handleAllocate}
             disabled={isAllocating}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
-              isAllocating
-                ? "bg-orange-600/30 text-orange-300/50 cursor-not-allowed"
-                : "bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg shadow-orange-500/20 hover:from-orange-500 hover:to-amber-500"
-            )}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {isAllocating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clock className="w-4 h-4" />}
             {isAllocating ? "Allocating..." : `Allocate ${slots.filter(s => s.timeSlot && s.departments.length > 0).length} Slot(s)`}
+          </button>
+          <button onClick={onClose}
+            className="w-full flex items-center justify-center px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted/50 transition-colors">
+            Cancel
           </button>
         </div>
       </div>
