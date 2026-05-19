@@ -1,13 +1,19 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
+import compression from 'compression';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn', 'log'],
+  });
 
   // Security headers
   app.use(helmet());
+
+  // Gzip compression — reduces payload size by ~70% for JSON responses
+  app.use(compression({ threshold: 1024 }));
 
   // CORS
   const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')

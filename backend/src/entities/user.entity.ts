@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne, DeleteDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToOne, DeleteDateColumn, Index } from 'typeorm';
 
 export enum UserRole {
   ADMIN = 'admin',
@@ -8,6 +8,8 @@ export enum UserRole {
 }
 
 @Entity('users')
+@Index('idx_users_role', ['role'])
+@Index('idx_users_email', ['email'])
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;

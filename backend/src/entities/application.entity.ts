@@ -1,10 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Unique } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Unique, Index } from 'typeorm';
 import { Student } from './student.entity';
 import { Job } from './job.entity';
 import { Cv } from './cv.entity';
 
 @Entity('applications')
 @Unique(['studentId', 'jobId'])
+@Index('idx_applications_job_id', ['jobId'])
+@Index('idx_applications_student_id', ['studentId'])
+@Index('idx_applications_admin_approved', ['adminApproved'])
+@Index('idx_applications_job_approved', ['jobId', 'adminApproved'])
 export class Application {
   @PrimaryGeneratedColumn('uuid')
   id: string;

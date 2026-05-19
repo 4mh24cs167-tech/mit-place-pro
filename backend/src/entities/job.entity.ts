@@ -1,7 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany, Index } from 'typeorm';
 import { Company } from './company.entity';
 
 @Entity('jobs')
+@Index('idx_jobs_company_id', ['companyId'])
+@Index('idx_jobs_status', ['status'])
 export class Job {
   @PrimaryGeneratedColumn('uuid')
   id: string;

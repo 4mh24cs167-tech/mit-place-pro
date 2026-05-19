@@ -78,42 +78,68 @@ export class DriveService {
     };
   }
 
-  // ─── List Drives ────────────────────────────────
+  // ─── List Drives (single-query, no N+1) ─────────
   async listDrives() {
-    const drives = await this.driveRepo.find({
-      relations: ['job', 'job.company'],
-      order: { createdAt: 'DESC' },
-    });
+    const results = await this.driveRepo
+      .createQueryBuilder('d')
+      .leftJoinAndSelect('d.job', 'job')
+      .leftJoinAndSelect('job.company', 'company')
+      .loadRelationCountAndMap('d.totalRegistrations', 'd.registrations')
+      .loadRelationCountAndMap('d.slotsCount', 'd.slots')
+      .orderBy('d.createdAt', 'DESC')
+      .getMany();
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const results: any[] = [];
-    for (const drive of drives) {
-      const totalRegs = await this.regRepo.count({ where: { driveId: drive.id } });
-      const approved = await this.regRepo.count({ where: { driveId: drive.id, status: 'approved' } });
-      const rejected = await this.regRepo.count({ where: { driveId: drive.id, status: 'rejected' } });
-      const pending = await this.regRepo.count({ where: { driveId: drive.id, status: 'pending' } });
-      const slotsCount = await this.slotRepo.count({ where: { driveId: drive.id } });
+    // Batch-load registration status counts in a single query
+    const driveIds = results.map((d) => d.id);
+    let statusCounts: Array<{ drive_id: string; status: string; cnt: string }> = [];
 
-      results.push({
-        id: drive.id,
-        title: drive.title,
-        type: drive.type,
-        status: drive.status,
-        driveDate: drive.driveDate,
-        departments: drive.departments,
-        company: drive.job?.company?.name || 'Unknown',
-        jobTitle: drive.job?.title || 'Unknown',
-        jobId: drive.jobId,
-        totalRegistrations: totalRegs,
-        approved,
-        rejected,
-        pending,
-        slotsCount,
-        createdAt: drive.createdAt,
-      });
+    if (driveIds.length > 0) {
+      statusCounts = await this.regRepo
+        .createQueryBuilder('r')
+        .select('r.drive_id', 'drive_id')
+        .addSelect('r.status', 'status')
+        .addSelect('COUNT(*)::int', 'cnt')
+        .where('r.drive_id IN (:...driveIds)', { driveIds })
+        .groupBy('r.drive_id')
+        .addGroupBy('r.status')
+        .getRawMany();
     }
 
-    return results;
+    const countMap = new Map<string, { pending: number; approved: number; rejected: number }>();
+    for (const row of statusCounts) {
+      if (!countMap.has(row.drive_id)) {
+        countMap.set(row.drive_id, { pending: 0, approved: 0, rejected: 0 });
+      }
+      const entry = countMap.get(row.drive_id)!;
+      if (row.status === 'pending') entry.pending = Number(row.cnt);
+      else if (row.status === 'approved') entry.approved = Number(row.cnt);
+      else if (row.status === 'rejected') entry.rejected = Number(row.cnt);
+    }
+
+    return results.map((d) => {
+      const counts = countMap.get(d.id) || { pending: 0, approved: 0, rejected: 0 };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const totalRegs = (d as any).totalRegistrations || 0;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const slotsCount = (d as any).slotsCount || 0;
+      return {
+        id: d.id,
+        title: d.title,
+        type: d.type,
+        status: d.status,
+        driveDate: d.driveDate,
+        departments: d.departments,
+        company: d.job?.company?.name || 'Unknown',
+        jobTitle: d.job?.title || 'Unknown',
+        jobId: d.jobId,
+        totalRegistrations: totalRegs,
+        approved: counts.approved,
+        rejected: counts.rejected,
+        pending: counts.pending,
+        slotsCount,
+        createdAt: d.createdAt,
+      };
+    });
   }
 
   // ─── Get Drive Detail with Registrations ────────

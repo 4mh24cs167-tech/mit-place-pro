@@ -56,6 +56,14 @@ const entities = [
         synchronize: false,
         ssl: { rejectUnauthorized: false },
         logging: config.get('NODE_ENV') === 'development',
+        // Connection pool tuning for 50K users
+        extra: {
+          max: 20,                    // Max pool size (up from default 10)
+          idleTimeoutMillis: 30000,   // Close idle connections after 30s
+          connectionTimeoutMillis: 5000, // Fail fast if can't connect in 5s
+          keepAlive: true,            // Prevent Neon cold-start disconnects
+          keepAliveInitialDelayMillis: 10000,
+        },
       }),
     }),
     AuthModule,

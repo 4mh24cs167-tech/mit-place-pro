@@ -33,18 +33,17 @@ export class AdminService {
     private readonly configService: ConfigService,
   ) {}
 
-  // ─── Dashboard Stats ───────────────────────────
+  // ─── Dashboard Stats (fully parallelized) ──────
   async getDashboardStats() {
-    const [totalStudents, totalCompanies, totalJobs, totalApplications] = await Promise.all([
+    const [totalStudents, totalCompanies, totalJobs, totalApplications, placedStudents, activeJobs, pendingApprovals] = await Promise.all([
       this.studentRepo.count(),
       this.companyRepo.count(),
       this.jobRepo.count(),
       this.applicationRepo.count(),
+      this.studentRepo.count({ where: { placementStatus: 'placed' } }),
+      this.jobRepo.count({ where: { status: 'open' } }),
+      this.applicationRepo.count({ where: { adminApproved: null as unknown as boolean } }),
     ]);
-
-    const placedStudents = await this.studentRepo.count({ where: { placementStatus: 'placed' } });
-    const activeJobs = await this.jobRepo.count({ where: { status: 'open' } });
-    const pendingApprovals = await this.applicationRepo.count({ where: { adminApproved: null as unknown as boolean } });
 
     return {
       totalStudents,
@@ -634,9 +633,21 @@ export class AdminService {
   async listBatches() {
     const batches = await this.batchRepo.find({ order: { department: 'ASC', year: 'DESC' } });
 
-    // Update student counts
-    for (const batch of batches) {
-      batch.studentCount = await this.studentRepo.count({ where: { batchId: batch.id } });
+    // Batch-load all student counts in a single GROUP BY query instead of N+1
+    if (batches.length > 0) {
+      const batchIds = batches.map((b) => b.id);
+      const counts: Array<{ batch_id: string; cnt: string }> = await this.studentRepo
+        .createQueryBuilder('s')
+        .select('s.batch_id', 'batch_id')
+        .addSelect('COUNT(*)::int', 'cnt')
+        .where('s.batch_id IN (:...batchIds)', { batchIds })
+        .groupBy('s.batch_id')
+        .getRawMany();
+
+      const countMap = new Map(counts.map((c) => [c.batch_id, Number(c.cnt)]));
+      for (const batch of batches) {
+        batch.studentCount = countMap.get(batch.id) || 0;
+      }
     }
 
     return batches;

@@ -1,6 +1,6 @@
 import {
   Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn,
-  ManyToOne, JoinColumn, OneToMany,
+  ManyToOne, JoinColumn, OneToMany, Index,
 } from 'typeorm';
 import { Company } from './company.entity';
 import { Job } from './job.entity';
@@ -9,6 +9,9 @@ export type DriveType = 'single' | 'multiple';
 export type DriveStatus = 'draft' | 'open' | 'screening' | 'scheduled' | 'completed' | 'cancelled';
 
 @Entity('drives')
+@Index('idx_drives_status', ['status'])
+@Index('idx_drives_job_id', ['jobId'])
+@Index('idx_drives_created_at', ['createdAt'])
 export class Drive {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -54,6 +57,9 @@ export class Drive {
 export type RegistrationStatus = 'pending' | 'approved' | 'rejected';
 
 @Entity('drive_registrations')
+@Index('idx_drive_reg_drive_id', ['driveId'])
+@Index('idx_drive_reg_student_id', ['studentId'])
+@Index('idx_drive_reg_drive_status', ['driveId', 'status'])
 export class DriveRegistration {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -79,6 +85,7 @@ export class DriveRegistration {
 }
 
 @Entity('drive_slots')
+@Index('idx_drive_slots_drive_id', ['driveId'])
 export class DriveSlot {
   @PrimaryGeneratedColumn('uuid')
   id: string;

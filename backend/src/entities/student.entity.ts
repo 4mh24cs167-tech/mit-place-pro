@@ -1,8 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { User } from './user.entity';
 import { Batch } from './batch.entity';
 
 @Entity('students')
+@Index('idx_students_department', ['department'])
+@Index('idx_students_batch_id', ['batchId'])
+@Index('idx_students_placement_status', ['placementStatus'])
+@Index('idx_students_user_id', ['userId'])
+@Index('idx_students_dept_profile', ['department', 'profileComplete'])
 export class Student {
   @PrimaryGeneratedColumn('uuid')
   id: string;
