@@ -125,7 +125,7 @@ export default function LoginPage() {
           )}
 
           {/* Form */}
-          <div className="space-y-4 mb-6">
+          <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-4 mb-6">
             {/* Email */}
             <div>
               <label htmlFor="email" className="block text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wider">
@@ -140,7 +140,6 @@ export default function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   className="w-full pl-11 pr-4 py-3 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-foreground transition-all placeholder:text-muted-foreground/50"
-                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                   autoComplete="email"
                 />
               </div>
@@ -169,7 +168,6 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   className="w-full pl-11 pr-11 py-3 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-foreground/20 focus:border-foreground transition-all placeholder:text-muted-foreground/50"
-                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                   autoComplete="current-password"
                 />
                 <button
@@ -182,27 +180,27 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-          </div>
 
-          {/* Login button */}
-          <button
-            onClick={handleLogin}
-            disabled={!email || !password || isLoading}
-            className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-              !email || !password || isLoading
-                ? "bg-foreground/30 text-white/50 cursor-not-allowed"
-                : "bg-foreground text-white hover:bg-foreground/90 shadow-lg shadow-foreground/10 hover:shadow-foreground/20 active:scale-[0.99]"
-            }`}
-          >
-            {isLoading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <>
-                Sign In
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
+            {/* Login button */}
+            <button
+              type="submit"
+              disabled={!email || !password || isLoading}
+              className={`w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                !email || !password || isLoading
+                  ? "bg-foreground/30 text-white/50 cursor-not-allowed"
+                  : "bg-foreground text-white hover:bg-foreground/90 shadow-lg shadow-foreground/10 hover:shadow-foreground/20 active:scale-[0.99]"
+              }`}
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  Sign In
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
 
           {/* Divider with role info */}
           <div className="mt-8 pt-6 border-t border-border/50">

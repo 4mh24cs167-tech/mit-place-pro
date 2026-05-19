@@ -3,23 +3,51 @@ import * as bcrypt from 'bcryptjs';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
+// ── Import ALL entities so synchronize: true creates every table ──
+import { User } from './entities/user.entity';
+import { Student } from './entities/student.entity';
+import { Batch } from './entities/batch.entity';
+import { Company } from './entities/company.entity';
+import { Job } from './entities/job.entity';
+import { CompanyAvailability } from './entities/company-availability.entity';
+import { Cv } from './entities/cv.entity';
+import { Application } from './entities/application.entity';
+import { InterviewSlot } from './entities/interview-slot.entity';
+import { OfferLetter } from './entities/offer-letter.entity';
+import { PlacementPoster } from './entities/placement-poster.entity';
+import { Notification } from './entities/notification.entity';
+import { AuditLog } from './entities/audit-log.entity';
+import { Drive, DriveRegistration, DriveSlot } from './entities/drive.entity';
+
 const AppDataSource = new DataSource({
   type: 'postgres',
   url: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
-  synchronize: true,
-  logging: false,
+  synchronize: true,        // Creates / alters tables to match entities
+  logging: ['error'],
+  entities: [
+    User, Student, Batch, Company, Job, CompanyAvailability, Cv,
+    Application, InterviewSlot, OfferLetter, PlacementPoster,
+    Notification, AuditLog, Drive, DriveRegistration, DriveSlot,
+  ],
 });
 
 async function seed() {
   console.log('🌱 Connecting to database...');
   await AppDataSource.initialize();
   const qr = AppDataSource.createQueryRunner();
-  console.log('✅ Connected!\n');
+  console.log('✅ Connected! Schema synchronised.\n');
 
   // ── Clear existing data (order matters for FK) ──
   console.log('🧹 Clearing existing data...');
-  const tables = ['notifications','interview_slots','applications','cvs','jobs','company_availability','students','companies','users'];
+  const tables = [
+    'drive_slots', 'drive_registrations', 'drives',
+    'placement_posters', 'offer_letters',
+    'notifications', 'interview_slots', 'applications',
+    'cvs', 'jobs', 'company_availability',
+    'students', 'batches', 'companies',
+    'audit_logs', 'users',
+  ];
   for (const t of tables) {
     await qr.query(`DELETE FROM ${t}`).catch(() => {});
   }
@@ -46,7 +74,19 @@ async function seed() {
   `);
 
   // ══════════════════════════════════════════════════
-  //  2. COMPANIES
+  //  2. BATCHES
+  // ══════════════════════════════════════════════════
+  console.log('📦 Creating batches...');
+  const depts = ['CSE','ISE','ECE','ME','CV'];
+  const batchIds: Record<string, string> = {};
+  for (const dept of depts) {
+    const bid = uuid();
+    batchIds[dept] = bid;
+    await qr.query(`INSERT INTO batches (id, name, department, year, current_semester, student_count) VALUES ('${bid}','${dept} 2026','${dept}',2026,8,3)`);
+  }
+
+  // ══════════════════════════════════════════════════
+  //  3. COMPANIES
   // ══════════════════════════════════════════════════
   console.log('🏢 Creating companies...');
   const companyIds = [uuid(), uuid(), uuid()];
@@ -60,10 +100,9 @@ async function seed() {
   }
 
   // ══════════════════════════════════════════════════
-  //  3. STUDENTS
+  //  4. STUDENTS
   // ══════════════════════════════════════════════════
   console.log('🎓 Creating students...');
-  const depts = ['CSE','ISE','ECE','ME','CV'];
   const studentNames = ['Arjun Sharma','Priya Patel','Rahul Kumar','Ananya Iyer','Dev Singh','Meera Nair','Karthik Reddy','Sneha Gupta','Vikas Joshi','Pooja Desai','Amit Rao','Divya Kulkarni','Sanjay Hegde','Riya Bhat','Nikhil Gowda'];
   const studentIds: string[] = [];
   const skills = [['Java','Spring Boot','SQL'],['Python','ML','TensorFlow'],['C++','DSA','Linux'],['React','Node.js','MongoDB'],['JavaScript','AWS','Docker']];
@@ -80,12 +119,13 @@ async function seed() {
     const sem = 8;
     const sk = JSON.stringify({ skills: skills[i % 5], linkedin: `https://linkedin.com/in/${studentNames[i].toLowerCase().replace(' ','-')}` });
     const status = i < 3 ? 'placed' : i < 6 ? 'shortlisted' : 'none';
+    const batchId = batchIds[dept];
 
-    await qr.query(`INSERT INTO students (id, user_id, usn, full_name, phone, department, semester, cgpa, tenth_percent, twelfth_percent, backlogs, profile_data, profile_complete, placement_status) VALUES ('${sid}','${studentUserIds[i]}','${usn}','${studentNames[i]}','+91 98765 ${String(43210+i).padStart(5,'0')}','${dept}',${sem},${cgpa},${tenth},${twelfth},${backlogs},'${sk}',true,'${status}')`);
+    await qr.query(`INSERT INTO students (id, user_id, usn, full_name, phone, department, batch_id, semester, cgpa, tenth_percent, twelfth_percent, backlogs, profile_data, profile_complete, placement_status) VALUES ('${sid}','${studentUserIds[i]}','${usn}','${studentNames[i]}','+91 98765 ${String(43210+i).padStart(5,'0')}','${dept}','${batchId}',${sem},${cgpa},${tenth},${twelfth},${backlogs},'${sk}',true,'${status}')`);
   }
 
   // ══════════════════════════════════════════════════
-  //  4. JOBS
+  //  5. JOBS
   // ══════════════════════════════════════════════════
   console.log('💼 Creating jobs...');
   const jobIds = [uuid(), uuid(), uuid(), uuid()];
@@ -100,7 +140,7 @@ async function seed() {
   }
 
   // ══════════════════════════════════════════════════
-  //  5. APPLICATIONS
+  //  6. APPLICATIONS
   // ══════════════════════════════════════════════════
   console.log('📝 Creating applications...');
   const appIds: string[] = [];
@@ -143,7 +183,7 @@ async function seed() {
   }
 
   // ══════════════════════════════════════════════════
-  //  6. INTERVIEW SLOTS (for Job 1 applications)
+  //  7. INTERVIEW SLOTS (for Job 1 applications)
   // ══════════════════════════════════════════════════
   console.log('📅 Creating interview slots...');
   const today = new Date();
@@ -165,7 +205,7 @@ async function seed() {
   }
 
   // ══════════════════════════════════════════════════
-  //  7. NOTIFICATIONS
+  //  8. NOTIFICATIONS
   // ══════════════════════════════════════════════════
   console.log('🔔 Creating notifications...');
   const notifData = [
@@ -186,6 +226,7 @@ async function seed() {
   console.log('  🌱 SEED DATA COMPLETE');
   console.log('═══════════════════════════════════════');
   console.log(`  Users:         ${2 + 3 + 15} (1 admin + 1 principal + 3 companies + 15 students)`);
+  console.log(`  Batches:       5 (CSE, ISE, ECE, ME, CV – 2026)`);
   console.log(`  Companies:     3 (Infosys, Wipro, TCS)`);
   console.log(`  Students:      15 (across 5 departments)`);
   console.log(`  Jobs:          4 (2 Infosys + 1 Wipro + 1 TCS)`);

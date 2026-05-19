@@ -66,7 +66,7 @@ export class AdminService {
       .createQueryBuilder('app')
       .leftJoin('app.job', 'job')
       .select('ROUND(AVG(job.ctc_max_lpa)::numeric, 1)', 'avgCtc')
-      .where("app.result = 'selected'")
+      .where("app.finalResult = 'selected'")
       .getRawOne();
 
     return {
