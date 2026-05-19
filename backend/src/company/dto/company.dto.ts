@@ -121,3 +121,37 @@ export class MarkRoundResultDto {
   @IsEnum(['selected', 'rejected'])
   result: string;
 }
+
+export class UpdateCompanyProfileDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  website?: string;
+
+  @IsOptional()
+  @IsString()
+  hqCity?: string;
+
+  @IsOptional()
+  @IsString()
+  sector?: string;
+
+  @IsOptional()
+  @IsString()
+  annualTurnoverRange?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  hrName?: string;
+
+  @IsOptional()
+  @IsString()
+  hrPhone?: string;
+}

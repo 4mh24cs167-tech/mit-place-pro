@@ -32,6 +32,31 @@ export class CompanyService {
     return company;
   }
 
+  async updateProfile(userId: string, dto: {
+    name?: string; website?: string; hqCity?: string; sector?: string;
+    annualTurnoverRange?: string; description?: string; hrName?: string; hrPhone?: string;
+  }) {
+    const company = await this.companyRepo.findOne({ where: { userId } });
+    if (!company) throw new NotFoundException('Company profile not found');
+
+    if (dto.name !== undefined) company.name = dto.name;
+    if (dto.website !== undefined) company.website = dto.website;
+    if (dto.hqCity !== undefined) company.hqCity = dto.hqCity;
+    if (dto.sector !== undefined) company.sector = dto.sector;
+    if (dto.annualTurnoverRange !== undefined) company.annualTurnoverRange = dto.annualTurnoverRange;
+    if (dto.description !== undefined) company.description = dto.description;
+    if (dto.hrName !== undefined) company.hrName = dto.hrName;
+    if (dto.hrPhone !== undefined) company.hrPhone = dto.hrPhone;
+
+    // Auto-mark profile as complete if key fields are filled
+    if (company.name && company.sector && company.hrName) {
+      company.profileComplete = true;
+    }
+
+    await this.companyRepo.save(company);
+    return company;
+  }
+
   // ─── Job Management ─────────────────────────────
   async createJob(userId: string, dto: CreateJobDto) {
     const company = await this.companyRepo.findOne({ where: { userId } });

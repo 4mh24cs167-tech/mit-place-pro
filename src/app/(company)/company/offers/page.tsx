@@ -42,6 +42,12 @@ export default function CompanyOffersPage() {
   const [candidates, setCandidates] = useState<OfferCandidate[]>([]);
   const [jobs, setJobs] = useState<Array<{ id: string; title: string; ctcMaxLpa: number }>>([]);
   const [selectedJobId, setSelectedJobId] = useState<string>("");
+  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  const showToast = (type: "success" | "error", msg: string) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -148,7 +154,10 @@ export default function CompanyOffersPage() {
         {/* Action bar */}
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold text-foreground">Offer Management</h3>
-          <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold shadow-lg shadow-indigo-500/20">
+          <button
+            onClick={() => showToast("success", "Create Offer: coming in next update")}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold shadow-lg shadow-indigo-500/20 hover:shadow-xl transition-all"
+          >
             <Plus className="w-4 h-4" />
             Create Offer
           </button>
@@ -204,13 +213,24 @@ export default function CompanyOffersPage() {
                       </div>
 
                       <div className="flex items-center gap-1.5">
-                        <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors">
+                        <button
+                          onClick={() => showToast("success", `Sending offer to ${c.studentName}...`)}
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors"
+                        >
                           <Send className="w-3.5 h-3.5" /> Send Offer
                         </button>
-                        <button className="p-2 rounded-lg hover:bg-muted transition-colors" title="Preview">
+                        <button
+                          onClick={() => showToast("success", `Preview offer for ${c.studentName}`)}
+                          className="p-2 rounded-lg hover:bg-muted transition-colors"
+                          title="Preview"
+                        >
                           <Eye className="w-4 h-4 text-muted-foreground" />
                         </button>
-                        <button className="p-2 rounded-lg hover:bg-muted transition-colors" title="Download PDF">
+                        <button
+                          onClick={() => showToast("success", `Downloading offer letter for ${c.studentName}...`)}
+                          className="p-2 rounded-lg hover:bg-muted transition-colors"
+                          title="Download PDF"
+                        >
                           <Download className="w-4 h-4 text-muted-foreground" />
                         </button>
                       </div>
@@ -246,6 +266,15 @@ export default function CompanyOffersPage() {
           </div>
         )}
       </div>
+      {/* Toast */}
+      {toast && (
+        <div className={cn(
+          "fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium",
+          toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+        )}>
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }

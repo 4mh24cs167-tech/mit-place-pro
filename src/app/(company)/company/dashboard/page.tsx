@@ -11,8 +11,16 @@ import {
   SlidersHorizontal,
   Users,
   Briefcase,
+  Loader2,
+  X,
+  MapPin,
+  DollarSign,
+  Clock,
+  FileText,
+  GraduationCap,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 interface Job {
   id: string;
@@ -31,9 +39,15 @@ interface Candidate {
 
 export default function CompanyDashboardPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateJob, setShowCreateJob] = useState(false);
+  const [jobForm, setJobForm] = useState({ title: "", description: "", location: "", ctcMinLpa: "", ctcMaxLpa: "", minCgpa: "", openPositions: "1", eligibleDepartments: "" });
+  const [jobSaving, setJobSaving] = useState(false);
+  const [jobError, setJobError] = useState("");
+  const [jobSuccess, setJobSuccess] = useState("");
 
   const fetchData = useCallback(async () => {
     try {
@@ -126,7 +140,10 @@ export default function CompanyDashboardPage() {
               </>
             )}
           </div>
-          <button className="i-btn-dark w-full sm:w-auto justify-center">
+          <button
+            onClick={() => setShowCreateJob(true)}
+            className="i-btn-dark w-full sm:w-auto justify-center"
+          >
             <Plus className="w-4 h-4" />
             Post Job
           </button>
@@ -140,7 +157,7 @@ export default function CompanyDashboardPage() {
                 <h2 className="text-lg font-semibold text-foreground">Recruitment Pipeline</h2>
                 <p className="text-sm text-muted-foreground">Candidate flow through stages</p>
               </div>
-              <button className="i-btn-icon">
+              <button className="i-btn-icon" title="Filter pipeline">
                 <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
@@ -180,7 +197,11 @@ export default function CompanyDashboardPage() {
                 <h2 className="text-lg font-semibold text-foreground">Top Candidates</h2>
                 <p className="text-sm text-muted-foreground">Highest ATS scores</p>
               </div>
-              <button className="i-btn-icon">
+              <button
+                onClick={() => router.push("/company/candidates")}
+                className="i-btn-icon"
+                title="View all candidates"
+              >
                 <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
@@ -240,7 +261,11 @@ export default function CompanyDashboardPage() {
                   {new Date().toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" })}
                 </p>
               </div>
-              <button className="i-btn-icon">
+              <button
+                onClick={() => router.push("/company/offers")}
+                className="i-btn-icon"
+                title="View offers"
+              >
                 <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
               </button>
             </div>
@@ -308,6 +333,133 @@ export default function CompanyDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Create Job Modal ─────────────────────── */}
+      {showCreateJob && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                  <Briefcase className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Post New Job</h3>
+                  <p className="text-xs text-white/70">Fill in the details to post a job</p>
+                </div>
+              </div>
+              <button onClick={() => { setShowCreateJob(false); setJobError(""); setJobSuccess(""); }} className="p-1.5 rounded-lg hover:bg-white/20 transition-colors">
+                <X className="w-5 h-5 text-white" />
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-4 max-h-[60vh] overflow-y-auto">
+              {jobError && <div className="px-3 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-medium">{jobError}</div>}
+              {jobSuccess && <div className="px-3 py-2 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-medium">{jobSuccess}</div>}
+
+              <div>
+                <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                  <Briefcase className="w-3.5 h-3.5 text-indigo-500" /> Job Title <span className="text-red-500">*</span>
+                </label>
+                <input type="text" value={jobForm.title} onChange={(e) => setJobForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Software Engineer" className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-indigo-500" /> Description
+                </label>
+                <textarea value={jobForm.description} onChange={(e) => setJobForm(f => ({ ...f, description: e.target.value }))} placeholder="Job description, responsibilities..." rows={3} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 resize-none" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-indigo-500" /> Location
+                  </label>
+                  <input type="text" value={jobForm.location} onChange={(e) => setJobForm(f => ({ ...f, location: e.target.value }))} placeholder="e.g. Bengaluru" className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-indigo-500" /> Positions
+                  </label>
+                  <input type="number" value={jobForm.openPositions} onChange={(e) => setJobForm(f => ({ ...f, openPositions: e.target.value }))} placeholder="1" className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                    <DollarSign className="w-3.5 h-3.5 text-indigo-500" /> Min CTC (LPA)
+                  </label>
+                  <input type="number" step="0.1" value={jobForm.ctcMinLpa} onChange={(e) => setJobForm(f => ({ ...f, ctcMinLpa: e.target.value }))} placeholder="e.g. 4" className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                    <DollarSign className="w-3.5 h-3.5 text-indigo-500" /> Max CTC (LPA)
+                  </label>
+                  <input type="number" step="0.1" value={jobForm.ctcMaxLpa} onChange={(e) => setJobForm(f => ({ ...f, ctcMaxLpa: e.target.value }))} placeholder="e.g. 8" className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                    <GraduationCap className="w-3.5 h-3.5 text-indigo-500" /> Min CGPA
+                  </label>
+                  <input type="number" step="0.1" value={jobForm.minCgpa} onChange={(e) => setJobForm(f => ({ ...f, minCgpa: e.target.value }))} placeholder="e.g. 6.5" className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-indigo-500" /> Departments
+                  </label>
+                  <input type="text" value={jobForm.eligibleDepartments} onChange={(e) => setJobForm(f => ({ ...f, eligibleDepartments: e.target.value }))} placeholder="CSE, ISE, ECE" className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3">
+              <button onClick={() => { setShowCreateJob(false); setJobError(""); setJobSuccess(""); }} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors">
+                Cancel
+              </button>
+              <button
+                disabled={jobSaving}
+                onClick={async () => {
+                  if (!jobForm.title.trim()) { setJobError("Job title is required"); return; }
+                  setJobSaving(true);
+                  setJobError("");
+                  try {
+                    const payload: Record<string, unknown> = {
+                      title: jobForm.title.trim(),
+                      description: jobForm.description.trim() || undefined,
+                      location: jobForm.location.trim() || undefined,
+                      openPositions: Number(jobForm.openPositions) || 1,
+                      ctcMinLpa: jobForm.ctcMinLpa ? Number(jobForm.ctcMinLpa) : undefined,
+                      ctcMaxLpa: jobForm.ctcMaxLpa ? Number(jobForm.ctcMaxLpa) : undefined,
+                      minCgpa: jobForm.minCgpa ? Number(jobForm.minCgpa) : undefined,
+                      eligibleDepartments: jobForm.eligibleDepartments ? jobForm.eligibleDepartments.split(",").map(d => d.trim()).filter(Boolean) : undefined,
+                    };
+                    await companyApi.createJob(payload);
+                    setJobSuccess("Job posted successfully!");
+                    setTimeout(() => {
+                      setShowCreateJob(false);
+                      setJobSuccess("");
+                      setJobForm({ title: "", description: "", location: "", ctcMinLpa: "", ctcMaxLpa: "", minCgpa: "", openPositions: "1", eligibleDepartments: "" });
+                      fetchData();
+                    }, 1200);
+                  } catch {
+                    setJobError("Failed to create job. Please try again.");
+                  } finally {
+                    setJobSaving(false);
+                  }
+                }}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold hover:shadow-lg transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {jobSaving ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</> : <><Plus className="w-4 h-4" /> Post Job</>}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

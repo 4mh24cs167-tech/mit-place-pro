@@ -271,6 +271,7 @@ export const studentApi = {
 export const companyApi = {
   getDashboard: () => apiFetch('/api/v1/company/dashboard'),
   getProfile: () => apiFetch('/api/v1/company/profile'),
+  updateProfile: (data: Record<string, unknown>) => apiFetch('/api/v1/company/profile', { method: 'PATCH', body: data }),
   createJob: (data: Record<string, unknown>) => apiFetch('/api/v1/company/jobs', { method: 'POST', body: data }),
   getJobs: () => apiFetch('/api/v1/company/jobs'),
   listJobs: () => apiFetch('/api/v1/company/jobs'),

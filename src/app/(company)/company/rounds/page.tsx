@@ -57,6 +57,12 @@ export default function CompanyRoundsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [rounds, setRounds] = useState<RoundData[]>([]);
+  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  const showToast = (type: "success" | "error", msg: string) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -209,7 +215,10 @@ export default function CompanyRoundsPage() {
                     </div>
                   );
                 })}
-                <button className="flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-border text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors flex-shrink-0">
+                <button
+                  onClick={() => showToast("success", "Add Round: coming in next update")}
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed border-border text-sm text-muted-foreground hover:border-primary hover:text-primary transition-colors flex-shrink-0"
+                >
                   <Plus className="w-4 h-4" />
                   Add Round
                 </button>
@@ -242,10 +251,18 @@ export default function CompanyRoundsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <button className="p-2 rounded-lg hover:bg-muted transition-colors">
+                        <button
+                          onClick={() => showToast("success", `Editing ${round.title}: coming in next update`)}
+                          className="p-2 rounded-lg hover:bg-muted transition-colors"
+                          title="Edit round"
+                        >
                           <Edit3 className="w-4 h-4 text-muted-foreground" />
                         </button>
-                        <button className="p-2 rounded-lg hover:bg-red-50 transition-colors">
+                        <button
+                          onClick={() => showToast("error", `Delete ${round.title}: coming in next update`)}
+                          className="p-2 rounded-lg hover:bg-red-50 transition-colors"
+                          title="Delete round"
+                        >
                           <Trash2 className="w-4 h-4 text-red-400" />
                         </button>
                       </div>
@@ -285,6 +302,15 @@ export default function CompanyRoundsPage() {
           </>
         )}
       </div>
+      {/* Toast */}
+      {toast && (
+        <div className={cn(
+          "fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium",
+          toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+        )}>
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }

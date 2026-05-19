@@ -50,6 +50,45 @@ export default function CompanyCandidatesPage() {
   const [selectedJobId, setSelectedJobId] = useState<string>("");
   const [driveSlots, setDriveSlots] = useState<Array<{ timeSlot: string; classroom: string | null; departments: string[]; studentCount: number }>>([]);
   const [showSchedule, setShowSchedule] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  const showToast = (type: "success" | "error", msg: string) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleMarkResult = async (applicationId: string, result: "selected" | "rejected") => {
+    setActionLoading(applicationId);
+    try {
+      await companyApi.markRoundResult(applicationId, result);
+      setCandidates((prev) =>
+        prev.map((c) => c.applicationId === applicationId ? { ...c, finalResult: result } : c)
+      );
+      showToast("success", `Candidate ${result === "selected" ? "shortlisted" : "rejected"} successfully`);
+    } catch {
+      showToast("error", "Action failed. Please try again.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleExport = () => {
+    if (filtered.length === 0) { showToast("error", "No candidates to export"); return; }
+    const headers = ["Name", "USN", "Department", "CGPA", "ATS Score", "Match Score", "Round", "Status"];
+    const rows = filtered.map((c) => [
+      c.studentName || "", c.usn || "", c.department || "",
+      String(c.cgpa ?? ""), String(c.atsScore ?? ""), String(c.matchScore),
+      String(c.currentRound), c.finalResult || "pending",
+    ]);
+    const csv = [headers.join(","), ...rows.map((r) => r.map((v) => `"${v}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `candidates_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    showToast("success", "Exported to CSV");
+  };
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -249,7 +288,10 @@ export default function CompanyCandidatesPage() {
               </select>
             </div>
           </div>
-          <button className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-xs sm:text-sm font-semibold hover:bg-indigo-700 transition-colors text-center">
+          <button
+            onClick={handleExport}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-xs sm:text-sm font-semibold hover:bg-indigo-700 transition-colors text-center"
+          >
             <Download className="w-4 h-4 inline mr-1.5" /> Export List
           </button>
         </div>
@@ -316,12 +358,26 @@ export default function CompanyCandidatesPage() {
                           </td>
                           <td className="py-3 px-3 text-center">
                             <div className="flex items-center justify-center gap-1">
-                              <button className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="View Profile"><Eye className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                              <button className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="View CV"><FileText className="w-3.5 h-3.5 text-muted-foreground" /></button>
+                              <button onClick={() => showToast("success", `Viewing profile: ${c.studentName} (${c.usn})`)} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="View Profile"><Eye className="w-3.5 h-3.5 text-muted-foreground" /></button>
+                              <button onClick={() => showToast("success", "Resume view: coming soon")} className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="View CV"><FileText className="w-3.5 h-3.5 text-muted-foreground" /></button>
                               {c.finalResult !== "rejected" && c.finalResult !== "selected" && (
                                 <>
-                                  <button className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition-colors" title="Shortlist"><ThumbsUp className="w-3.5 h-3.5 text-emerald-600" /></button>
-                                  <button className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 transition-colors" title="Reject"><ThumbsDown className="w-3.5 h-3.5 text-red-600" /></button>
+                                  <button
+                                    disabled={actionLoading === c.applicationId}
+                                    onClick={() => handleMarkResult(c.applicationId, "selected")}
+                                    className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                                    title="Shortlist"
+                                  >
+                                    {actionLoading === c.applicationId ? <Loader2 className="w-3.5 h-3.5 text-emerald-600 animate-spin" /> : <ThumbsUp className="w-3.5 h-3.5 text-emerald-600" />}
+                                  </button>
+                                  <button
+                                    disabled={actionLoading === c.applicationId}
+                                    onClick={() => handleMarkResult(c.applicationId, "rejected")}
+                                    className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 transition-colors disabled:opacity-50"
+                                    title="Reject"
+                                  >
+                                    <ThumbsDown className="w-3.5 h-3.5 text-red-600" />
+                                  </button>
                                 </>
                               )}
                             </div>
@@ -364,10 +420,18 @@ export default function CompanyCandidatesPage() {
                       </div>
                       {c.finalResult !== "rejected" && c.finalResult !== "selected" && (
                         <div className="flex items-center gap-2 pt-1">
-                          <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold">
-                            <ThumbsUp className="w-3.5 h-3.5" /> Shortlist
+                          <button
+                            disabled={actionLoading === c.applicationId}
+                            onClick={() => handleMarkResult(c.applicationId, "selected")}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold disabled:opacity-50"
+                          >
+                            {actionLoading === c.applicationId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ThumbsUp className="w-3.5 h-3.5" />} Shortlist
                           </button>
-                          <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-semibold">
+                          <button
+                            disabled={actionLoading === c.applicationId}
+                            onClick={() => handleMarkResult(c.applicationId, "rejected")}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-semibold disabled:opacity-50"
+                          >
                             <ThumbsDown className="w-3.5 h-3.5" /> Reject
                           </button>
                         </div>
@@ -380,6 +444,15 @@ export default function CompanyCandidatesPage() {
           )}
         </div>
       </div>
+      {/* Toast */}
+      {toast && (
+        <div className={cn(
+          "fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium animate-in slide-in-from-bottom-4 fade-in duration-300",
+          toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+        )}>
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }
