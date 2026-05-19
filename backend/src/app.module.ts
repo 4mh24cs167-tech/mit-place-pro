@@ -8,6 +8,7 @@ import { CompanyModule } from './company/company.module';
 import {
   User,
   Student,
+  Batch,
   Company,
   Job,
   CompanyAvailability,
@@ -18,11 +19,15 @@ import {
   PlacementPoster,
   Notification,
   AuditLog,
+  Drive,
+  DriveRegistration,
+  DriveSlot,
 } from './entities';
 
 const entities = [
   User,
   Student,
+  Batch,
   Company,
   Job,
   CompanyAvailability,
@@ -33,6 +38,9 @@ const entities = [
   PlacementPoster,
   Notification,
   AuditLog,
+  Drive,
+  DriveRegistration,
+  DriveSlot,
 ];
 
 @Module({

@@ -6,9 +6,6 @@ import { cn } from "@/lib/utils";
 import { adminApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import {
-  HelpCircle,
-  MessageCircle,
-  Settings,
   Plus,
   ArrowUpRight,
   Calendar,
