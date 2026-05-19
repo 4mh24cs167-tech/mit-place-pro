@@ -277,7 +277,7 @@ export default function AdminStudentsPage() {
                         <div className="flex flex-col items-center gap-2">
                           <Upload className="w-7 h-7 text-muted-foreground" />
                           <p className="text-sm font-medium text-foreground">Drop Excel file here</p>
-                          <p className="text-xs text-muted-foreground">or click to browse (.xlsx · max 5MB)</p>
+                          <p className="text-xs text-muted-foreground">or click to browse (.xlsx · max 10MB · up to 500 students)</p>
                         </div>
                       )}
                     </div>

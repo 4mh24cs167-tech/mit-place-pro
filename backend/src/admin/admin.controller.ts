@@ -75,7 +75,7 @@ export class AdminController {
 
   // ─── Bulk Upload ────────────────────────────────
   @Post('students/bulk-upload')
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
   async bulkUploadStudents(
     @UploadedFile() file: Express.Multer.File,
     @Body('department') department: string,

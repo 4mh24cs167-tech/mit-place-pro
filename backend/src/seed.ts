@@ -38,8 +38,8 @@ async function seed() {
   const qr = AppDataSource.createQueryRunner();
   console.log('✅ Connected! Schema synchronised.\n');
 
-  // ── Clear ALL existing data (order matters for FK) ──
-  console.log('🧹 Clearing ALL existing data...');
+  // ── NUKE everything with TRUNCATE CASCADE (instant, no FK issues) ──
+  console.log('🧹 TRUNCATING ALL tables (CASCADE)...');
   const tables = [
     'drive_slots', 'drive_registrations', 'drives',
     'placement_posters', 'offer_letters',
@@ -49,9 +49,9 @@ async function seed() {
     'audit_logs', 'users',
   ];
   for (const t of tables) {
-    await qr.query(`DELETE FROM ${t}`).catch(() => {});
+    await qr.query(`TRUNCATE TABLE "${t}" CASCADE`).catch(() => {});
   }
-  console.log('✅ All tables cleared.\n');
+  console.log('✅ All tables truncated.\n');
 
   // ── Helper ──
   const hash = (pw: string) => bcrypt.hashSync(pw, 10);
