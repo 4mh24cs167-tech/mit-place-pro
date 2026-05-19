@@ -8,7 +8,7 @@ import { CompanyAvailability } from '../entities/company-availability.entity';
 import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { Student } from '../entities/student.entity';
-import { Drive, DriveSlot } from '../entities/drive.entity';
+import { Drive, DriveSlot, DriveRegistration } from '../entities/drive.entity';
 import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto } from './dto/company.dto';
 
 @Injectable()
@@ -23,6 +23,7 @@ export class CompanyService {
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectRepository(Drive) private readonly driveRepo: Repository<Drive>,
     @InjectRepository(DriveSlot) private readonly driveSlotRepo: Repository<DriveSlot>,
+    @InjectRepository(DriveRegistration) private readonly driveRegRepo: Repository<DriveRegistration>,
   ) {}
 
   // ─── Company Profile ────────────────────────────
@@ -280,6 +281,21 @@ export class CompanyService {
       order: { createdAt: 'DESC' },
     });
 
+    // Get approved registration counts for each drive
+    const driveIds = drives.map((d) => d.id);
+    const approvedCounts: Record<string, number> = {};
+    if (driveIds.length > 0) {
+      const counts = await this.driveRegRepo
+        .createQueryBuilder('reg')
+        .select('reg.driveId', 'driveId')
+        .addSelect('COUNT(*)', 'count')
+        .where('reg.driveId IN (:...driveIds)', { driveIds })
+        .andWhere('reg.status = :status', { status: 'approved' })
+        .groupBy('reg.driveId')
+        .getRawMany();
+      counts.forEach((c) => { approvedCounts[c.driveId] = parseInt(c.count, 10); });
+    }
+
     return drives.map((drive) => ({
       id: drive.id,
       title: drive.title,
@@ -287,6 +303,7 @@ export class CompanyService {
       driveDate: drive.driveDate,
       departments: drive.departments,
       jobTitle: drive.job?.title,
+      approvedStudents: approvedCounts[drive.id] || 0,
       slots: (drive.slots || []).map((s) => ({
         id: s.id,
         timeSlot: s.timeSlot,

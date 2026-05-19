@@ -299,14 +299,106 @@ export class StudentService {
     return { message: 'Marked as read' };
   }
 
-  // ─── Drive Allocations (student sees their slots) ──
+  // ─── Available Drives (opt-in workflow) ─────────
+  async getAvailableDrives(userId: string) {
+    const student = await this.studentRepo.findOne({ where: { userId } });
+    if (!student) throw new NotFoundException('Student profile not found');
+
+    // Get all open drives that match the student's department
+    const drives = await this.driveRepo
+      .createQueryBuilder('d')
+      .leftJoinAndSelect('d.job', 'job')
+      .leftJoinAndSelect('job.company', 'company')
+      .where('d.status = :status', { status: 'open' })
+      .orderBy('d.createdAt', 'DESC')
+      .getMany();
+
+    // Filter drives matching student's department
+    const matchingDrives = drives.filter((d) =>
+      !d.departments || d.departments.length === 0 || d.departments.includes(student.department),
+    );
+
+    if (matchingDrives.length === 0) return [];
+
+    // Check which drives the student already registered for
+    const driveIds = matchingDrives.map((d) => d.id);
+    const existingRegs = await this.driveRegRepo.find({
+      where: { studentId: student.id, driveId: In(driveIds) },
+    });
+    const registeredDriveIds = new Set(existingRegs.map((r) => r.driveId));
+
+    return matchingDrives.map((drive) => {
+      const registered = registeredDriveIds.has(drive.id);
+      const reg = existingRegs.find((r) => r.driveId === drive.id);
+      return {
+        id: drive.id,
+        title: drive.title,
+        type: drive.type,
+        status: drive.status,
+        driveDate: drive.driveDate,
+        departments: drive.departments,
+        description: drive.description,
+        company: drive.job?.company?.name || 'Unknown',
+        jobTitle: drive.job?.title || 'Unknown',
+        ctcRange: drive.job ? `${drive.job.ctcMinLpa || 0} - ${drive.job.ctcMaxLpa || 0} LPA` : null,
+        alreadyRegistered: registered,
+        registrationStatus: reg?.status || null,
+        createdAt: drive.createdAt,
+      };
+    });
+  }
+
+  // ─── Register for a Drive (student opts in) ────
+  async registerForDrive(userId: string, driveId: string) {
+    const student = await this.studentRepo.findOne({ where: { userId } });
+    if (!student) throw new NotFoundException('Student profile not found');
+
+    const drive = await this.driveRepo.findOne({
+      where: { id: driveId },
+      relations: ['job', 'job.company'],
+    });
+    if (!drive) throw new NotFoundException('Drive not found');
+    if (drive.status !== 'open') throw new BadRequestException('This drive is no longer accepting registrations');
+
+    // Check if already registered
+    const existing = await this.driveRegRepo.findOne({
+      where: { driveId, studentId: student.id },
+    });
+    if (existing) throw new ConflictException('You have already registered for this drive');
+
+    // Check eligibility
+    if (drive.departments && drive.departments.length > 0 && !drive.departments.includes(student.department)) {
+      throw new BadRequestException('Your department is not eligible for this drive');
+    }
+
+    if (drive.job?.minCgpa && (student.cgpa ?? 0) < Number(drive.job.minCgpa)) {
+      throw new BadRequestException('You do not meet the minimum CGPA requirement for this drive');
+    }
+
+    // Create pending registration
+    const registration = await this.driveRegRepo.save({
+      driveId,
+      studentId: student.id,
+      status: 'pending' as const,
+    });
+
+    return {
+      id: registration.id,
+      driveTitle: drive.title,
+      company: drive.job?.company?.name,
+      status: 'pending',
+      message: 'You have registered for this drive. Your registration is pending admin approval.',
+    };
+  }
+
+  // ─── My Drive Registrations (all statuses) ─────
   async getMyDriveAllocations(userId: string) {
     const student = await this.studentRepo.findOne({ where: { userId } });
     if (!student) throw new NotFoundException('Student profile not found');
 
-    // Find all drive registrations for this student that are approved
+    // Find ALL drive registrations for this student (not just approved)
     const registrations = await this.driveRegRepo.find({
-      where: { studentId: student.id, status: 'approved' },
+      where: { studentId: student.id },
     });
 
     if (registrations.length === 0) return [];
@@ -337,13 +429,14 @@ export class StudentService {
         company: drive.job?.company?.name || 'Unknown',
         jobTitle: drive.job?.title || 'Unknown',
         registrationStatus: reg?.status || 'pending',
-        slots: mySlots.map((s) => ({
+        rejectionReason: reg?.rejectionReason || null,
+        slots: reg?.status === 'approved' ? mySlots.map((s) => ({
           id: s.id,
           timeSlot: s.timeSlot,
           classroom: s.classroom,
           departments: s.departments,
           studentCount: s.studentCount,
-        })),
+        })) : [], // Only show slots if approved
       };
     });
   }

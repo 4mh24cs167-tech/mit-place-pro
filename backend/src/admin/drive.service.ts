@@ -4,6 +4,7 @@ import { Repository, In } from 'typeorm';
 import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
 import { Job } from '../entities/job.entity';
 import { Student } from '../entities/student.entity';
+import { Notification } from '../entities/notification.entity';
 import { AuditLog } from '../entities/audit-log.entity';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class DriveService {
     @InjectRepository(DriveSlot) private readonly slotRepo: Repository<DriveSlot>,
     @InjectRepository(Job) private readonly jobRepo: Repository<Job>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
+    @InjectRepository(Notification) private readonly notificationRepo: Repository<Notification>,
     @InjectRepository(AuditLog) private readonly auditRepo: Repository<AuditLog>,
   ) {}
 
@@ -41,7 +43,7 @@ export class DriveService {
       departments: data.departments || job.allowedDepartments || [],
     });
 
-    // Auto-register eligible students (based on departments + min CGPA)
+    // Find eligible students and NOTIFY them (opt-in workflow, no auto-registration)
     const studentQuery = this.studentRepo.createQueryBuilder('s')
       .where('s.profileComplete = true');
 
@@ -54,14 +56,17 @@ export class DriveService {
 
     const eligibleStudents = await studentQuery.getMany();
 
-    const registrations = eligibleStudents.map((s) => ({
-      driveId: drive.id,
-      studentId: s.id,
-      status: 'pending' as const,
-    }));
-
-    if (registrations.length > 0) {
-      await this.regRepo.save(registrations);
+    // Send notifications to all eligible students instead of auto-registering
+    if (eligibleStudents.length > 0) {
+      const driveDate = drive.driveDate ? new Date(drive.driveDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBD';
+      const notifications = eligibleStudents.map((s) => ({
+        userId: s.userId,
+        type: 'drive_invite',
+        title: `New Drive: ${drive.title}`,
+        body: `${job.company?.name || 'A company'} is hiring for "${job.title}". Drive date: ${driveDate}. Open your drives page to register if interested.`,
+        metadata: { driveId: drive.id, jobId: job.id, companyName: job.company?.name },
+      }));
+      await this.notificationRepo.save(notifications);
     }
 
     await this.auditRepo.save({
@@ -69,12 +74,12 @@ export class DriveService {
       action: 'CREATE_DRIVE',
       entityType: 'drive',
       entityId: drive.id,
-      newValue: { title: drive.title, type: drive.type, eligible: registrations.length } as unknown as Record<string, unknown>,
+      newValue: { title: drive.title, type: drive.type, notified: eligibleStudents.length } as unknown as Record<string, unknown>,
     });
 
     return {
       ...drive,
-      eligibleCount: registrations.length,
+      notifiedCount: eligibleStudents.length,
     };
   }
 

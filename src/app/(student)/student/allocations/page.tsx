@@ -26,6 +26,7 @@ interface DriveAllocation {
   company: string;
   jobTitle: string;
   registrationStatus: string;
+  rejectionReason: string | null;
   slots: SlotData[];
 }
 
@@ -61,8 +62,10 @@ export default function StudentAllocationsPage() {
     fetchAllocations();
   }, [fetchAllocations]);
 
-  const scheduledDrives = allocations.filter((a) => a.slots.length > 0);
-  const pendingDrives = allocations.filter((a) => a.slots.length === 0);
+  const approvedDrives = allocations.filter((a) => a.registrationStatus === "approved");
+  const pendingDrives = allocations.filter((a) => a.registrationStatus === "pending");
+  const rejectedDrives = allocations.filter((a) => a.registrationStatus === "rejected");
+  const scheduledDrives = approvedDrives.filter((a) => a.slots.length > 0);
 
   return (
     <div className="page-enter">
@@ -70,7 +73,7 @@ export default function StudentAllocationsPage() {
         userName={user?.email?.split("@")[0] || "Student"}
         userRole="Student"
         greeting="My Allocations"
-        subtitle={`${scheduledDrives.length} scheduled · ${pendingDrives.length} pending`}
+        subtitle={`${approvedDrives.length} approved · ${pendingDrives.length} pending`}
       />
 
       <div className="px-4 sm:px-6 md:px-8 pb-10 space-y-6">

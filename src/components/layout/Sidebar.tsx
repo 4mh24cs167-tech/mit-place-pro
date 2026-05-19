@@ -22,6 +22,7 @@ import {
   Menu,
   X,
   Layers,
+  Megaphone,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -54,6 +55,7 @@ const navConfigs = {
     { label: "Applications", href: "/student/applications", icon: Briefcase },
     { label: "Profile", href: "/student/profile", icon: UserCircle },
     { label: "CVs", href: "/student/cv", icon: FileText },
+    { label: "Drives", href: "/student/drives", icon: Megaphone },
     { label: "Allocations", href: "/student/allocations", icon: CalendarClock },
   ],
   principal: [

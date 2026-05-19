@@ -55,7 +55,22 @@ export class StudentController {
     return { success: true, data };
   }
 
-  // ─── Drive Allocations ─────────────────────────
+  // ─── Drives (opt-in workflow) ──────────────────
+  @Get('drives/available')
+  async getAvailableDrives(@CurrentUser('id') userId: string) {
+    const data = await this.studentService.getAvailableDrives(userId);
+    return { success: true, data };
+  }
+
+  @Post('drives/:driveId/register')
+  async registerForDrive(
+    @CurrentUser('id') userId: string,
+    @Param('driveId') driveId: string,
+  ) {
+    const data = await this.studentService.registerForDrive(userId, driveId);
+    return { success: true, data };
+  }
+
   @Get('drives')
   async getMyDriveAllocations(@CurrentUser('id') userId: string) {
     const data = await this.studentService.getMyDriveAllocations(userId);
