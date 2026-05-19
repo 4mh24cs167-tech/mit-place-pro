@@ -11,13 +11,14 @@ import {
   MapPin,
   Mail,
   Phone,
-  MoreHorizontal,
   ExternalLink,
   CheckCircle2,
   XCircle,
   Building2,
   X,
   Loader2,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 
@@ -44,6 +45,8 @@ export default function AdminCompaniesPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState<Company | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     sector: "Information Technology",
@@ -111,6 +114,20 @@ export default function AdminCompaniesPage() {
       setAddError(err instanceof Error ? err.message : "Failed to add company");
     } finally {
       setAddLoading(false);
+    }
+  };
+
+  const handleDeleteCompany = async () => {
+    if (!deleteConfirm) return;
+    try {
+      setDeleteLoading(true);
+      await adminApi.deleteCompany(deleteConfirm.id);
+      setDeleteConfirm(null);
+      await fetchCompanies();
+    } catch (err: unknown) {
+      setAddError(err instanceof Error ? err.message : "Failed to delete company");
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -224,8 +241,12 @@ export default function AdminCompaniesPage() {
                     )}>
                       {company.isActive !== false ? "Active" : "Inactive"}
                     </span>
-                    <button className="p-1.5 rounded-lg hover:bg-muted transition-colors opacity-0 group-hover:opacity-100">
-                      <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm(company); }}
+                      className="p-1.5 rounded-lg hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                      title="Delete company"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
                     </button>
                   </div>
                 </div>
@@ -429,6 +450,43 @@ export default function AdminCompaniesPage() {
             >
               Done
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full max-w-sm p-5 sm:p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-foreground">Delete Company</h3>
+                <p className="text-xs text-muted-foreground">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground mb-5">
+              Are you sure you want to delete <strong className="text-foreground">{deleteConfirm.name}</strong>? This will also remove their login credentials.
+            </p>
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                disabled={deleteLoading}
+                className="px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteCompany}
+                disabled={deleteLoading}
+                className="flex items-center justify-center gap-2 px-5 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {deleteLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                Delete Company
+              </button>
+            </div>
           </div>
         </div>
       )}

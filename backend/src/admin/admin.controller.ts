@@ -119,6 +119,15 @@ export class AdminController {
     return { success: true, data };
   }
 
+  @Delete('companies/:id')
+  async deleteCompany(
+    @Param('id') id: string,
+    @CurrentUser('id') actorId: string,
+  ) {
+    const data = await this.adminService.deleteCompany(id, actorId);
+    return { success: true, ...data };
+  }
+
   // ─── Jobs (Admin View) ─────────────────────────
   @Get('jobs')
   async listJobs(@Query() query: PaginationDto) {

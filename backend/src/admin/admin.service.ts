@@ -193,6 +193,23 @@ export class AdminService {
   }
 
   // ─── Company Management ─────────────────────────
+  async deleteCompany(id: string, actorId: string) {
+    const company = await this.companyRepo.findOne({ where: { id } });
+    if (!company) throw new NotFoundException('Company not found');
+
+    await this.companyRepo.softDelete(id);
+    await this.userRepo.softDelete(company.userId);
+
+    await this.auditRepo.save({
+      actorUserId: actorId,
+      action: 'DELETE_COMPANY',
+      entityType: 'company',
+      entityId: id,
+    });
+
+    return { message: 'Company deleted' };
+  }
+
   async createCompany(dto: CreateCompanyDto, actorId: string) {
     const existing = await this.userRepo.findOne({ where: { email: dto.hrEmail.toLowerCase() } });
     if (existing) throw new ConflictException('Email already exists');

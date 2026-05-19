@@ -195,6 +195,7 @@ export const adminApi = {
     return apiFetch(`/api/v1/admin/companies?${query.toString()}`);
   },
   getCompany: (id: string) => apiFetch(`/api/v1/admin/companies/${id}`),
+  deleteCompany: (id: string) => apiFetch(`/api/v1/admin/companies/${id}`, { method: 'DELETE' }),
 
   // Shortlist
   getShortlist: (jobId: string) => apiFetch(`/api/v1/admin/jobs/${jobId}/shortlist`),
