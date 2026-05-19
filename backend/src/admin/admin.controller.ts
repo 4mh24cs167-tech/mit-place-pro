@@ -3,6 +3,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { AdminService } from './admin.service';
 import { BulkUploadService } from './bulk-upload.service';
+import { DriveService } from './drive.service';
 import { Auth, CurrentUser } from '../auth/auth.decorators';
 import { UserRole } from '../entities/user.entity';
 import { CreateCompanyDto, BulkApproveDto, UpdateStudentDto, PaginationDto } from './dto/admin.dto';
@@ -13,6 +14,7 @@ export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly bulkUploadService: BulkUploadService,
+    private readonly driveService: DriveService,
   ) {}
 
   // ─── Dashboard ──────────────────────────────────
@@ -76,8 +78,9 @@ export class AdminController {
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 5 * 1024 * 1024 } }))
   async bulkUploadStudents(
     @UploadedFile() file: Express.Multer.File,
+    @Body('department') department: string,
+    @Body('batch') batch: string,
     @CurrentUser('id') actorId: string,
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   ) {
     if (!file) {
       return { success: false, message: 'No file uploaded' };
@@ -90,7 +93,7 @@ export class AdminController {
       return { success: false, message: 'Only .xlsx or .xls files are accepted' };
     }
 
-    const result = await this.bulkUploadService.processExcel(file.buffer, actorId);
+    const result = await this.bulkUploadService.processExcel(file.buffer, actorId, department, batch);
     return { success: true, data: result };
   }
 
@@ -170,5 +173,118 @@ export class AdminController {
   async getSlotTimeline(@Query('date') date?: string) {
     const data = await this.adminService.getSlotTimeline(date);
     return { success: true, data };
+  }
+
+  // ─── Batch Management ──────────────────────────
+  @Post('batches')
+  async createBatch(
+    @Body() body: { department: string; year: number; currentSemester: number },
+    @CurrentUser('id') actorId: string,
+  ) {
+    const data = await this.adminService.createBatch(body, actorId);
+    return { success: true, data };
+  }
+
+  @Get('batches')
+  async listBatches() {
+    const data = await this.adminService.listBatches();
+    return { success: true, data };
+  }
+
+  @Post('batches/:id/promote')
+  async promoteBatch(
+    @Param('id') id: string,
+    @CurrentUser('id') actorId: string,
+  ) {
+    const data = await this.adminService.promoteBatch(id, actorId);
+    return { success: true, data };
+  }
+
+  @Delete('batches/:id')
+  async deleteBatch(
+    @Param('id') id: string,
+    @CurrentUser('id') actorId: string,
+  ) {
+    const data = await this.adminService.deleteBatch(id, actorId);
+    return { success: true, ...data };
+  }
+
+  // ─── Drive Management ──────────────────────────
+  @Post('drives')
+  async createDrive(
+    @Body() body: {
+      title: string;
+      type: 'single' | 'multiple';
+      jobId: string;
+      description?: string;
+      driveDate?: string;
+      departments?: string[];
+    },
+    @CurrentUser('id') actorId: string,
+  ) {
+    const data = await this.driveService.createDrive(body, actorId);
+    return { success: true, data };
+  }
+
+  @Get('drives')
+  async listDrives() {
+    const data = await this.driveService.listDrives();
+    return { success: true, data };
+  }
+
+  @Get('drives/:id')
+  async getDriveDetail(@Param('id') id: string) {
+    const data = await this.driveService.getDriveDetail(id);
+    return { success: true, data };
+  }
+
+  @Post('drives/:id/reject')
+  async rejectDriveStudents(
+    @Param('id') id: string,
+    @Body() body: { studentIds: string[]; reason?: string },
+    @CurrentUser('id') actorId: string,
+  ) {
+    const data = await this.driveService.rejectStudents(id, body.studentIds, body.reason || null, actorId);
+    return { success: true, data };
+  }
+
+  @Post('drives/:id/approve-all')
+  async approveAllDrive(
+    @Param('id') id: string,
+    @CurrentUser('id') actorId: string,
+  ) {
+    const data = await this.driveService.approveAllPending(id, actorId);
+    return { success: true, data };
+  }
+
+  @Post('drives/:id/allocate-slots')
+  async allocateDriveSlots(
+    @Param('id') id: string,
+    @Body() body: {
+      slots: Array<{ timeSlot: string; classroom: string; departments: string[] }>;
+    },
+    @CurrentUser('id') actorId: string,
+  ) {
+    const data = await this.driveService.allocateSlots(id, body.slots, actorId);
+    return { success: true, data };
+  }
+
+  @Patch('drives/:id/status')
+  async updateDriveStatus(
+    @Param('id') id: string,
+    @Body() body: { status: string },
+    @CurrentUser('id') actorId: string,
+  ) {
+    const data = await this.driveService.updateDriveStatus(id, body.status, actorId);
+    return { success: true, data };
+  }
+
+  @Delete('drives/:id')
+  async deleteDrive(
+    @Param('id') id: string,
+    @CurrentUser('id') actorId: string,
+  ) {
+    const data = await this.driveService.deleteDrive(id, actorId);
+    return { success: true, ...data };
   }
 }

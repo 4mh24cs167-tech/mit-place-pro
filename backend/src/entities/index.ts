@@ -1,5 +1,6 @@
 export { User, UserRole } from './user.entity';
 export { Student } from './student.entity';
+export { Batch } from './batch.entity';
 export { Company } from './company.entity';
 export { Job } from './job.entity';
 export { CompanyAvailability } from './company-availability.entity';
@@ -10,3 +11,4 @@ export { OfferLetter } from './offer-letter.entity';
 export { PlacementPoster } from './placement-poster.entity';
 export { Notification } from './notification.entity';
 export { AuditLog } from './audit-log.entity';
+export { Drive, DriveRegistration, DriveSlot } from './drive.entity';

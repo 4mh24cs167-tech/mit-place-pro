@@ -9,9 +9,9 @@ import { AuditLog } from '../entities/audit-log.entity';
 
 interface ExcelRow {
   USN: string;
-  'Full Name': string;
   Email: string;
-  Department: string;
+  'Full Name'?: string;
+  Department?: string;
   Phone?: string;
   CGPA?: number;
   '10th %'?: number;
@@ -37,7 +37,7 @@ export class BulkUploadService {
     @InjectRepository(AuditLog) private readonly auditRepo: Repository<AuditLog>,
   ) {}
 
-  async processExcel(buffer: Buffer, actorId: string): Promise<BulkResult> {
+  async processExcel(buffer: Buffer, actorId: string, selectedDepartment?: string, selectedBatch?: string): Promise<BulkResult> {
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheetName = workbook.SheetNames[0];
     if (!sheetName) throw new BadRequestException('Empty Excel file');
@@ -45,13 +45,17 @@ export class BulkUploadService {
     const rows: ExcelRow[] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
     if (!rows.length) throw new BadRequestException('No data rows found');
 
-    // Validate required columns
-    const requiredCols = ['USN', 'Full Name', 'Email', 'Department'];
+    // Validate required columns — only USN and Email are mandatory now
+    const requiredCols = ['USN', 'Email'];
     const headers = Object.keys(rows[0]);
     const missing = requiredCols.filter((col) => !headers.includes(col));
     if (missing.length) {
       throw new BadRequestException(`Missing required columns: ${missing.join(', ')}`);
     }
+
+    // Use selected department/batch or fallback to defaults
+    const dept = selectedDepartment ? selectedDepartment.trim().toUpperCase().replace(/\s+/g, '') : null;
+    const batch = selectedBatch ? selectedBatch.trim() : String(new Date().getFullYear());
 
     const result: BulkResult = {
       total: rows.length,
@@ -67,12 +71,13 @@ export class BulkUploadService {
 
       try {
         const usn = String(row.USN).trim().toUpperCase();
-        const fullName = String(row['Full Name']).trim();
         const email = String(row.Email).trim().toLowerCase();
-        const department = String(row.Department).trim();
+        const fullName = row['Full Name'] ? String(row['Full Name']).trim() : 'Student';
+        // Use the admin-selected department, fallback to row Department, then 'Unassigned'
+        const department = dept || (row.Department ? String(row.Department).trim().toUpperCase() : 'UNASSIGNED');
 
-        if (!usn || !fullName || !email || !department) {
-          result.errors.push({ row: rowNum, usn, reason: 'Missing required fields' });
+        if (!usn || !email) {
+          result.errors.push({ row: rowNum, usn, reason: 'Missing USN or Email' });
           result.skipped++;
           continue;
         }
@@ -93,8 +98,8 @@ export class BulkUploadService {
           continue;
         }
 
-        // Generate password based on department + batch pattern
-        const rawPassword = `${department.toUpperCase().replace(/\s+/g, '')}${new Date().getFullYear()}`;
+        // Generate deterministic password: DEPARTMENT + BATCH (e.g. CSE2026)
+        const rawPassword = `${department}${batch}`;
         const salt = await bcrypt.genSalt(12);
         const hash = await bcrypt.hash(rawPassword, salt);
 
@@ -106,7 +111,7 @@ export class BulkUploadService {
           mustChangePassword: true,
         });
 
-        // Create student
+        // Create student — profileComplete is false so student must complete their profile
         await this.studentRepo.save({
           userId: user.id,
           usn,
@@ -119,6 +124,7 @@ export class BulkUploadService {
           backlogs: row.Backlogs ? Number(row.Backlogs) : 0,
           gender: row.Gender ? String(row.Gender) : null,
           category: row.Category ? String(row.Category) : null,
+          profileComplete: false,
         });
 
         result.created++;
@@ -151,16 +157,16 @@ export class BulkUploadService {
     const templateData = [
       {
         USN: '4MT22CS001',
-        'Full Name': 'John Doe',
         Email: 'john.doe@mitm.ac.in',
-        Department: 'CSE',
-        Phone: '9876543210',
-        CGPA: 8.5,
-        '10th %': 92.4,
-        '12th %': 88.6,
-        Backlogs: 0,
-        Gender: 'Male',
-        Category: 'General',
+        'Full Name (Optional)': 'John Doe',
+        'Department (Optional)': 'CSE',
+        'Phone (Optional)': '9876543210',
+        'CGPA (Optional)': 8.5,
+        '10th % (Optional)': 92.4,
+        '12th % (Optional)': 88.6,
+        'Backlogs (Optional)': 0,
+        'Gender (Optional)': 'Male',
+        'Category (Optional)': 'General',
       },
     ];
 

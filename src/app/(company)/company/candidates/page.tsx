@@ -13,6 +13,11 @@ import {
   SortAsc,
   Loader2,
   Users,
+  CalendarDays,
+  Clock,
+  MapPin,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 
@@ -43,6 +48,8 @@ export default function CompanyCandidatesPage() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [jobs, setJobs] = useState<Array<{ id: string; title: string }>>([]);
   const [selectedJobId, setSelectedJobId] = useState<string>("");
+  const [driveSlots, setDriveSlots] = useState<Array<{ timeSlot: string; classroom: string | null; departments: string[]; studentCount: number }>>([]);
+  const [showSchedule, setShowSchedule] = useState(false);
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -85,6 +92,25 @@ export default function CompanyCandidatesPage() {
   useEffect(() => {
     fetchCandidates();
   }, [fetchCandidates]);
+
+  // Fetch drive slots for schedule banner
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await companyApi.getDrives();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data = (res as any)?.data;
+        if (Array.isArray(data)) {
+          // Flatten all slots across drives
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const allSlots = data.flatMap((d: any) => d.slots || []);
+          setDriveSlots(allSlots);
+        }
+      } catch {
+        // non-critical
+      }
+    })();
+  }, []);
 
   const filtered = candidates
     .filter((c) => {
@@ -130,6 +156,60 @@ export default function CompanyCandidatesPage() {
                 </option>
               ))}
             </select>
+          </div>
+        )}
+
+        {/* Drive Schedule Banner */}
+        {driveSlots.length > 0 && (
+          <div className="i-card overflow-hidden">
+            <button
+              onClick={() => setShowSchedule(!showSchedule)}
+              className="w-full flex items-center justify-between p-4 hover:bg-muted/20 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
+                  <CalendarDays className="w-4.5 h-4.5 text-blue-600" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-semibold text-foreground">Drive Schedule</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {driveSlots.length} slot{driveSlots.length !== 1 ? "s" : ""} · {driveSlots.reduce((s, sl) => s + sl.studentCount, 0)} students allocated
+                  </p>
+                </div>
+              </div>
+              {showSchedule ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+            </button>
+            {showSchedule && (
+              <div className="border-t border-border/50 p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                  {driveSlots.map((slot, idx) => (
+                    <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-blue-50/60 to-indigo-50/60 border border-blue-100/60">
+                      <div className="space-y-1 flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                          <Clock className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                          {slot.timeSlot}
+                        </div>
+                        {slot.classroom && (
+                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                            <MapPin className="w-3 h-3 flex-shrink-0" />
+                            {slot.classroom}
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-1">
+                          {slot.departments.map((d) => (
+                            <span key={d} className="text-[9px] font-medium px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">{d}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm font-bold text-foreground">{slot.studentCount}</p>
+                        <p className="text-[9px] text-muted-foreground">students</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -192,28 +272,76 @@ export default function CompanyCandidatesPage() {
             </div>
           ) : (
             <>
-            {/* Desktop table */}
-            <div className="hidden md:block">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left py-3.5 px-5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Candidate</th>
-                  <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">CGPA</th>
-                  <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">ATS</th>
-                  <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Match</th>
-                  <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Round</th>
-                  <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                  <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+              {/* Desktop table */}
+              <div className="hidden md:block">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      <th className="text-left py-3.5 px-5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Candidate</th>
+                      <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">CGPA</th>
+                      <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">ATS</th>
+                      <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Match</th>
+                      <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Round</th>
+                      <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                      <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((c) => {
+                      const sc = statusColors[c.finalResult] || statusColors.pending;
+                      return (
+                        <tr key={c.applicationId} className="border-b border-border/50 table-row-hover">
+                          <td className="py-3 px-5">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-[10px] font-bold text-indigo-700">
+                                {getInitials(c.studentName || "?")}
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-foreground">{c.studentName || "—"}</p>
+                                <p className="text-[10px] text-muted-foreground">{c.usn || "—"} · {c.department || "—"}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-center"><span className="text-sm font-semibold text-foreground">{c.cgpa ?? "—"}</span></td>
+                          <td className="py-3 px-3 text-center">
+                            <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full",
+                              (c.atsScore || 0) >= 80 ? "bg-emerald-50 text-emerald-600" :
+                                (c.atsScore || 0) >= 65 ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"
+                            )}>{c.atsScore ?? "—"}%</span>
+                          </td>
+                          <td className="py-3 px-3 text-center"><span className="text-xs text-muted-foreground">{c.matchScore}%</span></td>
+                          <td className="py-3 px-3 text-center"><span className="text-xs font-medium">{c.currentRound > 0 ? `R${c.currentRound}` : "—"}</span></td>
+                          <td className="py-3 px-3 text-center">
+                            <span className={cn("text-[10px] font-semibold px-2.5 py-1 rounded-full capitalize", sc.bg, sc.text)}>{c.finalResult || "pending"}</span>
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <button className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="View Profile"><Eye className="w-3.5 h-3.5 text-muted-foreground" /></button>
+                              <button className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="View CV"><FileText className="w-3.5 h-3.5 text-muted-foreground" /></button>
+                              {c.finalResult !== "rejected" && c.finalResult !== "selected" && (
+                                <>
+                                  <button className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition-colors" title="Shortlist"><ThumbsUp className="w-3.5 h-3.5 text-emerald-600" /></button>
+                                  <button className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 transition-colors" title="Reject"><ThumbsDown className="w-3.5 h-3.5 text-red-600" /></button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile card list */}
+              <div className="md:hidden divide-y divide-border">
                 {filtered.map((c) => {
                   const sc = statusColors[c.finalResult] || statusColors.pending;
                   return (
-                    <tr key={c.applicationId} className="border-b border-border/50 table-row-hover">
-                      <td className="py-3 px-5">
+                    <div key={c.applicationId} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-[10px] font-bold text-indigo-700">
+                          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-[10px] font-bold text-indigo-700 flex-shrink-0">
                             {getInitials(c.studentName || "?")}
                           </div>
                           <div>
@@ -221,81 +349,33 @@ export default function CompanyCandidatesPage() {
                             <p className="text-[10px] text-muted-foreground">{c.usn || "—"} · {c.department || "—"}</p>
                           </div>
                         </div>
-                      </td>
-                      <td className="py-3 px-3 text-center"><span className="text-sm font-semibold text-foreground">{c.cgpa ?? "—"}</span></td>
-                      <td className="py-3 px-3 text-center">
-                        <span className={cn("text-xs font-semibold px-2 py-0.5 rounded-full",
+                        <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize flex-shrink-0", sc.bg, sc.text)}>
+                          {c.finalResult || "pending"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 flex-wrap text-[10px]">
+                        <span className="text-muted-foreground">CGPA: <strong className="text-foreground">{c.cgpa ?? "—"}</strong></span>
+                        <span className={cn("font-semibold px-2 py-0.5 rounded-full",
                           (c.atsScore || 0) >= 80 ? "bg-emerald-50 text-emerald-600" :
-                          (c.atsScore || 0) >= 65 ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"
-                        )}>{c.atsScore ?? "—"}%</span>
-                      </td>
-                      <td className="py-3 px-3 text-center"><span className="text-xs text-muted-foreground">{c.matchScore}%</span></td>
-                      <td className="py-3 px-3 text-center"><span className="text-xs font-medium">{c.currentRound > 0 ? `R${c.currentRound}` : "—"}</span></td>
-                      <td className="py-3 px-3 text-center">
-                        <span className={cn("text-[10px] font-semibold px-2.5 py-1 rounded-full capitalize", sc.bg, sc.text)}>{c.finalResult || "pending"}</span>
-                      </td>
-                      <td className="py-3 px-3 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <button className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="View Profile"><Eye className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                          <button className="p-1.5 rounded-lg hover:bg-muted transition-colors" title="View CV"><FileText className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                          {c.finalResult !== "rejected" && c.finalResult !== "selected" && (
-                            <>
-                              <button className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 transition-colors" title="Shortlist"><ThumbsUp className="w-3.5 h-3.5 text-emerald-600" /></button>
-                              <button className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 transition-colors" title="Reject"><ThumbsDown className="w-3.5 h-3.5 text-red-600" /></button>
-                            </>
-                          )}
+                            (c.atsScore || 0) >= 65 ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"
+                        )}>ATS: {c.atsScore ?? "—"}%</span>
+                        <span className="text-muted-foreground">Match: {c.matchScore}%</span>
+                        <span className="text-foreground font-medium">{c.currentRound > 0 ? `Round ${c.currentRound}` : "—"}</span>
+                      </div>
+                      {c.finalResult !== "rejected" && c.finalResult !== "selected" && (
+                        <div className="flex items-center gap-2 pt-1">
+                          <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold">
+                            <ThumbsUp className="w-3.5 h-3.5" /> Shortlist
+                          </button>
+                          <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-semibold">
+                            <ThumbsDown className="w-3.5 h-3.5" /> Reject
+                          </button>
                         </div>
-                      </td>
-                    </tr>
+                      )}
+                    </div>
                   );
                 })}
-              </tbody>
-            </table>
-            </div>
-
-            {/* Mobile card list */}
-            <div className="md:hidden divide-y divide-border">
-              {filtered.map((c) => {
-                const sc = statusColors[c.finalResult] || statusColors.pending;
-                return (
-                  <div key={c.applicationId} className="p-4 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-[10px] font-bold text-indigo-700 flex-shrink-0">
-                          {getInitials(c.studentName || "?")}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{c.studentName || "—"}</p>
-                          <p className="text-[10px] text-muted-foreground">{c.usn || "—"} · {c.department || "—"}</p>
-                        </div>
-                      </div>
-                      <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize flex-shrink-0", sc.bg, sc.text)}>
-                        {c.finalResult || "pending"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 flex-wrap text-[10px]">
-                      <span className="text-muted-foreground">CGPA: <strong className="text-foreground">{c.cgpa ?? "—"}</strong></span>
-                      <span className={cn("font-semibold px-2 py-0.5 rounded-full",
-                        (c.atsScore || 0) >= 80 ? "bg-emerald-50 text-emerald-600" :
-                        (c.atsScore || 0) >= 65 ? "bg-blue-50 text-blue-600" : "bg-amber-50 text-amber-600"
-                      )}>ATS: {c.atsScore ?? "—"}%</span>
-                      <span className="text-muted-foreground">Match: {c.matchScore}%</span>
-                      <span className="text-foreground font-medium">{c.currentRound > 0 ? `Round ${c.currentRound}` : "—"}</span>
-                    </div>
-                    {c.finalResult !== "rejected" && c.finalResult !== "selected" && (
-                      <div className="flex items-center gap-2 pt-1">
-                        <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-emerald-50 text-emerald-600 text-xs font-semibold">
-                          <ThumbsUp className="w-3.5 h-3.5" /> Shortlist
-                        </button>
-                        <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-semibold">
-                          <ThumbsDown className="w-3.5 h-3.5" /> Reject
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+              </div>
             </>
           )}
         </div>

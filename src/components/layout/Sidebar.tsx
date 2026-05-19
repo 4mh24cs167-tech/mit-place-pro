@@ -21,6 +21,7 @@ import {
   FileText,
   Menu,
   X,
+  Layers,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -32,7 +33,9 @@ const navConfigs = {
   admin: [
     { label: "Dashboard", href: "/admin/dashboard", icon: Home },
     { label: "Students", href: "/admin/students", icon: Users },
+    { label: "Batches", href: "/admin/batches", icon: Layers },
     { label: "Companies", href: "/admin/companies", icon: Building2 },
+    { label: "Drives", href: "/admin/drives", icon: Briefcase },
     { label: "Applications", href: "/admin/applications", icon: FileCheck2 },
     { label: "Slots", href: "/admin/slots", icon: CalendarClock },
     { label: "Posters", href: "/admin/posters", icon: ImageIcon },
@@ -40,6 +43,7 @@ const navConfigs = {
   ],
   company: [
     { label: "Dashboard", href: "/company/dashboard", icon: Home },
+    { label: "Drives", href: "/company/drives", icon: CalendarClock },
     { label: "Candidates", href: "/company/candidates", icon: Users },
     { label: "Rounds", href: "/company/rounds", icon: ClipboardList },
     { label: "Offers", href: "/company/offers", icon: Award },
@@ -49,6 +53,7 @@ const navConfigs = {
     { label: "Profile", href: "/student/profile", icon: UserCircle },
     { label: "CVs", href: "/student/cv", icon: FileText },
     { label: "Applications", href: "/student/applications", icon: Briefcase },
+    { label: "Allocations", href: "/student/allocations", icon: CalendarClock },
     { label: "Slots", href: "/student/slots", icon: CalendarClock },
   ],
   principal: [

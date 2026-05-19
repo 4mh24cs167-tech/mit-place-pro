@@ -9,6 +9,7 @@ import { CompanyAvailability } from '../entities/company-availability.entity';
 import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { Student } from '../entities/student.entity';
+import { Drive, DriveSlot } from '../entities/drive.entity';
 
 @Module({
   imports: [
@@ -20,6 +21,8 @@ import { Student } from '../entities/student.entity';
       InterviewSlot,
       Notification,
       Student,
+      Drive,
+      DriveSlot,
     ]),
   ],
   controllers: [CompanyController],

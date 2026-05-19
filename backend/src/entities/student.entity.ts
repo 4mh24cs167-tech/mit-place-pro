@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { User } from './user.entity';
+import { Batch } from './batch.entity';
 
 @Entity('students')
 export class Student {
@@ -63,6 +64,13 @@ export class Student {
 
   @Column({ type: 'varchar', length: 50 })
   department: string;
+
+  @Column({ type: 'uuid', nullable: true, name: 'batch_id' })
+  batchId: string | null;
+
+  @ManyToOne(() => Batch, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'batch_id' })
+  batch: Batch | null;
 
   @Column({ type: 'smallint', nullable: true })
   semester: number | null;

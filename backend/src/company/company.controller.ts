@@ -87,6 +87,13 @@ export class CompanyController {
     return { success: true, data };
   }
 
+  // ─── Drives (slots, student counts, depts) ────
+  @Get('drives')
+  async getMyDrives(@CurrentUser('id') userId: string) {
+    const data = await this.companyService.getMyDrives(userId);
+    return { success: true, data };
+  }
+
   // ─── Attendance & Results ─────────────────────
   @Patch('attendance')
   async markAttendance(

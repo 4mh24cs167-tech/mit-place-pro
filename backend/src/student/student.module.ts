@@ -8,6 +8,7 @@ import { Application } from '../entities/application.entity';
 import { Cv } from '../entities/cv.entity';
 import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
+import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
 
 @Module({
   imports: [
@@ -18,6 +19,9 @@ import { Notification } from '../entities/notification.entity';
       Cv,
       InterviewSlot,
       Notification,
+      Drive,
+      DriveRegistration,
+      DriveSlot,
     ]),
   ],
   controllers: [StudentController],

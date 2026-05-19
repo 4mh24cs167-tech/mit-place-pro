@@ -55,6 +55,13 @@ export class StudentController {
     return { success: true, data };
   }
 
+  // ─── Drive Allocations ─────────────────────────
+  @Get('drives')
+  async getMyDriveAllocations(@CurrentUser('id') userId: string) {
+    const data = await this.studentService.getMyDriveAllocations(userId);
+    return { success: true, data };
+  }
+
   // ─── Notifications ─────────────────────────────
   @Get('notifications')
   async getNotifications(@CurrentUser('id') userId: string) {

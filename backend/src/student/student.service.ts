@@ -7,6 +7,7 @@ import { Application } from '../entities/application.entity';
 import { Cv } from '../entities/cv.entity';
 import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
+import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
 import { UpdateProfileDto, ApplyJobDto } from './dto/student.dto';
 
 @Injectable()
@@ -18,6 +19,9 @@ export class StudentService {
     @InjectRepository(Cv) private readonly cvRepo: Repository<Cv>,
     @InjectRepository(InterviewSlot) private readonly slotRepo: Repository<InterviewSlot>,
     @InjectRepository(Notification) private readonly notificationRepo: Repository<Notification>,
+    @InjectRepository(Drive) private readonly driveRepo: Repository<Drive>,
+    @InjectRepository(DriveRegistration) private readonly driveRegRepo: Repository<DriveRegistration>,
+    @InjectRepository(DriveSlot) private readonly driveSlotRepo: Repository<DriveSlot>,
   ) {}
 
   // ─── Profile ────────────────────────────────────
@@ -34,12 +38,29 @@ export class StudentService {
     const student = await this.studentRepo.findOne({ where: { userId } });
     if (!student) throw new NotFoundException('Student profile not found');
 
+    // Basic info
     if (dto.fullName) student.fullName = dto.fullName;
     if (dto.phone) student.phone = dto.phone;
+    if (dto.dateOfBirth) student.dateOfBirth = new Date(dto.dateOfBirth);
+    if (dto.gender) student.gender = dto.gender;
+    if (dto.semester !== undefined) student.semester = dto.semester;
+
+    // Academic scores
     if (dto.tenthPercent !== undefined) student.tenthPercent = dto.tenthPercent;
+    if (dto.tenthBoard) student.tenthBoard = dto.tenthBoard;
+    if (dto.tenthYear !== undefined) student.tenthYear = dto.tenthYear;
     if (dto.twelfthPercent !== undefined) student.twelfthPercent = dto.twelfthPercent;
+    if (dto.twelfthBoard) student.twelfthBoard = dto.twelfthBoard;
+    if (dto.twelfthYear !== undefined) student.twelfthYear = dto.twelfthYear;
+    if (dto.twelfthStream) student.twelfthStream = dto.twelfthStream;
     if (dto.cgpa !== undefined) student.cgpa = dto.cgpa;
     if (dto.activeBacklogs !== undefined) student.backlogs = dto.activeBacklogs;
+
+    // Additional info
+    if (dto.familyIncome !== undefined) student.familyIncome = dto.familyIncome;
+    if (dto.category) student.category = dto.category;
+    if (dto.driveLink !== undefined) student.driveLink = dto.driveLink;
+    if (dto.addressJson) student.addressJson = dto.addressJson;
 
     if (dto.profileData) {
       student.profileData = { ...(student.profileData || {}), ...dto.profileData };
@@ -51,12 +72,17 @@ export class StudentService {
       student.profileData = { ...(student.profileData || {}), certifications: dto.certifications };
     }
 
-    // Calculate profile completeness
-    const fields = [student.fullName, student.phone, student.usn, student.department,
-      student.tenthPercent, student.twelfthPercent, student.cgpa];
-    const filledCount = fields.filter((f) => f !== null && f !== undefined).length;
-    const completePct = Math.round((filledCount / fields.length) * 100);
-    student.profileComplete = completePct >= 100;
+    // Calculate profile completeness — all 7 mandatory fields must be filled
+    const mandatoryFields = [
+      student.fullName,
+      student.phone,
+      student.dateOfBirth,
+      student.gender,
+      student.tenthPercent,
+      student.twelfthPercent,
+      student.cgpa,
+    ];
+    student.profileComplete = mandatoryFields.every((f) => f !== null && f !== undefined && f !== '');
 
     await this.studentRepo.save(student);
     return student;
@@ -262,5 +288,54 @@ export class StudentService {
     notif.isRead = true;
     await this.notificationRepo.save(notif);
     return { message: 'Marked as read' };
+  }
+
+  // ─── Drive Allocations (student sees their slots) ──
+  async getMyDriveAllocations(userId: string) {
+    const student = await this.studentRepo.findOne({ where: { userId } });
+    if (!student) throw new NotFoundException('Student profile not found');
+
+    // Find all drive registrations for this student that are approved
+    const registrations = await this.driveRegRepo.find({
+      where: { studentId: student.id, status: 'approved' },
+    });
+
+    if (registrations.length === 0) return [];
+
+    const driveIds = [...new Set(registrations.map((r) => r.driveId))];
+
+    // Get drives with slots and job/company info
+    const drives = await this.driveRepo.find({
+      where: { id: In(driveIds) },
+      relations: ['job', 'job.company', 'slots'],
+      order: { createdAt: 'DESC' },
+    });
+
+    const regMap = new Map(registrations.map((r) => [r.driveId, r]));
+
+    return drives.map((drive) => {
+      const reg = regMap.get(drive.id);
+      // Filter slots to only those matching the student's department
+      const mySlots = (drive.slots || []).filter(
+        (slot) => slot.departments.includes(student.department),
+      );
+
+      return {
+        driveId: drive.id,
+        title: drive.title,
+        status: drive.status,
+        driveDate: drive.driveDate,
+        company: drive.job?.company?.name || 'Unknown',
+        jobTitle: drive.job?.title || 'Unknown',
+        registrationStatus: reg?.status || 'pending',
+        slots: mySlots.map((s) => ({
+          id: s.id,
+          timeSlot: s.timeSlot,
+          classroom: s.classroom,
+          departments: s.departments,
+          studentCount: s.studentCount,
+        })),
+      };
+    });
   }
 }

@@ -8,6 +8,7 @@ import { CompanyAvailability } from '../entities/company-availability.entity';
 import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { Student } from '../entities/student.entity';
+import { Drive, DriveSlot } from '../entities/drive.entity';
 import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto } from './dto/company.dto';
 
 @Injectable()
@@ -20,6 +21,8 @@ export class CompanyService {
     @InjectRepository(InterviewSlot) private readonly slotRepo: Repository<InterviewSlot>,
     @InjectRepository(Notification) private readonly notificationRepo: Repository<Notification>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
+    @InjectRepository(Drive) private readonly driveRepo: Repository<Drive>,
+    @InjectRepository(DriveSlot) private readonly driveSlotRepo: Repository<DriveSlot>,
   ) {}
 
   // ─── Company Profile ────────────────────────────
@@ -232,5 +235,39 @@ export class CompanyService {
       totalSelected,
       totalPending,
     };
+  }
+
+  // ─── Company Drives (view slots, student counts, depts) ──
+  async getMyDrives(userId: string) {
+    const company = await this.companyRepo.findOne({ where: { userId } });
+    if (!company) throw new NotFoundException('Company profile not found');
+
+    const jobs = await this.jobRepo.find({ where: { companyId: company.id } });
+    if (jobs.length === 0) return [];
+
+    const jobIds = jobs.map((j) => j.id);
+
+    const drives = await this.driveRepo.find({
+      where: { jobId: In(jobIds) },
+      relations: ['job', 'slots'],
+      order: { createdAt: 'DESC' },
+    });
+
+    return drives.map((drive) => ({
+      id: drive.id,
+      title: drive.title,
+      status: drive.status,
+      driveDate: drive.driveDate,
+      departments: drive.departments,
+      jobTitle: drive.job?.title,
+      slots: (drive.slots || []).map((s) => ({
+        id: s.id,
+        timeSlot: s.timeSlot,
+        classroom: s.classroom,
+        departments: s.departments,
+        studentCount: s.studentCount,
+      })),
+      createdAt: drive.createdAt,
+    }));
   }
 }

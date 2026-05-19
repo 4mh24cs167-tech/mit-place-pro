@@ -5,6 +5,7 @@ import { Repository, Like, ILike, Between, MoreThanOrEqual, LessThanOrEqual } fr
 import * as bcrypt from 'bcryptjs';
 import { User, UserRole } from '../entities/user.entity';
 import { Student } from '../entities/student.entity';
+import { Batch } from '../entities/batch.entity';
 import { Company } from '../entities/company.entity';
 import { Job } from '../entities/job.entity';
 import { Application } from '../entities/application.entity';
@@ -21,6 +22,7 @@ export class AdminService {
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
+    @InjectRepository(Batch) private readonly batchRepo: Repository<Batch>,
     @InjectRepository(Company) private readonly companyRepo: Repository<Company>,
     @InjectRepository(Job) private readonly jobRepo: Repository<Job>,
     @InjectRepository(Application) private readonly applicationRepo: Repository<Application>,
@@ -583,5 +585,120 @@ export class AdminService {
       attendance: s.attendance,
       result: s.roundResult,
     }));
+  }
+
+  // ─── Batch Management ───────────────────────────
+  async createBatch(data: { department: string; year: number; currentSemester: number }, actorId: string) {
+    const name = `${data.department} ${data.year}`;
+
+    // Check duplicate
+    const existing = await this.batchRepo.findOne({
+      where: { department: data.department, year: data.year },
+    });
+    if (existing) throw new ConflictException(`Batch "${name}" already exists`);
+
+    const batch = await this.batchRepo.save({
+      name,
+      department: data.department,
+      year: data.year,
+      currentSemester: data.currentSemester,
+    });
+
+    // Count students already matching this dept — link them automatically
+    const matchingStudents = await this.studentRepo.count({
+      where: { department: data.department, batchId: null as unknown as string },
+    });
+
+    if (matchingStudents > 0) {
+      await this.studentRepo
+        .createQueryBuilder()
+        .update()
+        .set({ batchId: batch.id, semester: data.currentSemester })
+        .where('department = :dept AND batch_id IS NULL', { dept: data.department })
+        .execute();
+      batch.studentCount = matchingStudents;
+      await this.batchRepo.save(batch);
+    }
+
+    await this.auditRepo.save({
+      actorUserId: actorId,
+      action: 'CREATE_BATCH',
+      entityType: 'batch',
+      entityId: batch.id,
+      newValue: data as unknown as Record<string, unknown>,
+    });
+
+    return batch;
+  }
+
+  async listBatches() {
+    const batches = await this.batchRepo.find({ order: { department: 'ASC', year: 'DESC' } });
+
+    // Update student counts
+    for (const batch of batches) {
+      batch.studentCount = await this.studentRepo.count({ where: { batchId: batch.id } });
+    }
+
+    return batches;
+  }
+
+  async promoteBatch(batchId: string, actorId: string) {
+    const batch = await this.batchRepo.findOne({ where: { id: batchId } });
+    if (!batch) throw new NotFoundException('Batch not found');
+
+    if (batch.currentSemester >= 8) {
+      throw new BadRequestException('Batch already at maximum semester (8)');
+    }
+
+    const oldSemester = batch.currentSemester;
+    batch.currentSemester += 1;
+    await this.batchRepo.save(batch);
+
+    // Promote all students in this batch
+    const updated = await this.studentRepo
+      .createQueryBuilder()
+      .update()
+      .set({ semester: batch.currentSemester })
+      .where('batch_id = :batchId', { batchId })
+      .execute();
+
+    await this.auditRepo.save({
+      actorUserId: actorId,
+      action: 'PROMOTE_BATCH',
+      entityType: 'batch',
+      entityId: batchId,
+      oldValue: { semester: oldSemester } as unknown as Record<string, unknown>,
+      newValue: { semester: batch.currentSemester, studentsUpdated: updated.affected } as unknown as Record<string, unknown>,
+    });
+
+    return {
+      batch,
+      studentsUpdated: updated.affected || 0,
+      newSemester: batch.currentSemester,
+    };
+  }
+
+  async deleteBatch(batchId: string, actorId: string) {
+    const batch = await this.batchRepo.findOne({ where: { id: batchId } });
+    if (!batch) throw new NotFoundException('Batch not found');
+
+    // Unlink students from batch
+    await this.studentRepo
+      .createQueryBuilder()
+      .update()
+      .set({ batchId: null as unknown as string })
+      .where('batch_id = :batchId', { batchId })
+      .execute();
+
+    await this.batchRepo.delete(batchId);
+
+    await this.auditRepo.save({
+      actorUserId: actorId,
+      action: 'DELETE_BATCH',
+      entityType: 'batch',
+      entityId: batchId,
+    });
+
+    return { message: 'Batch deleted' };
   }
 }

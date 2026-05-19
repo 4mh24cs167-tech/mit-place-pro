@@ -175,9 +175,11 @@ export const adminApi = {
   deleteStudent: (id: string) => apiFetch(`/api/v1/admin/students/${id}`, { method: 'DELETE' }),
 
   // Bulk upload
-  uploadStudents: (file: File) => {
+  uploadStudents: (file: File, department?: string, batch?: string) => {
     const formData = new FormData();
     formData.append('file', file);
+    if (department) formData.append('department', department);
+    if (batch) formData.append('batch', batch);
     return apiFetch('/api/v1/admin/students/bulk-upload', { method: 'POST', body: formData, isFormData: true });
   },
 
@@ -226,6 +228,30 @@ export const adminApi = {
     if (params?.status) query.set('status', params.status);
     return apiFetch(`/api/v1/admin/applications?${query.toString()}`);
   },
+
+  // Batches
+  listBatches: () => apiFetch('/api/v1/admin/batches'),
+  createBatch: (data: { department: string; year: number; currentSemester: number }) =>
+    apiFetch('/api/v1/admin/batches', { method: 'POST', body: data }),
+  promoteBatch: (id: string) => apiFetch(`/api/v1/admin/batches/${id}/promote`, { method: 'POST' }),
+  deleteBatch: (id: string) => apiFetch(`/api/v1/admin/batches/${id}`, { method: 'DELETE' }),
+
+  // Drives
+  listDrives: () => apiFetch('/api/v1/admin/drives'),
+  getDrive: (id: string) => apiFetch(`/api/v1/admin/drives/${id}`),
+  createDrive: (data: {
+    title: string; type: 'single' | 'multiple'; jobId: string;
+    description?: string; driveDate?: string; departments?: string[];
+  }) => apiFetch('/api/v1/admin/drives', { method: 'POST', body: data }),
+  rejectDriveStudents: (driveId: string, studentIds: string[], reason?: string) =>
+    apiFetch(`/api/v1/admin/drives/${driveId}/reject`, { method: 'POST', body: { studentIds, reason } }),
+  approveAllDrive: (driveId: string) =>
+    apiFetch(`/api/v1/admin/drives/${driveId}/approve-all`, { method: 'POST' }),
+  allocateDriveSlots: (driveId: string, slots: Array<{ timeSlot: string; classroom: string; departments: string[] }>) =>
+    apiFetch(`/api/v1/admin/drives/${driveId}/allocate-slots`, { method: 'POST', body: { slots } }),
+  updateDriveStatus: (driveId: string, status: string) =>
+    apiFetch(`/api/v1/admin/drives/${driveId}/status`, { method: 'PATCH', body: { status } }),
+  deleteDrive: (id: string) => apiFetch(`/api/v1/admin/drives/${id}`, { method: 'DELETE' }),
 };
 
 // ─── Student ─────────────────────────────────────
@@ -236,6 +262,7 @@ export const studentApi = {
   applyForJob: (jobId: string, cvId?: string) => apiFetch('/api/v1/student/apply', { method: 'POST', body: { jobId, cvId } }),
   getApplications: () => apiFetch('/api/v1/student/applications'),
   getInterviews: () => apiFetch('/api/v1/student/interviews'),
+  getDriveAllocations: () => apiFetch('/api/v1/student/drives'),
   getNotifications: () => apiFetch('/api/v1/student/notifications'),
   markNotificationRead: (id: string) => apiFetch(`/api/v1/student/notifications/${id}/read`, { method: 'PATCH' }),
 };
@@ -252,6 +279,7 @@ export const companyApi = {
   addAvailability: (jobId: string, data: Record<string, unknown>) => apiFetch(`/api/v1/company/jobs/${jobId}/availability`, { method: 'POST', body: data }),
   getAvailability: (jobId: string) => apiFetch(`/api/v1/company/jobs/${jobId}/availability`),
   getCandidates: (jobId: string) => apiFetch(`/api/v1/company/jobs/${jobId}/candidates`),
+  getDrives: () => apiFetch('/api/v1/company/drives'),
   getShortlist: () => apiFetch('/api/v1/company/shortlist'),
   markAttendance: (slotId: string, attendance: string) => apiFetch('/api/v1/company/attendance', { method: 'PATCH', body: { slotId, attendance } }),
   markRoundResult: (slotId: string, result: string) => apiFetch('/api/v1/company/round-result', { method: 'PATCH', body: { slotId, result } }),
