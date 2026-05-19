@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx';
 import * as bcrypt from 'bcryptjs';
 import { User, UserRole } from '../entities/user.entity';
 import { Student } from '../entities/student.entity';
+import { Batch } from '../entities/batch.entity';
 import { AuditLog } from '../entities/audit-log.entity';
 
 interface ExcelRow {
@@ -34,6 +35,7 @@ export class BulkUploadService {
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
+    @InjectRepository(Batch) private readonly batchRepo: Repository<Batch>,
     @InjectRepository(AuditLog) private readonly auditRepo: Repository<AuditLog>,
   ) {}
 
@@ -56,6 +58,14 @@ export class BulkUploadService {
     // Use selected department/batch or fallback to defaults
     const dept = selectedDepartment ? selectedDepartment.trim().toUpperCase().replace(/\s+/g, '') : null;
     const batch = selectedBatch ? selectedBatch.trim() : String(new Date().getFullYear());
+
+    // Look up the matching Batch entity so we can assign batchId to students
+    let matchedBatch: Batch | null = null;
+    if (dept && batch) {
+      matchedBatch = await this.batchRepo.findOne({
+        where: { department: dept, year: Number(batch) },
+      });
+    }
 
     const result: BulkResult = {
       total: rows.length,
@@ -117,6 +127,8 @@ export class BulkUploadService {
           usn,
           fullName,
           department,
+          batchId: matchedBatch?.id || null,
+          semester: matchedBatch?.currentSemester || null,
           phone: row.Phone ? String(row.Phone) : null,
           cgpa: row.CGPA ? Number(row.CGPA) : null,
           tenthPercent: row['10th %'] ? Number(row['10th %']) : null,
@@ -126,6 +138,11 @@ export class BulkUploadService {
           category: row.Category ? String(row.Category) : null,
           profileComplete: false,
         });
+
+        // Update batch student count
+        if (matchedBatch) {
+          await this.batchRepo.increment({ id: matchedBatch.id }, 'studentCount', 1);
+        }
 
         result.created++;
         result.credentials.push({ usn, email, temporaryPassword: rawPassword });
