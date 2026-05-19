@@ -2,6 +2,7 @@
 
 import Header from "@/components/layout/Header";
 import { adminApi } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import {
   CalendarClock,
@@ -41,6 +42,7 @@ interface TimelineSlot {
 }
 
 export default function AdminSlotsPage() {
+  const { user } = useAuth();
   const [slotRuns, setSlotRuns] = useState<SlotRun[]>([]);
   const [timeline, setTimeline] = useState<TimelineSlot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,7 +105,7 @@ export default function AdminSlotsPage() {
   return (
     <div className="page-enter">
       <Header
-        userName="Dr. Placement Head"
+        userName={user?.email || "Admin"}
         userRole="Admin"
         greeting="Slot Manager"
         subtitle="Generate and manage conflict-free interview schedules"

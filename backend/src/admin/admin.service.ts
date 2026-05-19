@@ -45,15 +45,42 @@ export class AdminService {
       this.applicationRepo.count({ where: { adminApproved: null as unknown as boolean } }),
     ]);
 
+    // Department-wise placement breakdown
+    const deptRaw: Array<{ department: string; total: string; placed: string }> = await this.studentRepo
+      .createQueryBuilder('student')
+      .select('student.department', 'department')
+      .addSelect('COUNT(*)', 'total')
+      .addSelect(`SUM(CASE WHEN student.placement_status = 'placed' THEN 1 ELSE 0 END)`, 'placed')
+      .groupBy('student.department')
+      .orderBy('total', 'DESC')
+      .getRawMany();
+
+    const departmentStats = deptRaw.map((d) => ({
+      department: d.department,
+      total: Number(d.total),
+      placed: Number(d.placed),
+    }));
+
+    // Avg CTC from placed applications
+    const avgCtcResult = await this.applicationRepo
+      .createQueryBuilder('app')
+      .leftJoin('app.job', 'job')
+      .select('ROUND(AVG(job.ctc_max_lpa)::numeric, 1)', 'avgCtc')
+      .where("app.result = 'selected'")
+      .getRawOne();
+
     return {
       totalStudents,
       totalCompanies,
       totalJobs,
       totalApplications,
       placedStudents,
+      totalPlaced: placedStudents,
       activeJobs,
       pendingApprovals,
       placementRate: totalStudents > 0 ? Math.round((placedStudents / totalStudents) * 100) : 0,
+      departmentStats,
+      avgCtc: avgCtcResult?.avgCtc ? Number(avgCtcResult.avgCtc) : 0,
     };
   }
 

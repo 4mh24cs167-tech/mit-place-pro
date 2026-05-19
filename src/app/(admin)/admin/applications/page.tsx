@@ -2,6 +2,7 @@
 
 import Header from "@/components/layout/Header";
 import { adminApi } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { cn, getInitials } from "@/lib/utils";
 import {
   Search,
@@ -30,6 +31,7 @@ interface Application {
 }
 
 export default function AdminApplicationsPage() {
+  const { user } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -94,7 +96,7 @@ export default function AdminApplicationsPage() {
   return (
     <div className="page-enter">
       <Header
-        userName="Dr. Placement Head"
+        userName={user?.email || "Admin"}
         userRole="Admin"
         greeting="Applications"
         subtitle={`${applications.length} total applications · ${pendingCount} pending approval`}

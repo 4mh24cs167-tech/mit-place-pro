@@ -27,6 +27,7 @@ interface DashboardStats {
   totalPlaced: number;
   placementRate: number;
   pendingApprovals: number;
+  departmentStats?: Array<{ department: string; placed: number; total: number }>;
 }
 
 interface ActivityItem {
@@ -248,34 +249,26 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="space-y-4">
-              {[
-                { task: "Review pending shortlist approvals", subtitle: "Approval Queue", done: false, urgent: true },
-                { task: "Verify student eligibility data", subtitle: "Data Validation", done: false, urgent: false },
-                { task: "Schedule company orientation", subtitle: "Event Planning", done: false, urgent: false },
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-3 pb-4 border-b border-border last:border-0 last:pb-0">
-                  <div className={cn(
-                    "w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5",
-                    item.done ? "bg-accent-green" : "border-2 border-border"
-                  )}>
-                    {item.done && <CheckCircle2 className="w-4 h-4 text-foreground" />}
-                  </div>
+              {(stats?.pendingApprovals ?? 0) > 0 ? (
+                <div className="flex items-start gap-3 pb-4 border-b border-border">
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 border-2 border-border" />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <p className={cn(
-                        "text-sm font-semibold",
-                        item.done ? "text-muted-foreground line-through" : "text-foreground"
-                      )}>
-                        {item.task}
+                      <p className="text-sm font-semibold text-foreground">
+                        Review {stats?.pendingApprovals} pending approvals
                       </p>
-                      {item.urgent && (
-                        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-red-50 text-red-600">Urgent</span>
-                      )}
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-red-50 text-red-600">Urgent</span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{item.subtitle}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Approval Queue</p>
                   </div>
                 </div>
-              ))}
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <CheckCircle2 className="w-8 h-8 text-green-500 mb-2" />
+                  <p className="text-sm font-medium text-foreground">All caught up!</p>
+                  <p className="text-xs text-muted-foreground mt-1">No pending tasks right now</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -294,26 +287,32 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="space-y-4">
-              {[
-                { dept: "CSE", placed: 85, total: 120, color: "bg-blue-500" },
-                { dept: "ISE", placed: 62, total: 90, color: "bg-purple-500" },
-                { dept: "ECE", placed: 45, total: 80, color: "bg-amber-500" },
-                { dept: "MECH", placed: 30, total: 60, color: "bg-green-500" },
-                { dept: "CIVIL", placed: 18, total: 40, color: "bg-red-500" },
-              ].map((dept) => (
-                <div key={dept.dept} className="flex items-center gap-3">
-                  <span className="text-xs font-medium text-foreground w-10">{dept.dept}</span>
-                  <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className={cn("h-full rounded-full transition-all duration-700", dept.color)}
-                      style={{ width: `${(dept.placed / dept.total) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-muted-foreground w-16 text-right">
-                    {dept.placed}/{dept.total}
-                  </span>
+              {(stats?.departmentStats && stats.departmentStats.length > 0) ? (
+                stats.departmentStats.map((dept) => {
+                  const colors = ["bg-blue-500", "bg-purple-500", "bg-amber-500", "bg-green-500", "bg-red-500", "bg-indigo-500", "bg-pink-500", "bg-teal-500"];
+                  const colorIdx = stats.departmentStats!.indexOf(dept) % colors.length;
+                  return (
+                    <div key={dept.department} className="flex items-center gap-3">
+                      <span className="text-xs font-medium text-foreground w-14">{dept.department}</span>
+                      <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={cn("h-full rounded-full transition-all duration-700", colors[colorIdx])}
+                          style={{ width: `${dept.total > 0 ? (dept.placed / dept.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground w-16 text-right">
+                        {dept.placed}/{dept.total}
+                      </span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <SlidersHorizontal className="w-8 h-8 text-muted-foreground mb-2" />
+                  <p className="text-sm font-medium text-foreground">No department data</p>
+                  <p className="text-xs text-muted-foreground mt-1">Department stats will appear as placements happen</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>

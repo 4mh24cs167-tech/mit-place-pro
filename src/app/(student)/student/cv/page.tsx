@@ -2,149 +2,354 @@
 
 import Header from "@/components/layout/Header";
 import { cn } from "@/lib/utils";
+import { studentApi } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import {
   FileText,
   Upload,
-  Plus,
-  Trash2,
-  Download,
-  Eye,
+  ExternalLink,
   CheckCircle2,
-  Star,
-  Clock,
   AlertCircle,
+  Loader2,
+  Link2,
+  Code,
+  Award,
+  Edit3,
+  Save,
+  X,
+  GraduationCap,
+  Briefcase,
+  ShieldCheck,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
-const cvs = [
-  { id: "cv1", title: "General SDE Resume", targetRole: "Software Engineer", version: 3, fileSize: "245 KB", isActive: true, uploadedAt: "May 10, 2026", atsScores: [{ company: "Infosys", score: 82 }, { company: "TCS", score: 76 }] },
-  { id: "cv2", title: "Data Science Resume", targetRole: "Data Scientist / ML Engineer", version: 1, fileSize: "198 KB", isActive: false, uploadedAt: "May 8, 2026", atsScores: [] },
-  { id: "cv3", title: "Embedded Systems CV", targetRole: "Embedded Engineer", version: 2, fileSize: "312 KB", isActive: false, uploadedAt: "Apr 28, 2026", atsScores: [{ company: "Bosch", score: 68 }] },
-];
+interface StudentProfile {
+  id: string;
+  fullName: string;
+  usn: string;
+  department: string;
+  semester: number | null;
+  cgpa: number | null;
+  driveLink: string | null;
+  profileComplete: boolean;
+  placementStatus: string;
+  profileData: Record<string, unknown>;
+}
 
 export default function StudentCVPage() {
-  const [dragActive, setDragActive] = useState(false);
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [profile, setProfile] = useState<StudentProfile | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [driveLink, setDriveLink] = useState("");
+  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  const fetchProfile = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await studentApi.getProfile();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = (res as any)?.data as StudentProfile;
+      if (data) {
+        setProfile(data);
+        setDriveLink(data.driveLink || "");
+      }
+    } catch {
+      /* silently handle */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      await studentApi.updateProfile({ driveLink: driveLink || undefined });
+      setToast({ type: "success", msg: "Resume link updated!" });
+      setEditing(false);
+      fetchProfile();
+    } catch {
+      setToast({ type: "error", msg: "Failed to update resume link" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const skills = (profile?.profileData?.skills as string[]) || [];
+  const certifications = (profile?.profileData?.certifications as string[]) || [];
+
+  const placementLabel: Record<string, { label: string; color: string; bg: string }> = {
+    none: { label: "Not Applied", color: "text-slate-500", bg: "bg-slate-50" },
+    shortlisted: { label: "Shortlisted", color: "text-blue-600", bg: "bg-blue-50" },
+    interview_scheduled: { label: "Interview", color: "text-violet-600", bg: "bg-violet-50" },
+    offered: { label: "Offered", color: "text-amber-600", bg: "bg-amber-50" },
+    placed: { label: "Placed", color: "text-emerald-600", bg: "bg-emerald-50" },
+    not_placed: { label: "Not Placed", color: "text-red-600", bg: "bg-red-50" },
+  };
 
   return (
     <div className="page-enter">
       <Header
-        userName="Arjun Sharma"
+        userName={user?.email?.split("@")[0] || "Student"}
         userRole="Student"
-        greeting="My CVs"
-        subtitle="Manage multiple versions of your resume for different roles"
+        greeting="My CV / Resume"
+        subtitle="Manage your resume link and placement profile"
       />
 
-      <div className="px-8 pb-10 space-y-6">
-        {/* Upload area */}
-        <div
-          className={cn(
-            "i-card p-8 border-2 border-dashed transition-all text-center cursor-pointer",
-            dragActive ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
-          )}
-          onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-          onDragLeave={() => setDragActive(false)}
-          onDrop={(e) => { e.preventDefault(); setDragActive(false); }}
-        >
-          <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-4">
-            <Upload className="w-7 h-7 text-indigo-600" />
+      {toast && (
+        <div className={cn(
+          "fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium animate-in slide-in-from-top-2",
+          toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"
+        )}>
+          {toast.type === "success" ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+          {toast.msg}
+        </div>
+      )}
+
+      <div className="px-4 sm:px-6 md:px-8 pb-10 space-y-6">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+            <p className="text-sm text-muted-foreground">Loading your profile...</p>
           </div>
-          <h3 className="text-base font-semibold text-foreground">Upload New CV</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Drag & drop your PDF here, or <span className="text-primary font-medium">browse files</span>
-          </p>
-          <p className="text-[10px] text-muted-foreground mt-2">PDF only · Max 2 MB · Max 5 CVs allowed</p>
-        </div>
-
-        {/* Info banner */}
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-blue-50 border border-blue-200">
-          <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
-          <p className="text-xs text-blue-700">
-            <strong>Tip:</strong> Tailor your CV for each role. The ATS engine scores your resume against each company&apos;s
-            job description — a higher score significantly improves your shortlisting chances.
-          </p>
-        </div>
-
-        {/* CV Cards */}
-        <div className="space-y-4">
-          {cvs.map((cv) => (
-            <div key={cv.id} className={cn(
-              "i-card p-5 transition-all",
-              cv.isActive && "ring-2 ring-primary/20"
-            )}>
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <div className={cn(
-                    "w-12 h-12 rounded-xl flex items-center justify-center",
-                    cv.isActive ? "bg-indigo-100" : "bg-slate-100"
-                  )}>
-                    <FileText className={cn("w-6 h-6", cv.isActive ? "text-indigo-600" : "text-slate-500")} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-semibold text-foreground">{cv.title}</h3>
-                      {cv.isActive && (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 inline-flex items-center gap-1">
-                          <CheckCircle2 className="w-3 h-3" /> Active
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">Target: {cv.targetRole}</p>
-                    <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
-                      <span>v{cv.version}</span>
-                      <span>·</span>
-                      <span>{cv.fileSize}</span>
-                      <span>·</span>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {cv.uploadedAt}
-                      </div>
-                    </div>
-                  </div>
+        ) : !profile ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <AlertCircle className="w-10 h-10 text-muted-foreground/40" />
+            <p className="text-sm text-muted-foreground">Profile not found</p>
+          </div>
+        ) : (
+          <>
+            {/* Profile snapshot card */}
+            <div className="i-card p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-5">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg shadow-indigo-500/30 flex-shrink-0">
+                  {profile.fullName?.split(" ").map((n) => n[0]).join("").slice(0, 2)}
                 </div>
-
-                <div className="flex items-center gap-1.5">
-                  <button className="p-2 rounded-lg hover:bg-muted transition-colors" title="Preview">
-                    <Eye className="w-4 h-4 text-muted-foreground" />
-                  </button>
-                  <button className="p-2 rounded-lg hover:bg-muted transition-colors" title="Download">
-                    <Download className="w-4 h-4 text-muted-foreground" />
-                  </button>
-                  {!cv.isActive && (
-                    <button className="p-2 rounded-lg hover:bg-red-50 transition-colors" title="Delete">
-                      <Trash2 className="w-4 h-4 text-red-400" />
-                    </button>
-                  )}
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg sm:text-xl font-bold text-foreground truncate">{profile.fullName}</h2>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                    {profile.usn} · {profile.department}
+                    {profile.semester ? ` · Sem ${profile.semester}` : ""}
+                    {profile.cgpa ? ` · CGPA ${profile.cgpa}` : ""}
+                  </p>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    {(() => {
+                      const st = placementLabel[profile.placementStatus] || placementLabel.none;
+                      return <span className={cn("text-[10px] font-semibold px-2.5 py-1 rounded-full", st.bg, st.color)}>{st.label}</span>;
+                    })()}
+                    {profile.profileComplete && (
+                      <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 inline-flex items-center gap-1">
+                        <ShieldCheck className="w-3 h-3" /> Profile Complete
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
+            </div>
 
-              {/* ATS Scores */}
-              {cv.atsScores.length > 0 && (
-                <div className="mt-4 pt-3 border-t border-border/50">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">ATS Scores</p>
-                  <div className="flex flex-wrap gap-2">
-                    {cv.atsScores.map((score) => (
-                      <div key={score.company} className={cn(
-                        "flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border",
-                        score.score >= 80 ? "bg-emerald-50 text-emerald-600 border-emerald-200" :
-                        score.score >= 65 ? "bg-blue-50 text-blue-600 border-blue-200" :
-                        "bg-amber-50 text-amber-600 border-amber-200"
-                      )}>
-                        <Star className="w-3 h-3" />
-                        {score.company}: {score.score}%
-                      </div>
-                    ))}
+            {/* Resume Link Card */}
+            <div className="i-card p-5 sm:p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-indigo-500" /> Resume / CV Link
+                </h3>
+                {!editing && (
+                  <button
+                    onClick={() => setEditing(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted text-foreground hover:bg-muted/80 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    {profile.driveLink ? "Update" : "Add Link"}
+                  </button>
+                )}
+              </div>
+
+              {editing ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">
+                      Google Drive / Resume URL
+                    </label>
+                    <input
+                      type="url"
+                      value={driveLink}
+                      onChange={(e) => setDriveLink(e.target.value)}
+                      placeholder="https://drive.google.com/file/d/..."
+                      className="w-full px-3 py-2.5 rounded-lg border border-border text-sm outline-none transition-colors bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-1.5">
+                      Paste a link to your resume on Google Drive, Dropbox, or any public URL. Make sure sharing permissions are set to &quot;Anyone with the link&quot;.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-semibold shadow-md hover:shadow-lg transition-all disabled:opacity-60"
+                    >
+                      {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                      {saving ? "Saving..." : "Save Link"}
+                    </button>
+                    <button
+                      onClick={() => { setEditing(false); setDriveLink(profile.driveLink || ""); }}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-muted text-foreground text-xs font-medium hover:bg-muted/80 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" /> Cancel
+                    </button>
                   </div>
                 </div>
-              )}
-
-              {!cv.isActive && (
-                <div className="mt-3 pt-3 border-t border-border/50">
-                  <button className="text-xs text-primary font-medium hover:underline">Set as Active CV</button>
+              ) : profile.driveLink ? (
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-indigo-50/80 to-violet-50/80 border border-indigo-100">
+                  <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                    <Link2 className="w-6 h-6 text-indigo-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">Resume uploaded</p>
+                    <a
+                      href={profile.driveLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-indigo-600 hover:underline truncate block mt-0.5 max-w-full"
+                    >
+                      {profile.driveLink}
+                    </a>
+                  </div>
+                  <a
+                    href={profile.driveLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors shadow-sm flex-shrink-0"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> View Resume
+                  </a>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center mx-auto mb-4">
+                    <Upload className="w-7 h-7 text-amber-600" />
+                  </div>
+                  <h4 className="text-sm font-semibold text-foreground">No resume linked yet</h4>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+                    Add a link to your resume so companies can review it during the placement process.
+                  </p>
+                  <button
+                    onClick={() => setEditing(true)}
+                    className="mt-4 flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-semibold shadow-md hover:shadow-lg transition-all"
+                  >
+                    <Link2 className="w-3.5 h-3.5" /> Add Resume Link
+                  </button>
                 </div>
               )}
             </div>
-          ))}
-        </div>
+
+            {/* Info banner */}
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-blue-50 border border-blue-200">
+              <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-blue-700">
+                <strong>Tip:</strong> Tailor your resume for each role. The ATS engine scores your resume against each company&apos;s
+                job description — a higher score significantly improves your shortlisting chances. Update your resume link whenever you have a new version.
+              </p>
+            </div>
+
+            {/* Skills & Certifications */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="i-card p-5 space-y-3">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Code className="w-4 h-4 text-indigo-500" /> Skills
+                </h3>
+                {skills.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {skills.map((s) => (
+                      <span key={s} className="text-[10px] font-semibold px-2.5 py-1.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <Code className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+                    <p className="text-xs text-muted-foreground">No skills added yet</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Update your profile to add skills</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="i-card p-5 space-y-3">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <Award className="w-4 h-4 text-indigo-500" /> Certifications
+                </h3>
+                {certifications.length > 0 ? (
+                  <div className="space-y-2">
+                    {certifications.map((c) => (
+                      <div key={c} className="flex items-center gap-2 text-xs text-foreground">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                        {c}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <Award className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
+                    <p className="text-xs text-muted-foreground">No certifications added</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Update your profile to add certifications</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Placement readiness checklist */}
+            <div className="i-card p-5 space-y-3">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Briefcase className="w-4 h-4 text-indigo-500" /> Placement Readiness
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  { label: "Profile Complete", done: profile.profileComplete, icon: ShieldCheck },
+                  { label: "Resume Linked", done: !!profile.driveLink, icon: FileText },
+                  { label: "Skills Added", done: skills.length > 0, icon: Code },
+                  { label: "CGPA Updated", done: !!profile.cgpa, icon: GraduationCap },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className={cn(
+                      "flex items-center gap-3 p-3 rounded-xl border transition-colors",
+                      item.done
+                        ? "bg-emerald-50/50 border-emerald-200 text-emerald-700"
+                        : "bg-amber-50/50 border-amber-200 text-amber-700"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0",
+                      item.done ? "bg-emerald-100" : "bg-amber-100"
+                    )}>
+                      {item.done ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-amber-600" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold">{item.label}</p>
+                      <p className="text-[10px] opacity-70">{item.done ? "Complete" : "Pending"}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

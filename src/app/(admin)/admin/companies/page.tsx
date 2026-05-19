@@ -2,6 +2,7 @@
 
 import Header from "@/components/layout/Header";
 import { adminApi } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import {
   Search,
@@ -35,6 +36,7 @@ interface Company {
 }
 
 export default function AdminCompaniesPage() {
+  const { user } = useAuth();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -122,7 +124,7 @@ export default function AdminCompaniesPage() {
   return (
     <div className="page-enter">
       <Header
-        userName="Dr. Placement Head"
+        userName={user?.email || "Admin"}
         userRole="Admin"
         greeting="Companies"
         subtitle={`${companies.length} companies registered for campus recruitment`}

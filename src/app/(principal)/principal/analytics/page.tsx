@@ -3,6 +3,7 @@
 import Header from "@/components/layout/Header";
 import StatsCard from "@/components/dashboard/StatsCard";
 import { adminApi } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import { cn } from "@/lib/utils";
 import {
   Users,
@@ -28,12 +29,7 @@ import { useState, useEffect, useCallback } from "react";
 
 const COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#84cc16"];
 
-const yearComparison = [
-  { year: "2022", placed: 620 },
-  { year: "2023", placed: 745 },
-  { year: "2024", placed: 812 },
-  { year: "2025", placed: 892 },
-];
+
 
 const defaultCtcDistribution = [
   { range: "< 3 LPA", count: 0, fill: "#e0e7ff" },
@@ -56,6 +52,7 @@ interface CompanyStat {
 }
 
 export default function PrincipalAnalyticsPage() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [totalStudents, setTotalStudents] = useState(0);
   const [totalCompanies, setTotalCompanies] = useState(0);
@@ -64,6 +61,7 @@ export default function PrincipalAnalyticsPage() {
   const [departmentStats, setDepartmentStats] = useState<DeptStat[]>([]);
   const [companyStats, setCompanyStats] = useState<CompanyStat[]>([]);
   const [ctcDistribution, setCtcDistribution] = useState(defaultCtcDistribution);
+  const [yearComparison, setYearComparison] = useState<Array<{ year: string; placed: number }>>([]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -81,6 +79,9 @@ export default function PrincipalAnalyticsPage() {
         if (data.ctcDistribution) {
           setCtcDistribution(data.ctcDistribution);
         }
+        if (data.yearComparison) {
+          setYearComparison(data.yearComparison);
+        }
       }
     } catch {
       // silently handle — show zeros
@@ -96,7 +97,7 @@ export default function PrincipalAnalyticsPage() {
   return (
     <div className="page-enter">
       <Header
-        userName="Dr. Principal"
+        userName={user?.email || "Principal"}
         userRole="Principal (Read-Only)"
         subtitle="Comprehensive placement analytics for the current season."
       />
@@ -139,10 +140,10 @@ export default function PrincipalAnalyticsPage() {
             ))
           ) : (
             <>
-              <StatsCard title="Total Students" value={totalStudents} change={12} icon={Users} variant="indigo" />
-              <StatsCard title="Active Companies" value={totalCompanies} change={8} icon={Building2} variant="emerald" />
-              <StatsCard title="Students Placed" value={totalPlaced} change={15} icon={Award} variant="amber" />
-              <StatsCard title="Avg CTC Offered" value={`₹${avgCtc} LPA`} change={6} icon={TrendingUp} variant="rose" />
+              <StatsCard title="Total Students" value={totalStudents} change={0} icon={Users} variant="indigo" />
+              <StatsCard title="Active Companies" value={totalCompanies} change={0} icon={Building2} variant="emerald" />
+              <StatsCard title="Students Placed" value={totalPlaced} change={0} icon={Award} variant="amber" />
+              <StatsCard title="Avg CTC Offered" value={`₹${avgCtc} LPA`} change={0} icon={TrendingUp} variant="rose" />
             </>
           )}
         </div>

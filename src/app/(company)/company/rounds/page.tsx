@@ -3,6 +3,7 @@
 import Header from "@/components/layout/Header";
 import { cn } from "@/lib/utils";
 import { companyApi } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import {
   Plus,
   Users,
@@ -53,6 +54,7 @@ const statusConfig = {
 };
 
 export default function CompanyRoundsPage() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -140,7 +142,7 @@ export default function CompanyRoundsPage() {
   return (
     <div className="page-enter">
       <Header
-        userName="HR Manager"
+        userName={user?.email?.split("@")[0] || "HR"}
         userRole="Company"
         greeting="Interview Rounds"
         subtitle="Design and manage your recruitment pipeline rounds"

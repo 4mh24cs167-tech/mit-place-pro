@@ -3,6 +3,7 @@
 import Header from "@/components/layout/Header";
 import { cn, getInitials, formatLPA } from "@/lib/utils";
 import { companyApi } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import {
   Send,
   Download,
@@ -38,6 +39,7 @@ const statusMap = {
 };
 
 export default function CompanyOffersPage() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [candidates, setCandidates] = useState<OfferCandidate[]>([]);
   const [jobs, setJobs] = useState<Array<{ id: string; title: string; ctcMaxLpa: number }>>([]);
@@ -104,7 +106,7 @@ export default function CompanyOffersPage() {
   return (
     <div className="page-enter">
       <Header
-        userName="HR Manager"
+        userName={user?.email?.split("@")[0] || "HR"}
         userRole="Company"
         greeting="Offer Letters"
         subtitle={`${selectedCandidates.length} selected · ${pendingCandidates.length} in pipeline`}

@@ -105,7 +105,7 @@ export default function CompanyDashboardPage() {
   return (
     <div className="page-enter">
       <Header
-        userName={user?.email?.split("@")[0] || "HR Manager"}
+        userName={user?.email?.split("@")[0] || "Company User"}
         userRole="Company"
         greeting={`Good morning!`}
         subtitle="Let's make this day productive."

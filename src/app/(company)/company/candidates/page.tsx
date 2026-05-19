@@ -3,6 +3,7 @@
 import Header from "@/components/layout/Header";
 import { cn, getInitials } from "@/lib/utils";
 import { companyApi } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import {
   Search,
   Download,
@@ -43,6 +44,7 @@ const statusColors: Record<string, { bg: string; text: string }> = {
 };
 
 export default function CompanyCandidatesPage() {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState<"ats" | "cgpa" | "match">("ats");
@@ -175,7 +177,7 @@ export default function CompanyCandidatesPage() {
   return (
     <div className="page-enter">
       <Header
-        userName="HR Manager"
+        userName={user?.email?.split("@")[0] || "HR"}
         userRole="Company"
         greeting="Candidates"
         subtitle={`${candidates.length} total candidates · ${shortlistedCount} in pipeline`}
