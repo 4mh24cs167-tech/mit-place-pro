@@ -27,10 +27,10 @@ interface BulkResult {
 }
 
 const DEPARTMENTS = ["CSE", "ISE", "ECE", "EEE", "MECH", "CIVIL", "AI&ML", "AI&DS"];
-const BATCH_YEARS = (() => {
-  const cur = new Date().getFullYear();
-  return [cur, cur + 1, cur + 2, cur + 3].map(String);
-})();
+
+interface BatchRecord {
+  id: string; name: string; department: string; year: number;
+}
 
 export default function AdminStudentsPage() {
   const { user } = useAuth();
@@ -43,6 +43,7 @@ export default function AdminStudentsPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
   const [expandedDepts, setExpandedDepts] = useState<Set<string>>(new Set());
+  const [allBatches, setAllBatches] = useState<BatchRecord[]>([]);
 
   // Upload state
   const [showUpload, setShowUpload] = useState(false);
@@ -50,7 +51,7 @@ export default function AdminStudentsPage() {
   const [uploadResult, setUploadResult] = useState<BulkResult | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadDept, setUploadDept] = useState("");
-  const [uploadBatch, setUploadBatch] = useState(BATCH_YEARS[0]);
+  const [uploadBatch, setUploadBatch] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -77,8 +78,24 @@ export default function AdminStudentsPage() {
   useEffect(() => { fetchStudents(); }, [fetchStudents]);
   useEffect(() => { const t = setTimeout(() => setPage(1), 300); return () => clearTimeout(t); }, [searchQuery]);
 
+  // Fetch real batch years from DB
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await adminApi.listBatches();
+        if (res.data) setAllBatches(res.data as BatchRecord[]);
+      } catch { /* empty */ }
+    })();
+  }, []);
+
   const toggleBatch = (b: string) => setExpandedBatches(prev => { const n = new Set(prev); n.has(b) ? n.delete(b) : n.add(b); return n; });
   const toggleDept = (key: string) => setExpandedDepts(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
+
+  // Derive batch years for selected department from real data
+  const batchYearsForDept = useMemo(() => {
+    if (!uploadDept) return [...new Set(allBatches.map(b => String(b.year)))].sort((a, b) => b.localeCompare(a));
+    return [...new Set(allBatches.filter(b => b.department === uploadDept).map(b => String(b.year)))].sort((a, b) => b.localeCompare(a));
+  }, [uploadDept, allBatches]);
 
   const grouped = useMemo(() => {
     const map: Record<string, Record<string, StudentRecord[]>> = {};
@@ -113,7 +130,7 @@ export default function AdminStudentsPage() {
 
   const resetUpload = () => {
     setShowUpload(false); setUploadResult(null); setUploadError(null);
-    setSelectedFile(null); setUploadDept(""); setUploadBatch(BATCH_YEARS[0]);
+    setSelectedFile(null); setUploadDept(""); setUploadBatch("");
   };
 
   const handleDownloadTemplate = async () => {
@@ -210,7 +227,7 @@ export default function AdminStudentsPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Department *</label>
-                        <select value={uploadDept} onChange={(e) => setUploadDept(e.target.value)}
+                        <select value={uploadDept} onChange={(e) => { setUploadDept(e.target.value); setUploadBatch(""); }}
                           className={cn("w-full px-3 py-2.5 rounded-lg border text-sm outline-none bg-white transition-colors",
                             !uploadDept ? "border-amber-300" : "border-border")}>
                           <option value="">Select dept...</option>
@@ -220,8 +237,10 @@ export default function AdminStudentsPage() {
                       <div>
                         <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Batch Year *</label>
                         <select value={uploadBatch} onChange={(e) => setUploadBatch(e.target.value)}
-                          className="w-full px-3 py-2.5 rounded-lg border border-border text-sm outline-none bg-white">
-                          {BATCH_YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+                          className={cn("w-full px-3 py-2.5 rounded-lg border text-sm outline-none bg-white transition-colors",
+                            !uploadBatch ? "border-amber-300" : "border-border")}>
+                          <option value="">Select year...</option>
+                          {batchYearsForDept.map((y) => <option key={y} value={y}>{y}</option>)}
                         </select>
                       </div>
                     </div>
@@ -274,7 +293,7 @@ export default function AdminStudentsPage() {
 
                   {/* Actions */}
                   <div className="flex flex-col gap-2">
-                    <button onClick={handleUploadSubmit} disabled={isUploading || !selectedFile || !uploadDept}
+                    <button onClick={handleUploadSubmit} disabled={isUploading || !selectedFile || !uploadDept || !uploadBatch}
                       className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                       {isUploading ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> :
                         <><Upload className="w-4 h-4" /> Upload Students</>}
