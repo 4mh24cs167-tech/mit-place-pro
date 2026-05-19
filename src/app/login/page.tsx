@@ -80,19 +80,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Stats */}
-          <div className="flex gap-8">
-            {[
-              { value: "500+", label: "Students" },
-              { value: "50+", label: "Companies" },
-              { value: "95%", label: "Placement Rate" },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <p className="text-2xl font-bold text-white">{stat.value}</p>
-                <p className="text-xs text-white/40 mt-0.5">{stat.label}</p>
-              </div>
-            ))}
-          </div>
+
         </div>
       </div>
 
