@@ -67,6 +67,7 @@ export class AdminService {
 
     const queryBuilder = this.studentRepo.createQueryBuilder('student')
       .leftJoinAndSelect('student.user', 'user')
+      .leftJoinAndSelect('student.batch', 'batch')
       .skip((page - 1) * limit)
       .take(limit)
       .orderBy('student.createdAt', 'DESC');
@@ -93,6 +94,8 @@ export class AdminService {
         fullName: s.fullName,
         email: s.user?.email,
         department: s.department,
+        batchName: s.batch?.name || null,
+        semester: s.semester,
         cgpa: s.cgpa,
         placementStatus: s.placementStatus,
         profileComplete: s.profileComplete,
@@ -261,7 +264,7 @@ export class AdminService {
 
     const applications = await this.applicationRepo.find({
       where: { jobId },
-      relations: ['student', 'cv'],
+      relations: ['student', 'student.batch', 'cv'],
       order: { matchScore: 'DESC' },
     });
 
@@ -278,6 +281,8 @@ export class AdminService {
         studentName: app.student?.fullName,
         usn: app.student?.usn,
         department: app.student?.department,
+        batchName: app.student?.batch?.name || null,
+        semester: app.student?.semester,
         cgpa: app.student?.cgpa,
         matchScore: app.matchScore,
         atsScore: app.atsScore,
@@ -392,6 +397,7 @@ export class AdminService {
 
     const queryBuilder = this.applicationRepo.createQueryBuilder('app')
       .leftJoinAndSelect('app.student', 'student')
+      .leftJoinAndSelect('student.batch', 'batch')
       .leftJoinAndSelect('app.job', 'job')
       .leftJoinAndSelect('job.company', 'company')
       .skip((page - 1) * limit)
@@ -423,6 +429,8 @@ export class AdminService {
           fullName: a.student.fullName,
           usn: a.student.usn,
           department: a.student.department,
+          batchName: a.student.batch?.name || null,
+          semester: a.student.semester,
         } : null,
         job: a.job ? {
           id: a.job.id,

@@ -12,6 +12,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 
 interface StudentRecord {
   id: string; usn: string; fullName: string; department: string;
+  batchName?: string | null;
   cgpa: number | null; tenthPercent: number | null;
   twelfthPercent: number | null; backlogs: number; semester: number;
   placementStatus: string; profileComplete: boolean;
@@ -379,8 +380,14 @@ export default function AdminStudentsPage() {
                       <p className="text-[10px] text-muted-foreground uppercase">12th</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 flex-wrap mb-3">
+                    {student.batchName && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                        {student.batchName}
+                      </span>
+                    )}
                     <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">{student.department}</span>
+                    <span className="text-[10px] text-muted-foreground">Sem {student.semester}</span>
                     {student.backlogs > 0 && (
                       <><span className="text-muted-foreground">·</span>
                       <span className="text-[10px] text-red-500 font-medium">{student.backlogs} Backlog</span></>

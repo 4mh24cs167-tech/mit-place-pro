@@ -160,7 +160,7 @@ export class DriveService {
     if (studentIds.length > 0) {
       students = await this.studentRepo.find({
         where: { id: In(studentIds) },
-        relations: ['user'],
+        relations: ['user', 'batch'],
       });
     }
 
@@ -177,6 +177,7 @@ export class DriveService {
           fullName: student.fullName,
           usn: student.usn,
           department: student.department,
+          batchName: student.batch?.name || null,
           cgpa: student.cgpa,
           email: student.user?.email,
           semester: student.semester,

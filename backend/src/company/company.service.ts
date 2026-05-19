@@ -146,7 +146,7 @@ export class CompanyService {
 
     const applications = await this.applicationRepo.find({
       where: { jobId, adminApproved: true },
-      relations: ['student'],
+      relations: ['student', 'student.batch'],
       order: { matchScore: 'DESC' },
     });
 
@@ -155,6 +155,8 @@ export class CompanyService {
       studentName: app.student?.fullName,
       usn: app.student?.usn,
       department: app.student?.department,
+      batchName: app.student?.batch?.name || null,
+      semester: app.student?.semester,
       cgpa: app.student?.cgpa,
       matchScore: app.matchScore,
       atsScore: app.atsScore,

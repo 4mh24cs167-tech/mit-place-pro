@@ -20,7 +20,7 @@ import { useState, useEffect, useCallback } from "react";
 
 interface Application {
   id: string;
-  student?: { fullName?: string; usn?: string; department?: string };
+  student?: { fullName?: string; usn?: string; department?: string; batchName?: string; semester?: number };
   job?: { title?: string; company?: { name?: string } };
   atsScore?: number;
   matchScore?: number;
@@ -175,6 +175,7 @@ export default function AdminApplicationsPage() {
                 <thead>
                   <tr className="border-b border-border bg-muted/30">
                     <th className="text-left py-3.5 px-5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Student</th>
+                    <th className="text-left py-3.5 px-5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Batch / Dept</th>
                     <th className="text-left py-3.5 px-5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Company / Role</th>
                     <th className="text-center py-3.5 px-5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">ATS Score</th>
                     <th className="text-center py-3.5 px-5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Match</th>
@@ -193,8 +194,20 @@ export default function AdminApplicationsPage() {
                           </div>
                           <div>
                             <p className="text-sm font-medium text-foreground">{app.student?.fullName || "—"}</p>
-                            <p className="text-[10px] text-muted-foreground">{app.student?.usn || "—"} · {app.student?.department || "—"}</p>
+                            <p className="text-[10px] text-muted-foreground">{app.student?.usn || "—"}</p>
                           </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-5">
+                        <div className="flex flex-col gap-1">
+                          {app.student?.batchName && (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 w-fit">
+                              {app.student.batchName}
+                            </span>
+                          )}
+                          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                            {app.student?.department || "—"}{app.student?.semester ? ` · Sem ${app.student.semester}` : ""}
+                          </span>
                         </div>
                       </td>
                       <td className="py-3 px-5">
@@ -287,7 +300,7 @@ export default function AdminApplicationsPage() {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-foreground">{app.student?.fullName || "—"}</p>
-                        <p className="text-[10px] text-muted-foreground">{app.student?.usn || "—"} · {app.student?.department || "—"}</p>
+                        <p className="text-[10px] text-muted-foreground">{app.student?.usn || "—"}</p>
                       </div>
                     </div>
                     {app.approved === null && (
@@ -299,6 +312,16 @@ export default function AdminApplicationsPage() {
                     {app.approved === false && (
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600 flex-shrink-0">Rejected</span>
                     )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {app.student?.batchName && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                        {app.student.batchName}
+                      </span>
+                    )}
+                    <span className="text-[10px] font-medium text-muted-foreground uppercase">
+                      {app.student?.department || "—"}{app.student?.semester ? ` · Sem ${app.student.semester}` : ""}
+                    </span>
                   </div>
                   <div className="text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">{app.job?.company?.name || "—"}</span> · {app.job?.title || "—"}

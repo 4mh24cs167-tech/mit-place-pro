@@ -26,6 +26,8 @@ interface Candidate {
   studentName: string;
   usn: string;
   department: string;
+  batchName?: string | null;
+  semester?: number;
   cgpa: number | null;
   matchScore: number;
   atsScore: number | null;
@@ -75,10 +77,10 @@ export default function CompanyCandidatesPage() {
 
   const handleExport = () => {
     if (filtered.length === 0) { showToast("error", "No candidates to export"); return; }
-    const headers = ["Name", "USN", "Department", "CGPA", "ATS Score", "Match Score", "Round", "Status"];
+    const headers = ["Name", "USN", "Batch", "Department", "Semester", "CGPA", "ATS Score", "Match Score", "Round", "Status"];
     const rows = filtered.map((c) => [
-      c.studentName || "", c.usn || "", c.department || "",
-      String(c.cgpa ?? ""), String(c.atsScore ?? ""), String(c.matchScore),
+      c.studentName || "", c.usn || "", c.batchName || "", c.department || "",
+      String(c.semester ?? ""), String(c.cgpa ?? ""), String(c.atsScore ?? ""), String(c.matchScore),
       String(c.currentRound), c.finalResult || "pending",
     ]);
     const csv = [headers.join(","), ...rows.map((r) => r.map((v) => `"${v}"`).join(","))].join("\n");
@@ -320,6 +322,7 @@ export default function CompanyCandidatesPage() {
                   <thead>
                     <tr className="border-b border-border bg-muted/30">
                       <th className="text-left py-3.5 px-5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Candidate</th>
+                      <th className="text-left py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Batch / Dept</th>
                       <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">CGPA</th>
                       <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">ATS</th>
                       <th className="text-center py-3.5 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Match</th>
@@ -340,8 +343,20 @@ export default function CompanyCandidatesPage() {
                               </div>
                               <div>
                                 <p className="text-sm font-medium text-foreground">{c.studentName || "—"}</p>
-                                <p className="text-[10px] text-muted-foreground">{c.usn || "—"} · {c.department || "—"}</p>
+                                <p className="text-[10px] text-muted-foreground">{c.usn || "—"}</p>
                               </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="flex flex-col gap-1">
+                              {c.batchName && (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 w-fit">
+                                  {c.batchName}
+                                </span>
+                              )}
+                              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                                {c.department || "—"}{c.semester ? ` · Sem ${c.semester}` : ""}
+                              </span>
                             </div>
                           </td>
                           <td className="py-3 px-3 text-center"><span className="text-sm font-semibold text-foreground">{c.cgpa ?? "—"}</span></td>
@@ -395,18 +410,28 @@ export default function CompanyCandidatesPage() {
                   const sc = statusColors[c.finalResult] || statusColors.pending;
                   return (
                     <div key={c.applicationId} className="p-4 space-y-3">
-                      <div className="flex items-start justify-between">
+                        <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-[10px] font-bold text-indigo-700 flex-shrink-0">
                             {getInitials(c.studentName || "?")}
                           </div>
                           <div>
                             <p className="text-sm font-medium text-foreground">{c.studentName || "—"}</p>
-                            <p className="text-[10px] text-muted-foreground">{c.usn || "—"} · {c.department || "—"}</p>
+                            <p className="text-[10px] text-muted-foreground">{c.usn || "—"}</p>
                           </div>
                         </div>
                         <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize flex-shrink-0", sc.bg, sc.text)}>
                           {c.finalResult || "pending"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {c.batchName && (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                            {c.batchName}
+                          </span>
+                        )}
+                        <span className="text-[10px] font-medium text-muted-foreground uppercase">
+                          {c.department || "—"}{c.semester ? ` · Sem ${c.semester}` : ""}
                         </span>
                       </div>
                       <div className="flex items-center gap-3 flex-wrap text-[10px]">
