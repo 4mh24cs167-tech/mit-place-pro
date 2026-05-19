@@ -53,7 +53,7 @@ const entities = [
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
         entities,
-        synchronize: true,
+        synchronize: false,
         ssl: { rejectUnauthorized: false },
         logging: config.get('NODE_ENV') === 'development',
       }),
