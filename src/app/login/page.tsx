@@ -25,7 +25,7 @@ export default function LoginPage() {
         const role = result.role || "student";
         router.push(`/${role}/dashboard`);
       } else {
-        setError("Invalid email or password. Please try again.");
+        setError(result.error || "Invalid email or password. Please try again.");
       }
     } catch {
       setError("Unable to connect. Please check your internet and try again.");

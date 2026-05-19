@@ -74,11 +74,13 @@ async function apiFetch<T = unknown>(path: string, options: ApiOptions = {}): Pr
   const response = await fetch(`${API_BASE}${path}`, fetchOptions);
 
   if (response.status === 401) {
+    // Don't redirect to /login if we're already on the login page (i.e. login attempt failed)
+    const isLoginRequest = path.includes('/auth/login');
     removeToken();
-    if (typeof window !== 'undefined') {
+    if (!isLoginRequest && typeof window !== 'undefined') {
       window.location.href = '/login';
     }
-    throw new ApiError(401, 'Session expired');
+    throw new ApiError(401, 'Invalid credentials');
   }
 
   const contentType = response.headers.get('content-type');

@@ -14,7 +14,7 @@ interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; mustChangePassword?: boolean; role?: string }>;
+  login: (email: string, password: string) => Promise<{ success: boolean; mustChangePassword?: boolean; role?: string; error?: string }>;
   logout: () => void;
 }
 
@@ -49,9 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           role: res.data.user.role,
         };
       }
-      return { success: false };
+      return { success: false, error: 'Login failed. Please try again.' };
     } catch (err) {
-      return { success: false };
+      const message = err instanceof Error ? err.message : 'Unable to connect. Please try again.';
+      return { success: false, error: message };
     }
   }, []);
 
