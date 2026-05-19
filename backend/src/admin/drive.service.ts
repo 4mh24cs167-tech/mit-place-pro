@@ -43,7 +43,7 @@ export class DriveService {
 
     // Auto-register eligible students (based on departments + min CGPA)
     const studentQuery = this.studentRepo.createQueryBuilder('s')
-      .where('s.profile_complete = true');
+      .where('s.profileComplete = true');
 
     if (drive.departments && drive.departments.length > 0) {
       studentQuery.andWhere('s.department IN (:...depts)', { depts: drive.departments });

@@ -99,7 +99,7 @@ export class AdminService {
       .take(limit)
       .orderBy('batch.name', 'DESC')
       .addOrderBy('student.department', 'ASC')
-      .addOrderBy('student.full_name', 'ASC');
+      .addOrderBy('student.fullName', 'ASC');
 
     if (search) {
       queryBuilder.andWhere(
@@ -111,7 +111,7 @@ export class AdminService {
       queryBuilder.andWhere('student.department = :department', { department });
     }
     if (status) {
-      queryBuilder.andWhere('student.placement_status = :status', { status });
+      queryBuilder.andWhere('student.placementStatus = :status', { status });
     }
     if (batch) {
       queryBuilder.andWhere('batch.name = :batch', { batch });
@@ -438,17 +438,17 @@ export class AdminService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(student.full_name ILIKE :search OR student.usn ILIKE :search OR company.name ILIKE :search OR job.title ILIKE :search)',
+        '(student.fullName ILIKE :search OR student.usn ILIKE :search OR company.name ILIKE :search OR job.title ILIKE :search)',
         { search: `%${search}%` },
       );
     }
 
     if (status === 'pending') {
-      queryBuilder.andWhere('app.admin_approved IS NULL');
+      queryBuilder.andWhere('app.adminApproved IS NULL');
     } else if (status === 'approved') {
-      queryBuilder.andWhere('app.admin_approved = true');
+      queryBuilder.andWhere('app.adminApproved = true');
     } else if (status === 'rejected') {
-      queryBuilder.andWhere('app.admin_approved = false');
+      queryBuilder.andWhere('app.adminApproved = false');
     }
 
     const [data, total] = await queryBuilder.getManyAndCount();
