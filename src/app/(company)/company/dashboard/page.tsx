@@ -52,27 +52,29 @@ export default function CompanyDashboardPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [jobRes, candRes] = await Promise.allSettled([
-        companyApi.getJobs(),
-        companyApi.getShortlist(),
-      ]);
+      const jobRes = await companyApi.getJobs();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const jobData = (jobRes as any)?.data;
+      const jobList: Job[] = Array.isArray(jobData) ? jobData : [];
+      setJobs(jobList);
 
-      if (jobRes.status === "fulfilled") {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const data = (jobRes.value as any)?.data;
-        setJobs(Array.isArray(data) ? data : []);
-      }
-      if (candRes.status === "fulfilled") {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const data = (candRes.value as any)?.data;
-        if (Array.isArray(data)) {
+      // Load top candidates from first job
+      if (jobList.length > 0) {
+        try {
+          const candRes = await companyApi.getCandidates(jobList[0].id);
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          setCandidates(data.slice(0, 5).map((c: any) => ({
-            name: c.student?.fullName || c.fullName || "Candidate",
-            dept: c.student?.department || c.department || "—",
-            ats: c.atsScore || 0,
-            status: c.result || "Shortlisted",
-          })));
+          const candData = (candRes as any)?.data;
+          if (Array.isArray(candData)) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            setCandidates(candData.slice(0, 5).map((c: any) => ({
+              name: c.studentName || "Candidate",
+              dept: c.department || "—",
+              ats: c.atsScore || 0,
+              status: c.finalResult || "pending",
+            })));
+          }
+        } catch {
+          // non-critical
         }
       }
     } catch {
