@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/api";
+/* eslint-disable @next/next/no-img-element */
 import {
-  GraduationCap,
   ArrowLeft,
   AlertCircle,
   CheckCircle,
@@ -169,9 +169,7 @@ export default function ChangePasswordPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-11 h-11 rounded-2xl bg-foreground flex items-center justify-center">
-            <GraduationCap className="w-5 h-5 text-white" />
-          </div>
+          <img src="/mitm-logo.png" alt="MITM Logo" className="w-11 h-11 rounded-2xl object-cover" />
           <span className="text-xl font-bold text-foreground tracking-tight">MITM PlacePro</span>
         </div>
 

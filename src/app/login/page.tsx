@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { GraduationCap, ArrowRight, AlertCircle, Eye, EyeOff, Mail, Lock, Sparkles } from "lucide-react";
+/* eslint-disable @next/next/no-img-element */
+import { ArrowRight, AlertCircle, Eye, EyeOff, Mail, Lock, Sparkles } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -53,9 +54,7 @@ export default function LoginPage() {
         <div className="relative z-10 flex flex-col p-12 w-full h-full">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center">
-              <GraduationCap className="w-6 h-6 text-white" />
-            </div>
+            <img src="/mitm-logo.png" alt="MITM Logo" className="w-12 h-12 rounded-2xl object-cover border border-white/10" />
             <div>
               <span className="text-xl font-bold text-white tracking-tight">MITM PlacePro</span>
               <p className="text-xs text-white/40">Campus Placement Portal</p>
@@ -83,9 +82,7 @@ export default function LoginPage() {
         <div className="w-full max-w-[420px]">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-10">
-            <div className="w-11 h-11 rounded-2xl bg-foreground flex items-center justify-center">
-              <GraduationCap className="w-5 h-5 text-white" />
-            </div>
+            <img src="/mitm-logo.png" alt="MITM Logo" className="w-11 h-11 rounded-2xl object-cover" />
             <div>
               <span className="text-xl font-bold text-foreground tracking-tight">MITM PlacePro</span>
               <p className="text-xs text-muted-foreground">Campus Placement Portal</p>

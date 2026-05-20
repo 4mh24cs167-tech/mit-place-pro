@@ -1,6 +1,6 @@
 "use client";
 
-import { GraduationCap } from "lucide-react";
+/* eslint-disable @next/next/no-img-element */
 
 interface HeaderProps {
   userName: string;
@@ -27,9 +27,7 @@ export default function Header({
       <div className="flex items-center justify-between mb-4 sm:mb-8">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-foreground flex items-center justify-center">
-            <GraduationCap className="w-4 h-4 text-white" />
-          </div>
+          <img src="/mitm-logo.png" alt="MITM Logo" className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover" />
           <span className="text-sm sm:text-base font-semibold text-foreground tracking-tight">
             MITM PlacePro
           </span>
