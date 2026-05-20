@@ -7,6 +7,7 @@ dotenv.config();
 import { User } from './entities/user.entity';
 import { Student } from './entities/student.entity';
 import { Batch } from './entities/batch.entity';
+import { Department } from './entities/department.entity';
 import { Company } from './entities/company.entity';
 import { Job } from './entities/job.entity';
 import { CompanyAvailability } from './entities/company-availability.entity';
@@ -26,7 +27,7 @@ const AppDataSource = new DataSource({
   synchronize: true,
   logging: ['error'],
   entities: [
-    User, Student, Batch, Company, Job, CompanyAvailability, Cv,
+    User, Student, Batch, Department, Company, Job, CompanyAvailability, Cv,
     Application, InterviewSlot, OfferLetter, PlacementPoster,
     Notification, AuditLog, Drive, DriveRegistration, DriveSlot,
   ],
@@ -45,7 +46,7 @@ async function seed() {
     'placement_posters', 'offer_letters',
     'notifications', 'interview_slots', 'applications',
     'cvs', 'jobs', 'company_availability',
-    'students', 'batches', 'companies',
+    'students', 'batches', 'departments', 'companies',
     'audit_logs', 'users',
   ];
   for (const t of tables) {
@@ -70,6 +71,23 @@ async function seed() {
     ('${principalId}', 'principal@mitm.edu.in',  '${hash(password)}', 'principal', false, true)
   `);
 
+  // ── Seed default departments ──
+  console.log('🏛️  Seeding default departments...');
+  const departments = [
+    { code: 'CSE', name: 'Computer Science & Engineering' },
+    { code: 'ISE', name: 'Information Science & Engineering' },
+    { code: 'ECE', name: 'Electronics & Communication Engineering' },
+    { code: 'EEE', name: 'Electrical & Electronics Engineering' },
+    { code: 'MECH', name: 'Mechanical Engineering' },
+    { code: 'CIVIL', name: 'Civil Engineering' },
+    { code: 'AI&ML', name: 'Artificial Intelligence & Machine Learning' },
+    { code: 'AI&DS', name: 'Artificial Intelligence & Data Science' },
+  ];
+  const deptValues = departments
+    .map((d) => `('${uuid()}', '${d.code}', '${d.name}', true)`)
+    .join(',\n    ');
+  await qr.query(`INSERT INTO departments (id, code, name, is_active) VALUES\n    ${deptValues}`);
+
   // ══════════════════════════════════════════════════
   //  SUMMARY
   // ══════════════════════════════════════════════════
@@ -77,6 +95,7 @@ async function seed() {
   console.log('  🌱 SEED DATA COMPLETE');
   console.log('═══════════════════════════════════════');
   console.log('  Users:  2 (1 admin + 1 principal)');
+  console.log('  Departments: 8 (CSE, ISE, ECE, EEE, MECH, CIVIL, AI&ML, AI&DS)');
   console.log('  All other tables: EMPTY');
   console.log('═══════════════════════════════════════');
   console.log('\n🔑 LOGIN CREDENTIALS:');

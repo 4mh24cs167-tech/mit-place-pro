@@ -20,13 +20,14 @@ interface BatchRecord {
   createdAt: string;
 }
 
-const DEPARTMENTS = ["CSE", "ISE", "ECE", "EEE", "MECH", "CIVIL", "AI&ML", "AI&DS"];
+
 
 export default function AdminBatchesPage() {
   const { user } = useAuth();
   const [batches, setBatches] = useState<BatchRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [DEPARTMENTS, setDepartments] = useState<string[]>([]);
 
   // Create modal state
   const [showCreate, setShowCreate] = useState(false);
@@ -63,6 +64,12 @@ export default function AdminBatchesPage() {
 
   useEffect(() => {
     fetchBatches();
+    (async () => {
+      try {
+        const res = await adminApi.listDepartments();
+        if (res.data) setDepartments((res.data as Array<{ code: string }>).map(d => d.code));
+      } catch { /* empty */ }
+    })();
   }, [fetchBatches]);
 
   const handleCreate = async () => {

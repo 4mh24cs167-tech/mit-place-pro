@@ -6,6 +6,7 @@ import * as bcrypt from 'bcryptjs';
 import { User, UserRole } from '../entities/user.entity';
 import { Student } from '../entities/student.entity';
 import { Batch } from '../entities/batch.entity';
+import { Department } from '../entities/department.entity';
 import { Company } from '../entities/company.entity';
 import { Job } from '../entities/job.entity';
 import { Application } from '../entities/application.entity';
@@ -23,6 +24,7 @@ export class AdminService {
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
     @InjectRepository(Batch) private readonly batchRepo: Repository<Batch>,
+    @InjectRepository(Department) private readonly departmentRepo: Repository<Department>,
     @InjectRepository(Company) private readonly companyRepo: Repository<Company>,
     @InjectRepository(Job) private readonly jobRepo: Repository<Job>,
     @InjectRepository(Application) private readonly applicationRepo: Repository<Application>,
@@ -768,5 +770,104 @@ export class AdminService {
     });
 
     return { message: 'Batch deleted' };
+  }
+
+  // ─── Department Management ──────────────────────
+  async listDepartments() {
+    return this.departmentRepo.find({ order: { code: 'ASC' } });
+  }
+
+  async createDepartment(data: { code: string; name: string }, actorId: string) {
+    const code = data.code.trim().toUpperCase();
+    const name = data.name.trim();
+
+    if (!code || !name) throw new BadRequestException('Code and name are required');
+
+    const existing = await this.departmentRepo.findOne({ where: { code } });
+    if (existing) throw new ConflictException(`Department "${code}" already exists`);
+
+    const dept = await this.departmentRepo.save({ code, name });
+
+    await this.auditRepo.save({
+      actorUserId: actorId,
+      action: 'CREATE_DEPARTMENT',
+      entityType: 'department',
+      entityId: dept.id,
+      newValue: { code, name } as unknown as Record<string, unknown>,
+    });
+
+    return dept;
+  }
+
+  async updateDepartment(id: string, data: { code?: string; name?: string }, actorId: string) {
+    const dept = await this.departmentRepo.findOne({ where: { id } });
+    if (!dept) throw new NotFoundException('Department not found');
+
+    const oldValue = { code: dept.code, name: dept.name };
+
+    if (data.code) {
+      const newCode = data.code.trim().toUpperCase();
+      if (newCode !== dept.code) {
+        const duplicate = await this.departmentRepo.findOne({ where: { code: newCode } });
+        if (duplicate) throw new ConflictException(`Department "${newCode}" already exists`);
+
+        // Update all batches and students referencing the old code
+        await this.batchRepo
+          .createQueryBuilder()
+          .update()
+          .set({ department: newCode, name: () => `REPLACE(name, '${dept.code}', '${newCode}')` })
+          .where('department = :old', { old: dept.code })
+          .execute();
+
+        await this.studentRepo
+          .createQueryBuilder()
+          .update()
+          .set({ department: newCode })
+          .where('department = :old', { old: dept.code })
+          .execute();
+
+        dept.code = newCode;
+      }
+    }
+    if (data.name) dept.name = data.name.trim();
+
+    await this.departmentRepo.save(dept);
+
+    await this.auditRepo.save({
+      actorUserId: actorId,
+      action: 'UPDATE_DEPARTMENT',
+      entityType: 'department',
+      entityId: id,
+      oldValue: oldValue as unknown as Record<string, unknown>,
+      newValue: { code: dept.code, name: dept.name } as unknown as Record<string, unknown>,
+    });
+
+    return dept;
+  }
+
+  async deleteDepartment(id: string, actorId: string) {
+    const dept = await this.departmentRepo.findOne({ where: { id } });
+    if (!dept) throw new NotFoundException('Department not found');
+
+    // Check if any batches or students reference this department
+    const batchCount = await this.batchRepo.count({ where: { department: dept.code } });
+    const studentCount = await this.studentRepo.count({ where: { department: dept.code } });
+
+    if (batchCount > 0 || studentCount > 0) {
+      throw new BadRequestException(
+        `Cannot delete "${dept.code}" — it is used by ${batchCount} batch(es) and ${studentCount} student(s). Remove references first.`,
+      );
+    }
+
+    await this.departmentRepo.delete(id);
+
+    await this.auditRepo.save({
+      actorUserId: actorId,
+      action: 'DELETE_DEPARTMENT',
+      entityType: 'department',
+      entityId: id,
+    });
+
+    return { message: `Department "${dept.code}" deleted` };
   }
 }

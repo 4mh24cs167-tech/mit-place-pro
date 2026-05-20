@@ -26,7 +26,7 @@ interface BulkResult {
   credentials: Array<{ usn: string; email: string; temporaryPassword: string }>;
 }
 
-const DEPARTMENTS = ["CSE", "ISE", "ECE", "EEE", "MECH", "CIVIL", "AI&ML", "AI&DS"];
+
 
 interface BatchRecord {
   id: string; name: string; department: string; year: number;
@@ -44,6 +44,7 @@ export default function AdminStudentsPage() {
   const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
   const [expandedDepts, setExpandedDepts] = useState<Set<string>>(new Set());
   const [allBatches, setAllBatches] = useState<BatchRecord[]>([]);
+  const [DEPARTMENTS, setDepartments] = useState<string[]>([]);
 
   // Upload state
   const [showUpload, setShowUpload] = useState(false);
@@ -85,6 +86,12 @@ export default function AdminStudentsPage() {
       try {
         const res = await adminApi.listBatches();
         if (res.data) setAllBatches(res.data as BatchRecord[]);
+      } catch { /* empty */ }
+    })();
+    (async () => {
+      try {
+        const res = await adminApi.listDepartments();
+        if (res.data) setDepartments((res.data as Array<{ code: string }>).map(d => d.code));
       } catch { /* empty */ }
     })();
   }, []);

@@ -184,6 +184,41 @@ export class AdminController {
     return { success: true, data };
   }
 
+  // ─── Department Management ─────────────────────
+  @Get('departments')
+  async listDepartments() {
+    const data = await this.adminService.listDepartments();
+    return { success: true, data };
+  }
+
+  @Post('departments')
+  async createDepartment(
+    @Body() body: { code: string; name: string },
+    @CurrentUser('id') actorId: string,
+  ) {
+    const data = await this.adminService.createDepartment(body, actorId);
+    return { success: true, data };
+  }
+
+  @Patch('departments/:id')
+  async updateDepartment(
+    @Param('id') id: string,
+    @Body() body: { code?: string; name?: string },
+    @CurrentUser('id') actorId: string,
+  ) {
+    const data = await this.adminService.updateDepartment(id, body, actorId);
+    return { success: true, data };
+  }
+
+  @Delete('departments/:id')
+  async deleteDepartment(
+    @Param('id') id: string,
+    @CurrentUser('id') actorId: string,
+  ) {
+    const data = await this.adminService.deleteDepartment(id, actorId);
+    return { success: true, ...data };
+  }
+
   // ─── Batch Management ──────────────────────────
   @Post('batches')
   async createBatch(

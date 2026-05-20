@@ -35,6 +35,7 @@ const navConfigs = {
     { label: "Dashboard", href: "/admin/dashboard", icon: Home },
     { label: "Students", href: "/admin/students", icon: Users },
     { label: "Batches", href: "/admin/batches", icon: Layers },
+    { label: "Depts", href: "/admin/departments", icon: BookOpen },
     { label: "Companies", href: "/admin/companies", icon: Building2 },
     { label: "Drives", href: "/admin/drives", icon: Briefcase },
     { label: "Applications", href: "/admin/applications", icon: FileCheck2 },

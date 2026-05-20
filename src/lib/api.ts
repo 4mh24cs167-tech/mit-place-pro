@@ -240,6 +240,15 @@ export const adminApi = {
   promoteBatch: (id: string) => apiFetch(`/api/v1/admin/batches/${id}/promote`, { method: 'POST' }),
   deleteBatch: (id: string) => apiFetch(`/api/v1/admin/batches/${id}`, { method: 'DELETE' }),
 
+  // Departments
+  listDepartments: () => apiFetch('/api/v1/admin/departments'),
+  createDepartment: (data: { code: string; name: string }) =>
+    apiFetch('/api/v1/admin/departments', { method: 'POST', body: data }),
+  updateDepartment: (id: string, data: { code?: string; name?: string }) =>
+    apiFetch(`/api/v1/admin/departments/${id}`, { method: 'PATCH', body: data }),
+  deleteDepartment: (id: string) =>
+    apiFetch(`/api/v1/admin/departments/${id}`, { method: 'DELETE' }),
+
   // Drives
   listDrives: () => apiFetch('/api/v1/admin/drives'),
   getDrive: (id: string) => apiFetch(`/api/v1/admin/drives/${id}`),

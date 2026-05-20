@@ -8,6 +8,7 @@ import { EmailService } from './email.service';
 import { User } from '../entities/user.entity';
 import { Student } from '../entities/student.entity';
 import { Batch } from '../entities/batch.entity';
+import { Department } from '../entities/department.entity';
 import { Company } from '../entities/company.entity';
 import { Job } from '../entities/job.entity';
 import { Application } from '../entities/application.entity';
@@ -22,6 +23,7 @@ import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
       User,
       Student,
       Batch,
+      Department,
       Company,
       Job,
       Application,

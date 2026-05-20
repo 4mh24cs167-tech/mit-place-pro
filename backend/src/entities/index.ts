@@ -1,6 +1,7 @@
 export { User, UserRole } from './user.entity';
 export { Student } from './student.entity';
 export { Batch } from './batch.entity';
+export { Department } from './department.entity';
 export { Company } from './company.entity';
 export { Job } from './job.entity';
 export { CompanyAvailability } from './company-availability.entity';

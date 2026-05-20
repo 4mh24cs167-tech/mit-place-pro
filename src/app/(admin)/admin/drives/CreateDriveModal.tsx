@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback } from "react";
 interface Company { id: string; name: string; industry?: string; }
 interface Job { id: string; title: string; companyId: string; company?: { name: string }; allowedDepartments?: string[] }
 
-const DEPARTMENTS = ["CSE", "ISE", "ECE", "EEE", "MECH", "CIVIL", "AI&ML", "AI&DS"];
+
 
 interface Props {
   onClose: () => void;
@@ -35,6 +35,7 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
   const [description, setDescription] = useState("");
   const [selectedDepts, setSelectedDepts] = useState<string[]>([]);
   const [isCreating, setIsCreating] = useState(false);
+  const [DEPARTMENTS, setDepartments] = useState<string[]>([]);
 
   // Fetch companies on mount
   const fetchCompanies = useCallback(async () => {
@@ -48,7 +49,15 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
     finally { setLoadingCompanies(false); }
   }, []);
 
-  useEffect(() => { fetchCompanies(); }, [fetchCompanies]);
+  useEffect(() => {
+    fetchCompanies();
+    (async () => {
+      try {
+        const res = await adminApi.listDepartments();
+        if (res.data) setDepartments((res.data as Array<{ code: string }>).map(d => d.code));
+      } catch { /* empty */ }
+    })();
+  }, [fetchCompanies]);
 
   // Fetch jobs when a company is selected
   const fetchJobsForCompany = useCallback(async (companyId: string) => {
