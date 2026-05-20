@@ -211,6 +211,9 @@ export default function LoginPage() {
           <p className="text-[11px] text-muted-foreground text-center mt-8">
             MITM College, Mysuru · Placement Cell Portal
           </p>
+          <p className="text-[10px] text-muted-foreground/60 text-center mt-1">
+            Developed by Yashas N, CSE Department &amp; Shreyas M, ISE Department
+          </p>
         </div>
       </div>
     </div>
