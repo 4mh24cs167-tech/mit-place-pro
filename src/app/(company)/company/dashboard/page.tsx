@@ -430,13 +430,13 @@ export default function CompanyDashboardPage() {
                   try {
                     const payload: Record<string, unknown> = {
                       title: jobForm.title.trim(),
-                      description: jobForm.description.trim() || undefined,
-                      location: jobForm.location.trim() || undefined,
-                      openPositions: Number(jobForm.openPositions) || 1,
+                      description: jobForm.description.trim() || jobForm.title.trim(),
+                      workLocation: jobForm.location.trim() || undefined,
+                      totalVacancies: Number(jobForm.openPositions) || 1,
                       ctcMinLpa: jobForm.ctcMinLpa ? Number(jobForm.ctcMinLpa) : undefined,
                       ctcMaxLpa: jobForm.ctcMaxLpa ? Number(jobForm.ctcMaxLpa) : undefined,
                       minCgpa: jobForm.minCgpa ? Number(jobForm.minCgpa) : undefined,
-                      eligibleDepartments: jobForm.eligibleDepartments ? jobForm.eligibleDepartments.split(",").map(d => d.trim()).filter(Boolean) : undefined,
+                      allowedDepartments: jobForm.eligibleDepartments ? jobForm.eligibleDepartments.split(",").map(d => d.trim()).filter(Boolean) : undefined,
                     };
                     await companyApi.createJob(payload);
                     setJobSuccess("Job posted successfully!");
