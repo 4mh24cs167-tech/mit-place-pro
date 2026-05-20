@@ -299,6 +299,8 @@ export const companyApi = {
   getShortlist: () => apiFetch('/api/v1/company/shortlist'),
   markAttendance: (slotId: string, attendance: string) => apiFetch('/api/v1/company/attendance', { method: 'PATCH', body: { slotId, attendance } }),
   markRoundResult: (slotId: string, result: string) => apiFetch('/api/v1/company/round-result', { method: 'PATCH', body: { slotId, result } }),
+  submitRoundResults: (jobId: string, round: number, selectedStudentIds: string[]) =>
+    apiFetch(`/api/v1/company/jobs/${jobId}/submit-round-results`, { method: 'POST', body: { round, selectedStudentIds } }),
 };
 
 export { ApiError, getToken, removeToken, getStoredUser };

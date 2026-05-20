@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Company } from '../entities/company.entity';
@@ -9,10 +10,13 @@ import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { Student } from '../entities/student.entity';
 import { Drive, DriveSlot, DriveRegistration } from '../entities/drive.entity';
-import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto } from './dto/company.dto';
+import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto, SubmitRoundResultsDto } from './dto/company.dto';
+import { EmailService } from '../admin/email.service';
 
 @Injectable()
 export class CompanyService {
+  private readonly logger = new Logger(CompanyService.name);
+
   constructor(
     @InjectRepository(Company) private readonly companyRepo: Repository<Company>,
     @InjectRepository(Job) private readonly jobRepo: Repository<Job>,
@@ -24,6 +28,8 @@ export class CompanyService {
     @InjectRepository(Drive) private readonly driveRepo: Repository<Drive>,
     @InjectRepository(DriveSlot) private readonly driveSlotRepo: Repository<DriveSlot>,
     @InjectRepository(DriveRegistration) private readonly driveRegRepo: Repository<DriveRegistration>,
+    private readonly emailService: EmailService,
+    private readonly configService: ConfigService,
   ) {}
 
   // ─── Company Profile ────────────────────────────
@@ -153,6 +159,7 @@ export class CompanyService {
 
     return applications.map((app) => ({
       applicationId: app.id,
+      studentId: app.studentId,
       studentName: app.student?.fullName,
       usn: app.student?.usn,
       department: app.student?.department,
@@ -313,5 +320,118 @@ export class CompanyService {
       })),
       createdAt: drive.createdAt,
     }));
+  }
+
+  // ─── Bulk Round Results ─────────────────────────
+  async submitRoundResults(userId: string, jobId: string, dto: SubmitRoundResultsDto) {
+    const company = await this.companyRepo.findOne({ where: { userId } });
+    if (!company) throw new NotFoundException('Company profile not found');
+
+    const job = await this.jobRepo.findOne({ where: { id: jobId, companyId: company.id } });
+    if (!job) throw new NotFoundException('Job not found');
+
+    const round = dto.round;
+    if (round < 1 || round > job.numRounds) {
+      throw new BadRequestException(`Invalid round ${round}. Job has ${job.numRounds} rounds.`);
+    }
+
+    // Get all approved applications currently at this round
+    const applications = await this.applicationRepo.find({
+      where: { jobId, adminApproved: true, currentRound: round, finalResult: 'pending' },
+      relations: ['student', 'student.user'],
+    });
+
+    if (applications.length === 0) {
+      throw new BadRequestException('No pending candidates found for this round');
+    }
+
+    const selectedIds = new Set(dto.selectedStudentIds);
+    const isFinalRound = round >= job.numRounds;
+    const loginUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000') + '/login';
+
+    let selectedCount = 0;
+    let rejectedCount = 0;
+
+    for (const app of applications) {
+      const isSelected = selectedIds.has(app.studentId);
+
+      if (isSelected) {
+        if (isFinalRound) {
+          app.finalResult = 'selected';
+          app.offeredCtcLpa = job.ctcMaxLpa;
+          if (app.student) {
+            app.student.placementStatus = 'placed';
+            await this.studentRepo.save(app.student);
+          }
+        } else {
+          app.currentRound = round + 1;
+        }
+        selectedCount++;
+
+        // In-app notification
+        if (app.student) {
+          await this.notificationRepo.save({
+            userId: app.student.userId,
+            type: isFinalRound ? 'placed' : 'round_selected',
+            title: isFinalRound
+              ? `🎉 Placed at ${company.name}!`
+              : `✅ Round ${round} Cleared — ${job.title}`,
+            body: isFinalRound
+              ? `Congratulations! You have been selected for the ${job.title} role.`
+              : `You cleared Round ${round}. Prepare for Round ${round + 1}.`,
+            metadata: { jobId, applicationId: app.id, round },
+          });
+
+          // Email (fire-and-forget)
+          if (app.student.user?.email) {
+            this.emailService.sendRoundSelectedEmail({
+              email: app.student.user.email,
+              studentName: app.student.fullName,
+              jobTitle: job.title,
+              companyName: company.name,
+              roundNumber: round,
+              totalRounds: job.numRounds,
+              loginUrl,
+            }).catch((e) => this.logger.error('Email send failed', e));
+          }
+        }
+      } else {
+        app.finalResult = 'rejected';
+        rejectedCount++;
+
+        // In-app notification
+        if (app.student) {
+          await this.notificationRepo.save({
+            userId: app.student.userId,
+            type: 'round_rejected',
+            title: `Round ${round} Result — ${job.title}`,
+            body: `Thank you for participating. Unfortunately, you were not selected to advance.`,
+            metadata: { jobId, applicationId: app.id, round },
+          });
+
+          // Email (fire-and-forget)
+          if (app.student.user?.email) {
+            this.emailService.sendRoundRejectedEmail({
+              email: app.student.user.email,
+              studentName: app.student.fullName,
+              jobTitle: job.title,
+              companyName: company.name,
+              roundNumber: round,
+              loginUrl,
+            }).catch((e) => this.logger.error('Email send failed', e));
+          }
+        }
+      }
+
+      await this.applicationRepo.save(app);
+    }
+
+    return {
+      round,
+      totalProcessed: applications.length,
+      selected: selectedCount,
+      rejected: rejectedCount,
+      isFinalRound,
+    };
   }
 }

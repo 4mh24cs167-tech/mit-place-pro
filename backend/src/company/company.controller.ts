@@ -2,7 +2,7 @@ import { Controller, Get, Post, Patch, Body, Param } from '@nestjs/common';
 import { CompanyService } from './company.service';
 import { Auth, CurrentUser } from '../auth/auth.decorators';
 import { UserRole } from '../entities/user.entity';
-import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto, UpdateCompanyProfileDto } from './dto/company.dto';
+import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto, UpdateCompanyProfileDto, SubmitRoundResultsDto } from './dto/company.dto';
 
 @Controller('api/v1/company')
 @Auth(UserRole.COMPANY)
@@ -119,6 +119,16 @@ export class CompanyController {
     @Body() dto: MarkRoundResultDto,
   ) {
     const data = await this.companyService.markRoundResult(userId, dto);
+    return { success: true, data };
+  }
+
+  @Post('jobs/:jobId/submit-round-results')
+  async submitRoundResults(
+    @CurrentUser('id') userId: string,
+    @Param('jobId') jobId: string,
+    @Body() dto: SubmitRoundResultsDto,
+  ) {
+    const data = await this.companyService.submitRoundResults(userId, jobId, dto);
     return { success: true, data };
   }
 }

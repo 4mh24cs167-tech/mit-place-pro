@@ -5,28 +5,15 @@ import { cn, getInitials } from "@/lib/utils";
 import { companyApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import {
-  Search,
-  Download,
-  Eye,
-  FileText,
-  ThumbsUp,
-  ThumbsDown,
-  SortAsc,
-  Loader2,
-  Users,
-  CalendarDays,
-  Clock,
-  MapPin,
-  ChevronDown,
-  ChevronUp,
-  ChevronRight,
-  GraduationCap,
-  Building2,
+  Search, Download, Eye, FileText, SortAsc, Loader2, Users,
+  CalendarDays, Clock, MapPin, ChevronDown, ChevronUp, ChevronRight,
+  GraduationCap, Building2, CheckSquare, Square, AlertTriangle, Send,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 
 interface Candidate {
   applicationId: string;
+  studentId: string;
   studentName: string;
   usn: string;
   department: string;
@@ -37,6 +24,12 @@ interface Candidate {
   atsScore: number | null;
   currentRound: number;
   finalResult: string;
+}
+
+interface JobInfo {
+  id: string;
+  title: string;
+  numRounds: number;
 }
 
 const statusColors: Record<string, { bg: string; text: string }> = {
@@ -53,32 +46,74 @@ export default function CompanyCandidatesPage() {
   const [sortBy, setSortBy] = useState<"ats" | "cgpa" | "match">("ats");
   const [loading, setLoading] = useState(true);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [jobs, setJobs] = useState<Array<{ id: string; title: string }>>([]);
+  const [jobs, setJobs] = useState<JobInfo[]>([]);
   const [selectedJobId, setSelectedJobId] = useState<string>("");
   const [driveSlots, setDriveSlots] = useState<Array<{ timeSlot: string; classroom: string | null; departments: string[]; studentCount: number }>>([]);
   const [showSchedule, setShowSchedule] = useState(false);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
   const [expandedDepts, setExpandedDepts] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
+  // ─── Bulk Selection State ──────────────────────
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
+  const [activeRound, setActiveRound] = useState<number>(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
   const showToast = (type: "success" | "error", msg: string) => {
     setToast({ type, msg });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 4000);
   };
 
-  const handleMarkResult = async (applicationId: string, result: "selected" | "rejected") => {
-    setActionLoading(applicationId);
+  const selectedJob = useMemo(() => jobs.find(j => j.id === selectedJobId), [jobs, selectedJobId]);
+
+  // ─── Checkbox Helpers ──────────────────────────
+  const toggleStudent = (studentId: string) => {
+    setSelectedStudentIds(prev => {
+      const next = new Set(prev);
+      next.has(studentId) ? next.delete(studentId) : next.add(studentId);
+      return next;
+    });
+  };
+
+  const roundCandidates = useMemo(() =>
+    candidates.filter(c => c.currentRound === activeRound && c.finalResult === "pending"),
+    [candidates, activeRound]
+  );
+
+  const toggleDeptAll = (dept: string, select: boolean) => {
+    setSelectedStudentIds(prev => {
+      const next = new Set(prev);
+      roundCandidates.filter(c => c.department === dept).forEach(c => {
+        select ? next.add(c.studentId) : next.delete(c.studentId);
+      });
+      return next;
+    });
+  };
+
+  const isDeptAllSelected = (dept: string) => {
+    const deptCandidates = roundCandidates.filter(c => c.department === dept);
+    return deptCandidates.length > 0 && deptCandidates.every(c => selectedStudentIds.has(c.studentId));
+  };
+
+  // ─── Submit Round Results ──────────────────────
+  const handleSubmitResults = async () => {
+    if (!selectedJobId) return;
+    setIsSubmitting(true);
     try {
-      await companyApi.markRoundResult(applicationId, result);
-      setCandidates((prev) =>
-        prev.map((c) => c.applicationId === applicationId ? { ...c, finalResult: result } : c)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const res = await companyApi.submitRoundResults(selectedJobId, activeRound, Array.from(selectedStudentIds)) as any;
+      const data = res?.data;
+      showToast("success",
+        `Round ${activeRound} results submitted! ${data?.selected || 0} selected, ${data?.rejected || 0} rejected. Emails sent.`
       );
-      showToast("success", `Candidate ${result === "selected" ? "shortlisted" : "rejected"} successfully`);
-    } catch {
-      showToast("error", "Action failed. Please try again.");
+      setSelectedStudentIds(new Set());
+      setShowConfirmModal(false);
+      fetchCandidates();
+    } catch (err) {
+      showToast("error", err instanceof Error ? err.message : "Failed to submit results");
     } finally {
-      setActionLoading(null);
+      setIsSubmitting(false);
     }
   };
 
@@ -105,7 +140,7 @@ export default function CompanyCandidatesPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data = (res as any)?.data;
       if (Array.isArray(data) && data.length > 0) {
-        setJobs(data.map((j: { id: string; title: string }) => ({ id: j.id, title: j.title })));
+        setJobs(data.map((j: JobInfo) => ({ id: j.id, title: j.title, numRounds: j.numRounds || 3 })));
         setSelectedJobId(data[0].id);
       }
     } catch {
@@ -114,10 +149,7 @@ export default function CompanyCandidatesPage() {
   }, []);
 
   const fetchCandidates = useCallback(async () => {
-    if (!selectedJobId) {
-      setLoading(false);
-      return;
-    }
+    if (!selectedJobId) { setLoading(false); return; }
     try {
       setLoading(true);
       const res = await companyApi.getCandidates(selectedJobId);
@@ -129,6 +161,9 @@ export default function CompanyCandidatesPage() {
         setExpandedBatches(batches);
         const depts = new Set(data.map((c: Candidate) => `${c.batchName || "Unassigned"}__${c.department}`));
         setExpandedDepts(depts);
+        // Detect active round
+        const rounds = data.filter((c: Candidate) => c.finalResult === "pending").map((c: Candidate) => c.currentRound);
+        if (rounds.length > 0) setActiveRound(Math.min(...rounds));
       }
     } catch {
       // silently handle
@@ -137,13 +172,8 @@ export default function CompanyCandidatesPage() {
     }
   }, [selectedJobId]);
 
-  useEffect(() => {
-    fetchJobs();
-  }, [fetchJobs]);
-
-  useEffect(() => {
-    fetchCandidates();
-  }, [fetchCandidates]);
+  useEffect(() => { fetchJobs(); }, [fetchJobs]);
+  useEffect(() => { fetchCandidates(); }, [fetchCandidates]);
 
   // Fetch drive slots for schedule banner
   useEffect(() => {
@@ -153,7 +183,6 @@ export default function CompanyCandidatesPage() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const data = (res as any)?.data;
         if (Array.isArray(data)) {
-          // Flatten all slots across drives
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const allSlots = data.flatMap((d: any) => d.slots || []);
           setDriveSlots(allSlots);
@@ -169,8 +198,7 @@ export default function CompanyCandidatesPage() {
       const matchSearch =
         (c.studentName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (c.usn || "").toLowerCase().includes(searchQuery.toLowerCase());
-      const matchStatus =
-        statusFilter === "all" || c.finalResult === statusFilter;
+      const matchStatus = statusFilter === "all" || c.finalResult === statusFilter;
       return matchSearch && matchStatus;
     })
     .sort((a, b) => {
@@ -179,12 +207,10 @@ export default function CompanyCandidatesPage() {
       return (b.matchScore || 0) - (a.matchScore || 0);
     });
 
-  const shortlistedCount = candidates.filter(
-    (c) => c.finalResult !== "rejected" && c.finalResult !== "selected"
-  ).length;
+  const pipelineCount = candidates.filter(c => c.finalResult !== "rejected" && c.finalResult !== "selected").length;
 
   const toggleBatch = (b: string) => setExpandedBatches(prev => { const n = new Set(prev); n.has(b) ? n.delete(b) : n.add(b); return n; });
-  const toggleDept = (key: string) => setExpandedDepts(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
+  const toggleDeptExpand = (key: string) => setExpandedDepts(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
 
   const grouped = useMemo(() => {
     const map: Record<string, Record<string, Candidate[]>> = {};
@@ -198,13 +224,22 @@ export default function CompanyCandidatesPage() {
     return Object.entries(map).sort(([a], [b]) => b.localeCompare(a));
   }, [filtered]);
 
+  // Departments with pending candidates in active round
+  const roundDepts = useMemo(() => {
+    const map: Record<string, number> = {};
+    roundCandidates.forEach(c => { map[c.department] = (map[c.department] || 0) + 1; });
+    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
+  }, [roundCandidates]);
+
+  const rejectedCount = roundCandidates.length - selectedStudentIds.size;
+
   return (
     <div className="page-enter">
       <Header
         userName={user?.email?.split("@")[0] || "HR"}
         userRole="Company"
         greeting="Candidates"
-        subtitle={`${candidates.length} total candidates · ${shortlistedCount} in pipeline`}
+        subtitle={`${candidates.length} total candidates · ${pipelineCount} in pipeline`}
       />
 
       <div className="px-4 sm:px-6 md:px-8 pb-10 space-y-4 sm:space-y-6">
@@ -214,15 +249,97 @@ export default function CompanyCandidatesPage() {
             <label className="text-sm font-medium text-foreground">Job:</label>
             <select
               value={selectedJobId}
-              onChange={(e) => setSelectedJobId(e.target.value)}
+              onChange={(e) => { setSelectedJobId(e.target.value); setSelectedStudentIds(new Set()); }}
               className="px-3 py-2 rounded-xl border border-border bg-white text-sm outline-none cursor-pointer flex-1 sm:flex-none"
             >
-              {jobs.map((j) => (
-                <option key={j.id} value={j.id}>
-                  {j.title}
-                </option>
-              ))}
+              {jobs.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
             </select>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════
+            ROUND RESULTS PANEL — Bulk Selection
+        ═══════════════════════════════════════════════ */}
+        {selectedJob && roundCandidates.length > 0 && (
+          <div className="i-card overflow-hidden border-2 border-indigo-200">
+            <div className="bg-gradient-to-r from-indigo-50 to-violet-50 p-5">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                    <Send className="w-4 h-4 text-indigo-600" />
+                    Submit Round Results
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Select students who cleared the round. Unselected students will be <strong className="text-red-600">automatically rejected</strong>.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="text-xs font-semibold text-muted-foreground uppercase">Round</label>
+                  <select
+                    value={activeRound}
+                    onChange={(e) => { setActiveRound(Number(e.target.value)); setSelectedStudentIds(new Set()); }}
+                    className="px-3 py-2 rounded-xl border border-indigo-200 bg-white text-sm font-semibold outline-none cursor-pointer"
+                  >
+                    {Array.from({ length: selectedJob.numRounds }, (_, i) => i + 1).map(r => (
+                      <option key={r} value={r}>Round {r}{r === selectedJob.numRounds ? " (Final)" : ""}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Department quick-select chips */}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {roundDepts.map(([dept, count]) => {
+                  const allSelected = isDeptAllSelected(dept);
+                  const selectedInDept = roundCandidates.filter(c => c.department === dept && selectedStudentIds.has(c.studentId)).length;
+                  return (
+                    <button
+                      key={dept}
+                      onClick={() => toggleDeptAll(dept, !allSelected)}
+                      className={cn(
+                        "flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border transition-all",
+                        allSelected
+                          ? "bg-emerald-600 border-emerald-600 text-white"
+                          : selectedInDept > 0
+                            ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+                            : "bg-white border-border text-foreground hover:border-indigo-300"
+                      )}
+                    >
+                      {allSelected ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
+                      {dept}
+                      <span className={cn(
+                        "px-1.5 py-0.5 rounded-md text-[10px]",
+                        allSelected ? "bg-emerald-700" : "bg-muted"
+                      )}>
+                        {selectedInDept}/{count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Summary + Submit */}
+              <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-indigo-200/60">
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="font-semibold text-emerald-600">
+                    ✅ {selectedStudentIds.size} selected
+                  </span>
+                  <span className="font-semibold text-red-500">
+                    ❌ {rejectedCount} will be rejected
+                  </span>
+                  <span className="text-muted-foreground">
+                    / {roundCandidates.length} total
+                  </span>
+                </div>
+                <button
+                  onClick={() => setShowConfirmModal(true)}
+                  disabled={roundCandidates.length === 0}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-xl transition-all"
+                >
+                  Submit Round {activeRound} Results
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -369,7 +486,7 @@ export default function CompanyCandidatesPage() {
                         const deptOpen = expandedDepts.has(deptKey);
                         return (
                           <div key={deptKey}>
-                            <button onClick={() => toggleDept(deptKey)}
+                            <button onClick={() => toggleDeptExpand(deptKey)}
                               className="w-full flex items-center justify-between px-5 sm:px-6 py-3 bg-muted/20 hover:bg-muted/40 transition-colors border-b border-border/30">
                               <div className="flex items-center gap-2.5">
                                 <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
@@ -384,13 +501,36 @@ export default function CompanyCandidatesPage() {
                               <div className="divide-y divide-border/30">
                                 {deptCandidates.map(c => {
                                   const sc = statusColors[c.finalResult] || statusColors.pending;
+                                  const isInActiveRound = c.currentRound === activeRound && c.finalResult === "pending";
+                                  const isChecked = selectedStudentIds.has(c.studentId);
                                   return (
-                                    <div key={c.applicationId} className="px-5 sm:px-6 py-3 hover:bg-muted/10 transition-colors">
+                                    <div
+                                      key={c.applicationId}
+                                      onClick={() => { if (isInActiveRound) toggleStudent(c.studentId); }}
+                                      className={cn(
+                                        "px-5 sm:px-6 py-3 transition-colors",
+                                        isInActiveRound ? "cursor-pointer" : "",
+                                        isInActiveRound && isChecked ? "bg-emerald-50/60 hover:bg-emerald-50" : "hover:bg-muted/10"
+                                      )}
+                                    >
                                       <div className="flex items-center justify-between gap-3 flex-wrap">
                                         <div className="flex items-center gap-3 min-w-0">
-                                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-[10px] font-bold text-indigo-700 flex-shrink-0">
-                                            {getInitials(c.studentName || "?")}
-                                          </div>
+                                          {/* Checkbox for active round candidates */}
+                                          {isInActiveRound ? (
+                                            <button
+                                              onClick={(e) => { e.stopPropagation(); toggleStudent(c.studentId); }}
+                                              className="flex-shrink-0"
+                                            >
+                                              {isChecked
+                                                ? <CheckSquare className="w-5 h-5 text-emerald-600" />
+                                                : <Square className="w-5 h-5 text-muted-foreground" />
+                                              }
+                                            </button>
+                                          ) : (
+                                            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-[10px] font-bold text-indigo-700 flex-shrink-0">
+                                              {getInitials(c.studentName || "?")}
+                                            </div>
+                                          )}
                                           <div className="min-w-0">
                                             <p className="text-sm font-medium text-foreground truncate">{c.studentName || "—"}</p>
                                             <p className="text-[10px] text-muted-foreground">{c.usn || "—"}</p>
@@ -406,20 +546,8 @@ export default function CompanyCandidatesPage() {
                                           {c.currentRound > 0 && <span className="text-[10px] font-medium">R{c.currentRound}</span>}
                                           <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize", sc.bg, sc.text)}>{c.finalResult || "pending"}</span>
                                           <div className="flex items-center gap-1">
-                                            <button onClick={() => showToast("success", `Viewing: ${c.studentName}`)} className="p-1 rounded hover:bg-muted" title="View"><Eye className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                                            <button onClick={() => showToast("success", "Resume: coming soon")} className="p-1 rounded hover:bg-muted" title="CV"><FileText className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                                            {c.finalResult !== "rejected" && c.finalResult !== "selected" && (
-                                              <>
-                                                <button disabled={actionLoading === c.applicationId} onClick={() => handleMarkResult(c.applicationId, "selected")}
-                                                  className="p-1 rounded bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50" title="Shortlist">
-                                                  {actionLoading === c.applicationId ? <Loader2 className="w-3.5 h-3.5 text-emerald-600 animate-spin" /> : <ThumbsUp className="w-3.5 h-3.5 text-emerald-600" />}
-                                                </button>
-                                                <button disabled={actionLoading === c.applicationId} onClick={() => handleMarkResult(c.applicationId, "rejected")}
-                                                  className="p-1 rounded bg-red-50 hover:bg-red-100 disabled:opacity-50" title="Reject">
-                                                  <ThumbsDown className="w-3.5 h-3.5 text-red-600" />
-                                                </button>
-                                              </>
-                                            )}
+                                            <button onClick={(e) => { e.stopPropagation(); showToast("success", `Viewing: ${c.studentName}`); }} className="p-1 rounded hover:bg-muted" title="View"><Eye className="w-3.5 h-3.5 text-muted-foreground" /></button>
+                                            <button onClick={(e) => { e.stopPropagation(); showToast("success", "Resume: coming soon"); }} className="p-1 rounded hover:bg-muted" title="CV"><FileText className="w-3.5 h-3.5 text-muted-foreground" /></button>
                                           </div>
                                         </div>
                                       </div>
@@ -439,6 +567,58 @@ export default function CompanyCandidatesPage() {
           </div>
         )}
       </div>
+
+      {/* ═══ Confirmation Modal ═══ */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl p-6 space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-amber-500" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-foreground">Confirm Round {activeRound} Results</h3>
+                <p className="text-xs text-muted-foreground">This action cannot be undone</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                <span className="text-sm font-medium text-emerald-700">Students Selected</span>
+                <span className="text-lg font-bold text-emerald-700">{selectedStudentIds.size}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-xl bg-red-50 border border-red-200">
+                <span className="text-sm font-medium text-red-700">Will Be Rejected</span>
+                <span className="text-lg font-bold text-red-700">{rejectedCount}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {activeRound >= (selectedJob?.numRounds || 3)
+                  ? "⚠️ This is the FINAL round. Selected students will be marked as PLACED."
+                  : `Selected students will advance to Round ${activeRound + 1}. All others will receive rejection emails.`
+                }
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 px-4 py-3 rounded-xl border border-border text-sm font-medium hover:bg-muted/50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitResults}
+                disabled={isSubmitting}
+                className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {isSubmitting ? "Submitting..." : "Confirm & Send Emails"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toast */}
       {toast && (
         <div className={cn(

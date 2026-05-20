@@ -170,3 +170,13 @@ export class UpdateCompanyProfileDto {
   @IsString()
   hrPhone?: string;
 }
+
+export class SubmitRoundResultsDto {
+  @IsNumber()
+  round: number;
+
+  @IsArray()
+  @IsString({ each: true })
+  @ArrayMinSize(0)
+  selectedStudentIds: string[];
+}

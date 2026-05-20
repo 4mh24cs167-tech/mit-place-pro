@@ -37,5 +37,6 @@ import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
   ],
   controllers: [AdminController],
   providers: [AdminService, BulkUploadService, DriveService, EmailService],
+  exports: [EmailService],
 })
 export class AdminModule {}
