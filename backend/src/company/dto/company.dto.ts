@@ -180,3 +180,10 @@ export class SubmitRoundResultsDto {
   @ArrayMinSize(0)
   selectedStudentIds: string[];
 }
+
+export class UpdateJobRoundsDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => Object)
+  roundsConfig: Record<string, unknown>[];
+}

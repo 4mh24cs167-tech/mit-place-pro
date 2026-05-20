@@ -10,7 +10,7 @@ import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { Student } from '../entities/student.entity';
 import { Drive, DriveSlot, DriveRegistration } from '../entities/drive.entity';
-import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto, SubmitRoundResultsDto } from './dto/company.dto';
+import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto, SubmitRoundResultsDto, UpdateJobRoundsDto } from './dto/company.dto';
 import { EmailService } from '../admin/email.service';
 
 @Injectable()
@@ -107,6 +107,19 @@ export class CompanyService {
     if (job.status !== 'draft') throw new BadRequestException('Only draft jobs can be published');
 
     job.status = 'open';
+    await this.jobRepo.save(job);
+    return job;
+  }
+
+  async updateJobRounds(userId: string, jobId: string, dto: UpdateJobRoundsDto) {
+    const company = await this.companyRepo.findOne({ where: { userId } });
+    if (!company) throw new NotFoundException('Company profile not found');
+
+    const job = await this.jobRepo.findOne({ where: { id: jobId, companyId: company.id } });
+    if (!job) throw new NotFoundException('Job not found');
+
+    job.roundsConfig = dto.roundsConfig;
+    job.numRounds = dto.roundsConfig.length;
     await this.jobRepo.save(job);
     return job;
   }

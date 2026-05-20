@@ -2,7 +2,7 @@ import { Controller, Get, Post, Patch, Body, Param } from '@nestjs/common';
 import { CompanyService } from './company.service';
 import { Auth, CurrentUser } from '../auth/auth.decorators';
 import { UserRole } from '../entities/user.entity';
-import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto, UpdateCompanyProfileDto, SubmitRoundResultsDto } from './dto/company.dto';
+import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto, UpdateCompanyProfileDto, SubmitRoundResultsDto, UpdateJobRoundsDto } from './dto/company.dto';
 
 @Controller('api/v1/company')
 @Auth(UserRole.COMPANY)
@@ -63,6 +63,16 @@ export class CompanyController {
     @Param('jobId') jobId: string,
   ) {
     const data = await this.companyService.publishJob(userId, jobId);
+    return { success: true, data };
+  }
+
+  @Patch('jobs/:jobId/rounds')
+  async updateJobRounds(
+    @CurrentUser('id') userId: string,
+    @Param('jobId') jobId: string,
+    @Body() dto: UpdateJobRoundsDto,
+  ) {
+    const data = await this.companyService.updateJobRounds(userId, jobId, dto);
     return { success: true, data };
   }
 
