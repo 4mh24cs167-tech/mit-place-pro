@@ -118,7 +118,7 @@ export class CompanyService {
     const job = await this.jobRepo.findOne({ where: { id: jobId, companyId: company.id } });
     if (!job) throw new NotFoundException('Job not found');
 
-    job.roundsConfig = dto.roundsConfig;
+    job.roundsConfig = dto.roundsConfig as unknown as Record<string, unknown>[];
     job.numRounds = dto.roundsConfig.length;
     await this.jobRepo.save(job);
     return job;

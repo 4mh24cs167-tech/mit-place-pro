@@ -181,9 +181,17 @@ export class SubmitRoundResultsDto {
   selectedStudentIds: string[];
 }
 
+export class RoundConfigDto {
+  @IsString()
+  title: string;
+
+  @IsString()
+  type: string;
+}
+
 export class UpdateJobRoundsDto {
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => Object)
-  roundsConfig: Record<string, unknown>[];
+  @Type(() => RoundConfigDto)
+  roundsConfig: RoundConfigDto[];
 }
