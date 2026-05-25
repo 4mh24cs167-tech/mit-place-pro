@@ -6,7 +6,7 @@ import { BulkUploadService } from './bulk-upload.service';
 import { DriveService } from './drive.service';
 import { Auth, CurrentUser } from '../auth/auth.decorators';
 import { UserRole } from '../entities/user.entity';
-import { CreateCompanyDto, BulkApproveDto, UpdateStudentDto, PaginationDto } from './dto/admin.dto';
+import { CreateCompanyDto, CreateStudentDto, BulkApproveDto, UpdateStudentDto, PaginationDto } from './dto/admin.dto';
 
 @Controller('api/v1/admin')
 @Auth(UserRole.ADMIN)
@@ -51,6 +51,15 @@ export class AdminController {
   @Get('students/:id')
   async getStudent(@Param('id') id: string) {
     const data = await this.adminService.getStudent(id);
+    return { success: true, data };
+  }
+
+  @Post('students')
+  async createStudent(
+    @Body() dto: CreateStudentDto,
+    @CurrentUser('id') actorId: string,
+  ) {
+    const data = await this.adminService.createStudent(dto, actorId);
     return { success: true, data };
   }
 

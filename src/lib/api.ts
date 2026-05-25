@@ -176,6 +176,8 @@ export const adminApi = {
   getStudent: (id: string) => apiFetch(`/api/v1/admin/students/${id}`),
   updateStudent: (id: string, data: Record<string, unknown>) => apiFetch(`/api/v1/admin/students/${id}`, { method: 'PATCH', body: data }),
   deleteStudent: (id: string) => apiFetch(`/api/v1/admin/students/${id}`, { method: 'DELETE' }),
+  createStudent: (data: { usn: string; email: string; fullName: string; department: string; batch?: string; phone?: string; gender?: string; category?: string; cgpa?: number; tenthPercent?: number; twelfthPercent?: number; backlogs?: number }) =>
+    apiFetch('/api/v1/admin/students', { method: 'POST', body: data }),
 
   // Bulk upload
   uploadStudents: (file: File, department?: string, batch?: string) => {
@@ -271,6 +273,11 @@ export const adminApi = {
 export const studentApi = {
   getProfile: () => apiFetch('/api/v1/student/profile'),
   updateProfile: (data: Record<string, unknown>) => apiFetch('/api/v1/student/profile', { method: 'PATCH', body: data }),
+  uploadProfilePhoto: (file: File) => {
+    const formData = new FormData();
+    formData.append('photo', file);
+    return apiFetch<{ photoUrl: string }>('/api/v1/student/profile/photo', { method: 'POST', body: formData, isFormData: true });
+  },
   getEligibleJobs: () => apiFetch('/api/v1/student/jobs'),
   applyForJob: (jobId: string, cvId?: string) => apiFetch('/api/v1/student/apply', { method: 'POST', body: { jobId, cvId } }),
   getApplications: () => apiFetch('/api/v1/student/applications'),

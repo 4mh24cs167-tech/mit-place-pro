@@ -57,6 +57,17 @@ export default function AdminStudentsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Single add student state
+  const [showAddStudent, setShowAddStudent] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createResult, setCreateResult] = useState<{ student: { usn: string; fullName: string; email: string; department: string }; temporaryPassword: string } | null>(null);
+  const [addForm, setAddForm] = useState({
+    usn: "", email: "", fullName: "", department: "", batch: "",
+    phone: "", gender: "", category: "", cgpa: "", tenthPercent: "", twelfthPercent: "", backlogs: "",
+  });
+  const setAddField = (key: string, val: string) => setAddForm(p => ({ ...p, [key]: val }));
+
   const fetchStudents = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -141,6 +152,48 @@ export default function AdminStudentsPage() {
     setSelectedFile(null); setUploadDept(""); setUploadBatch("");
   };
 
+  const resetAddStudent = () => {
+    setShowAddStudent(false); setCreateResult(null); setCreateError(null);
+    setAddForm({ usn: "", email: "", fullName: "", department: "", batch: "", phone: "", gender: "", category: "", cgpa: "", tenthPercent: "", twelfthPercent: "", backlogs: "" });
+  };
+
+  const handleCreateStudent = async () => {
+    if (!addForm.usn || !addForm.email || !addForm.fullName || !addForm.department) {
+      setCreateError("USN, Email, Full Name, and Department are required");
+      return;
+    }
+    setIsCreating(true);
+    setCreateError(null);
+    try {
+      const payload: Record<string, unknown> = {
+        usn: addForm.usn,
+        email: addForm.email,
+        fullName: addForm.fullName,
+        department: addForm.department,
+      };
+      if (addForm.batch) payload.batch = addForm.batch;
+      if (addForm.phone) payload.phone = addForm.phone;
+      if (addForm.gender) payload.gender = addForm.gender;
+      if (addForm.category) payload.category = addForm.category;
+      if (addForm.cgpa) payload.cgpa = parseFloat(addForm.cgpa);
+      if (addForm.tenthPercent) payload.tenthPercent = parseFloat(addForm.tenthPercent);
+      if (addForm.twelfthPercent) payload.twelfthPercent = parseFloat(addForm.twelfthPercent);
+      if (addForm.backlogs) payload.backlogs = parseInt(addForm.backlogs);
+
+      const res = await adminApi.createStudent(payload as Parameters<typeof adminApi.createStudent>[0]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((res as any).data) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        setCreateResult((res as any).data);
+        fetchStudents();
+      }
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : "Failed to create student");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   const handleDownloadTemplate = async () => {
     try {
       const token = localStorage.getItem('auth_token');
@@ -158,8 +211,15 @@ export default function AdminStudentsPage() {
     } catch { alert('Failed to download template.'); }
   };
 
+  // Batch years for add student form
+  const addBatchYearsForDept = useMemo(() => {
+    if (!addForm.department) return [...new Set(allBatches.map(b => String(b.year)))].sort((a, b) => b.localeCompare(a));
+    return [...new Set(allBatches.filter(b => b.department === addForm.department).map(b => String(b.year)))].sort((a, b) => b.localeCompare(a));
+  }, [addForm.department, allBatches]);
+
   const totalPages = Math.ceil(totalCount / 12);
   const passwordPreview = uploadDept ? `${uploadDept}${uploadBatch}` : "DEPT+BATCH";
+  const addPasswordPreview = addForm.department ? `${addForm.department}${addForm.batch || new Date().getFullYear()}` : "DEPT+BATCH";
 
   return (
     <div className="page-enter">
@@ -198,9 +258,13 @@ export default function AdminStudentsPage() {
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-white text-xs sm:text-sm font-medium text-foreground hover:bg-muted/50 transition-colors">
                 <Download className="w-3.5 h-3.5" /><span className="hidden sm:inline">Template</span>
               </button>
+              <button onClick={() => setShowAddStudent(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-xs sm:text-sm font-semibold hover:bg-indigo-100 transition-colors">
+                <UserPlus className="w-3.5 h-3.5" /><span className="hidden sm:inline">Add Student</span>
+              </button>
               <button onClick={() => setShowUpload(true)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all">
-                <Upload className="w-3.5 h-3.5" /> Upload
+                <Upload className="w-3.5 h-3.5" /> Bulk Upload
               </button>
             </div>
           </div>
@@ -357,6 +421,208 @@ export default function AdminStudentsPage() {
                     className="w-full px-4 py-2.5 rounded-xl bg-foreground text-white text-sm font-medium hover:bg-foreground/90 transition-colors">
                     Done
                   </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ─── Add Single Student Modal ─────────────── */}
+        {showAddStudent && (
+          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-6">
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl p-5 sm:p-6 w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-50 to-violet-50 flex items-center justify-center">
+                    <UserPlus className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-foreground">Add Single Student</h3>
+                    <p className="text-xs text-muted-foreground">Create one student account directly</p>
+                  </div>
+                </div>
+                <button onClick={resetAddStudent} className="w-8 h-8 rounded-lg hover:bg-muted flex items-center justify-center">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {!createResult ? (
+                <div className="space-y-4">
+                  {/* Required fields */}
+                  <div className="p-4 rounded-xl bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-100">
+                    <p className="text-xs font-semibold text-indigo-700 uppercase mb-3 flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5" /> Required Information
+                    </p>
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">USN *</label>
+                          <input value={addForm.usn} onChange={(e) => setAddField("usn", e.target.value)}
+                            placeholder="4MT22CS001" className={cn("w-full px-3 py-2.5 rounded-lg border text-sm outline-none bg-white transition-colors",
+                              !addForm.usn ? "border-amber-300" : "border-border")} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Email *</label>
+                          <input value={addForm.email} onChange={(e) => setAddField("email", e.target.value)} type="email"
+                            placeholder="john@mitm.ac.in" className={cn("w-full px-3 py-2.5 rounded-lg border text-sm outline-none bg-white transition-colors",
+                              !addForm.email ? "border-amber-300" : "border-border")} />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Full Name *</label>
+                        <input value={addForm.fullName} onChange={(e) => setAddField("fullName", e.target.value)}
+                          placeholder="John Doe" className={cn("w-full px-3 py-2.5 rounded-lg border text-sm outline-none bg-white transition-colors",
+                            !addForm.fullName ? "border-amber-300" : "border-border")} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Department *</label>
+                          <select value={addForm.department} onChange={(e) => { setAddField("department", e.target.value); setAddField("batch", ""); }}
+                            className={cn("w-full px-3 py-2.5 rounded-lg border text-sm outline-none bg-white transition-colors",
+                              !addForm.department ? "border-amber-300" : "border-border")}>
+                            <option value="">Select dept...</option>
+                            {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Batch Year</label>
+                          <select value={addForm.batch} onChange={(e) => setAddField("batch", e.target.value)}
+                            className="w-full px-3 py-2.5 rounded-lg border border-border text-sm outline-none bg-white">
+                            <option value="">Select year...</option>
+                            {addBatchYearsForDept.map((y) => <option key={y} value={y}>{y}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      {addForm.department && (
+                        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-indigo-200">
+                          <Hash className="w-3.5 h-3.5 text-indigo-500" />
+                          <p className="text-xs text-foreground">
+                            Password: <code className="font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">{addPasswordPreview}</code>
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Optional fields */}
+                  <div>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1.5">
+                      <GraduationCap className="w-3.5 h-3.5" /> Optional Details
+                    </p>
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Phone</label>
+                        <input value={addForm.phone} onChange={(e) => setAddField("phone", e.target.value)}
+                          placeholder="9876543210" className="w-full px-3 py-2.5 rounded-lg border border-border text-sm outline-none bg-white" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Gender</label>
+                        <select value={addForm.gender} onChange={(e) => setAddField("gender", e.target.value)}
+                          className="w-full px-3 py-2.5 rounded-lg border border-border text-sm outline-none bg-white">
+                          <option value="">Select...</option>
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Category</label>
+                        <select value={addForm.category} onChange={(e) => setAddField("category", e.target.value)}
+                          className="w-full px-3 py-2.5 rounded-lg border border-border text-sm outline-none bg-white">
+                          <option value="">Select...</option>
+                          {["General", "OBC", "SC", "ST", "EWS"].map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 gap-3 mt-3">
+                      <div>
+                        <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">CGPA</label>
+                        <input value={addForm.cgpa} onChange={(e) => setAddField("cgpa", e.target.value)} type="number" step="0.01"
+                          placeholder="8.5" className="w-full px-3 py-2.5 rounded-lg border border-border text-sm outline-none bg-white" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">10th %</label>
+                        <input value={addForm.tenthPercent} onChange={(e) => setAddField("tenthPercent", e.target.value)} type="number" step="0.1"
+                          placeholder="92.4" className="w-full px-3 py-2.5 rounded-lg border border-border text-sm outline-none bg-white" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">12th %</label>
+                        <input value={addForm.twelfthPercent} onChange={(e) => setAddField("twelfthPercent", e.target.value)} type="number" step="0.1"
+                          placeholder="88.6" className="w-full px-3 py-2.5 rounded-lg border border-border text-sm outline-none bg-white" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Backlogs</label>
+                        <input value={addForm.backlogs} onChange={(e) => setAddField("backlogs", e.target.value)} type="number"
+                          placeholder="0" className="w-full px-3 py-2.5 rounded-lg border border-border text-sm outline-none bg-white" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {createError && (
+                    <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200">
+                      <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                      <p className="text-sm text-red-600">{createError}</p>
+                    </div>
+                  )}
+
+                  <button onClick={handleCreateStudent} disabled={isCreating || !addForm.usn || !addForm.email || !addForm.fullName || !addForm.department}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                    {isCreating ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</> :
+                      <><UserPlus className="w-4 h-4" /> Create Student</>}
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Success result */}
+                  <div className="text-center py-4">
+                    <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-3">
+                      <CheckCircle2 className="w-7 h-7 text-emerald-500" />
+                    </div>
+                    <h4 className="text-base font-bold text-foreground">Student Created!</h4>
+                    <p className="text-xs text-muted-foreground mt-1">Account is ready for login</p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-muted/40 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Name</span>
+                      <span className="font-medium text-foreground">{createResult.student.fullName}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">USN</span>
+                      <span className="font-medium text-foreground">{createResult.student.usn}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Email</span>
+                      <span className="font-medium text-foreground">{createResult.student.email}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Department</span>
+                      <span className="font-medium text-foreground">{createResult.student.department}</span>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-green-50 border border-green-200">
+                    <p className="text-xs font-semibold text-green-700 uppercase mb-1">Login Credentials</p>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-green-600">Email</span>
+                      <code className="font-bold text-green-800">{createResult.student.email}</code>
+                    </div>
+                    <div className="flex justify-between text-sm mt-1">
+                      <span className="text-green-600">Password</span>
+                      <code className="font-bold text-green-800">{createResult.temporaryPassword}</code>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button onClick={() => { setCreateResult(null); setAddForm({ usn: "", email: "", fullName: "", department: addForm.department, batch: addForm.batch, phone: "", gender: "", category: "", cgpa: "", tenthPercent: "", twelfthPercent: "", backlogs: "" }); }}
+                      className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-muted/50 transition-colors flex items-center justify-center gap-1.5">
+                      <UserPlus className="w-3.5 h-3.5" /> Add Another
+                    </button>
+                    <button onClick={resetAddStudent}
+                      className="flex-1 px-4 py-2.5 rounded-xl bg-foreground text-white text-sm font-medium hover:bg-foreground/90 transition-colors">
+                      Done
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

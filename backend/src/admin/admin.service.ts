@@ -14,7 +14,7 @@ import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { AuditLog } from '../entities/audit-log.entity';
 import { EmailService } from './email.service';
-import { CreateCompanyDto, BulkApproveDto, UpdateStudentDto, PaginationDto } from './dto/admin.dto';
+import { CreateStudentDto, CreateCompanyDto, BulkApproveDto, UpdateStudentDto, PaginationDto } from './dto/admin.dto';
 
 @Injectable()
 export class AdminService {
@@ -192,6 +192,81 @@ export class AdminService {
     });
 
     return { message: 'Student deleted' };
+  }
+
+  async createStudent(dto: CreateStudentDto, actorId: string) {
+    const usn = dto.usn.trim().toUpperCase();
+    const email = dto.email.trim().toLowerCase();
+    const dept = dto.department.trim().toUpperCase();
+    const batch = dto.batch?.trim() || String(new Date().getFullYear());
+
+    // Check duplicate USN
+    const existingStudent = await this.studentRepo.findOne({ where: { usn } });
+    if (existingStudent) throw new ConflictException(`USN "${usn}" already exists`);
+
+    // Check duplicate email
+    const existingUser = await this.userRepo.findOne({ where: { email } });
+    if (existingUser) throw new ConflictException(`Email "${email}" already exists`);
+
+    // Find matching batch
+    const matchedBatch = await this.batchRepo.findOne({
+      where: { department: dept, year: Number(batch) },
+    });
+
+    // Generate password: DEPT+BATCH (same pattern as bulk upload)
+    const rawPassword = `${dept}${batch}`;
+    const passwordHash = await bcrypt.hash(rawPassword, 10);
+
+    // Create user
+    const user = await this.userRepo.save({
+      email,
+      passwordHash,
+      role: UserRole.STUDENT,
+      mustChangePassword: true,
+      isActive: true,
+    });
+
+    // Create student
+    const student = await this.studentRepo.save({
+      userId: user.id,
+      usn,
+      fullName: dto.fullName.trim(),
+      department: dept,
+      batchId: matchedBatch?.id || null,
+      semester: matchedBatch?.currentSemester || null,
+      phone: dto.phone || null,
+      gender: dto.gender || null,
+      category: dto.category || null,
+      cgpa: dto.cgpa ?? null,
+      tenthPercent: dto.tenthPercent ?? null,
+      twelfthPercent: dto.twelfthPercent ?? null,
+      backlogs: dto.backlogs ?? 0,
+      profileComplete: false,
+      placementStatus: 'none',
+      profileData: {},
+    });
+
+    // Audit log
+    await this.auditRepo.save({
+      actorUserId: actorId,
+      action: 'CREATE_STUDENT',
+      entityType: 'student',
+      entityId: student.id,
+      newValue: { usn, email, department: dept, batch } as unknown as Record<string, unknown>,
+    });
+
+    this.logger.log(`Single student created: ${usn} (${email})`);
+
+    return {
+      student: {
+        id: student.id,
+        usn: student.usn,
+        fullName: student.fullName,
+        department: student.department,
+        email,
+      },
+      temporaryPassword: rawPassword,
+    };
   }
 
   // ─── Company Management ─────────────────────────

@@ -72,6 +72,23 @@ export class StudentService {
       student.profileData = { ...(student.profileData || {}), certifications: dto.certifications };
     }
 
+    // New extended profile fields — stored in profileData JSONB
+    if (dto.linkedin !== undefined) {
+      student.profileData = { ...(student.profileData || {}), linkedin: dto.linkedin };
+    }
+    if (dto.github !== undefined) {
+      student.profileData = { ...(student.profileData || {}), github: dto.github };
+    }
+    if (dto.aboutMe !== undefined) {
+      student.profileData = { ...(student.profileData || {}), aboutMe: dto.aboutMe };
+    }
+    if (dto.tenthMarksCardLink !== undefined) {
+      student.profileData = { ...(student.profileData || {}), tenthMarksCardLink: dto.tenthMarksCardLink };
+    }
+    if (dto.twelfthMarksCardLink !== undefined) {
+      student.profileData = { ...(student.profileData || {}), twelfthMarksCardLink: dto.twelfthMarksCardLink };
+    }
+
     // Calculate profile completeness — all 7 mandatory fields must be filled
     const mandatoryFields = [
       student.fullName,
@@ -84,6 +101,15 @@ export class StudentService {
     ];
     student.profileComplete = mandatoryFields.every((f) => f !== null && f !== undefined && f !== '');
 
+    await this.studentRepo.save(student);
+    return student;
+  }
+
+  async updateProfilePhoto(userId: string, s3Key: string): Promise<Student> {
+    const student = await this.studentRepo.findOne({ where: { userId } });
+    if (!student) throw new NotFoundException('Student profile not found');
+
+    student.photoS3Key = s3Key;
     await this.studentRepo.save(student);
     return student;
   }

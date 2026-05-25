@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsArray, IsObject, Min, Max, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsArray, IsObject, Min, Max, IsDateString, MaxLength } from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -100,6 +100,32 @@ export class UpdateProfileDto {
   @IsArray()
   @IsString({ each: true })
   certifications?: string[];
+
+  // ─── New Profile Fields ─────────────────────────
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  tenthMarksCardLink?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  twelfthMarksCardLink?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  linkedin?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  github?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  aboutMe?: string;
 }
 
 export class ApplyJobDto {

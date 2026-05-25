@@ -1,5 +1,60 @@
-import { IsString, IsEmail, IsOptional, IsArray, IsNumber, IsEnum, IsBoolean, Min, Max, ValidateNested, ArrayMinSize } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsArray, IsNumber, IsEnum, IsBoolean, Min, Max, ValidateNested, ArrayMinSize, MaxLength } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
+
+export class CreateStudentDto {
+  @IsString()
+  @MaxLength(20)
+  usn: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @MaxLength(100)
+  fullName: string;
+
+  @IsString()
+  department: string;
+
+  @IsOptional()
+  @IsString()
+  batch?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  gender?: string;
+
+  @IsOptional()
+  @IsString()
+  category?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(10)
+  cgpa?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  tenthPercent?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  twelfthPercent?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  backlogs?: number;
+}
 
 export class CreateCompanyDto {
   @IsString()

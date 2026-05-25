@@ -4,10 +4,14 @@ import Header from "@/components/layout/Header";
 import { cn } from "@/lib/utils";
 import { studentApi } from "@/lib/api";
 import {
-  User, Mail, Phone, Calendar, GraduationCap, Award, Globe, Edit3, ExternalLink, GitBranch,
-  Loader2, CheckCircle2, AlertCircle, Save, ShieldCheck, Code, Briefcase, Plus,
+  User, Mail, Phone, Calendar, GraduationCap, Award, Globe, Edit3,
+  ExternalLink, Loader2, CheckCircle2, AlertCircle, Save, ShieldCheck,
+  Code, Camera, X, Plus, FileText, Link2, GitBranch, MapPin,
+  BookOpen, Building2, Trophy, Sparkles, ChevronDown, ChevronUp,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+
+/* ────────────────────────────────── Types ─────────────────────────────────── */
 
 interface StudentProfile {
   id: string; usn: string; fullName: string; phone: string | null;
@@ -20,6 +24,7 @@ interface StudentProfile {
   backlogs: number; driveLink: string | null; familyIncome: number | null;
   category: string | null; profileData: Record<string, unknown>;
   profileComplete: boolean; placementStatus: string;
+  photoUrl?: string | null;
   user?: { email: string };
 }
 
@@ -28,57 +33,103 @@ const CATEGORY_OPTIONS = ["General", "OBC", "SC", "ST", "EWS", "Other"];
 const STREAM_OPTIONS = ["Science", "Commerce", "Arts"];
 const BOARD_OPTIONS = ["CBSE", "ICSE", "State Board", "IB", "Other"];
 
-// Extracted outside the component to prevent re-creation on every render (fixes mobile focus loss)
-function InputField({ label, value, onChange, editing, type = "text", placeholder = "", required = false, disabled = false }: {
+/* ────────────────────────────── Stat Ring ─────────────────────────────────── */
+
+function StatRing({ value, max, label, color }: { value: number; max: number; label: string; color: string }) {
+  const pct = Math.min((value / max) * 100, 100);
+  const r = 28; const c = 2 * Math.PI * r;
+  const offset = c - (pct / 100) * c;
+  return (
+    <div className="flex flex-col items-center gap-1.5">
+      <div className="relative w-16 h-16">
+        <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r={r} fill="none" stroke="currentColor" strokeWidth="4" className="text-border/50" />
+          <circle cx="32" cy="32" r={r} fill="none" stroke={color} strokeWidth="4"
+            strokeDasharray={c} strokeDashoffset={offset} strokeLinecap="round"
+            className="transition-all duration-1000 ease-out" />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-sm font-bold text-foreground">{value}</span>
+        </div>
+      </div>
+      <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{label}</span>
+    </div>
+  );
+}
+
+/* ──────────────────────────── Section Header ──────────────────────────────── */
+
+function SectionHeader({ icon: Icon, title, children }: { icon: React.ElementType; title: string; children?: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <h3 className="text-sm font-bold text-foreground flex items-center gap-2.5">
+        <div className="p-1.5 rounded-lg bg-indigo-50"><Icon className="w-4 h-4 text-indigo-600" /></div>
+        {title}
+      </h3>
+      {children}
+    </div>
+  );
+}
+
+/* ─────────────────────── Inline Input / Select ───────────────────────────── */
+
+function InlineInput({ label, value, onChange, editing, type = "text", placeholder = "", required = false, disabled = false }: {
   label: string; value: string; onChange: (v: string) => void; editing: boolean; type?: string;
   placeholder?: string; required?: boolean; disabled?: boolean;
 }) {
   return (
     <div>
-      <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">
-        {label} {required && <span className="text-red-500">*</span>}
+      <label className="block text-[10px] font-semibold text-muted-foreground/80 uppercase tracking-wider mb-1.5">
+        {label} {required && <span className="text-red-400">*</span>}
       </label>
       {editing && !disabled ? (
         <input type={type} value={value} onChange={(e) => onChange(e.target.value)}
-          className={cn("w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors bg-white",
-            required && !value ? "border-amber-300 focus:border-amber-500" : "border-border focus:border-indigo-500"
+          className={cn("w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all bg-white/80 backdrop-blur-sm",
+            "focus:ring-2 focus:ring-indigo-500/20",
+            required && !value ? "border-amber-300 focus:border-amber-500" : "border-border/60 focus:border-indigo-500"
           )} placeholder={placeholder} step={type === "number" ? "0.01" : undefined} />
       ) : (
-        <p className="text-sm font-medium text-foreground">{value || "—"}</p>
+        <p className="text-sm font-medium text-foreground py-1">{value || <span className="text-muted-foreground/40">—</span>}</p>
       )}
     </div>
   );
 }
 
-function SelectField({ label, value, onChange, editing, options, required = false }: {
+function InlineSelect({ label, value, onChange, editing, options, required = false }: {
   label: string; value: string; onChange: (v: string) => void; editing: boolean; options: string[]; required?: boolean;
 }) {
   return (
     <div>
-      <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">
-        {label} {required && <span className="text-red-500">*</span>}
+      <label className="block text-[10px] font-semibold text-muted-foreground/80 uppercase tracking-wider mb-1.5">
+        {label} {required && <span className="text-red-400">*</span>}
       </label>
       {editing ? (
         <select value={value} onChange={(e) => onChange(e.target.value)}
-          className={cn("w-full px-3 py-2 rounded-lg border text-sm outline-none transition-colors bg-white",
-            required && !value ? "border-amber-300" : "border-border"
+          className={cn("w-full px-3.5 py-2.5 rounded-xl border text-sm outline-none transition-all bg-white/80 backdrop-blur-sm",
+            "focus:ring-2 focus:ring-indigo-500/20",
+            required && !value ? "border-amber-300" : "border-border/60"
           )}>
           <option value="">Select...</option>
           {options.map((o) => <option key={o} value={o}>{o}</option>)}
         </select>
       ) : (
-        <p className="text-sm font-medium text-foreground capitalize">{value || "—"}</p>
+        <p className="text-sm font-medium text-foreground capitalize py-1">{value || <span className="text-muted-foreground/40">—</span>}</p>
       )}
     </div>
   );
 }
 
+/* ═══════════════════════════════ MAIN PAGE ════════════════════════════════ */
+
 export default function StudentProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+  const [aboutExpanded, setAboutExpanded] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form fields
   const [form, setForm] = useState({
@@ -86,10 +137,23 @@ export default function StudentProfilePage() {
     semester: "", cgpa: "", tenthPercent: "", tenthBoard: "", tenthYear: "",
     twelfthPercent: "", twelfthBoard: "", twelfthYear: "", twelfthStream: "",
     backlogs: "0", familyIncome: "", category: "", driveLink: "",
+    aboutMe: "", linkedin: "", github: "",
+    tenthMarksCardLink: "", twelfthMarksCardLink: "",
   });
+
+  const [skills, setSkills] = useState<string[]>([]);
+  const [newSkill, setNewSkill] = useState("");
+  const [certifications, setCertifications] = useState<string[]>([]);
+  const [newCert, setNewCert] = useState("");
 
   const setField = (key: string, val: string) => setForm((p) => ({ ...p, [key]: val }));
 
+  const showToast = (type: "success" | "error", msg: string) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  /* ─── Fetch Profile ──────────────────────────────── */
   const fetchProfile = useCallback(async () => {
     try {
       setLoading(true);
@@ -98,10 +162,11 @@ export default function StudentProfilePage() {
       const data = (res as any)?.data as StudentProfile;
       if (data) {
         setProfile(data);
+        const pd = (data.profileData || {}) as Record<string, unknown>;
         setForm({
           fullName: data.fullName || "",
           phone: data.phone || "",
-          dateOfBirth: data.dateOfBirth ? data.dateOfBirth.split("T")[0] : "",
+          dateOfBirth: data.dateOfBirth ? String(data.dateOfBirth).split("T")[0] : "",
           gender: data.gender || "",
           semester: data.semester?.toString() || "",
           cgpa: data.cgpa?.toString() || "",
@@ -116,8 +181,14 @@ export default function StudentProfilePage() {
           familyIncome: data.familyIncome?.toString() || "",
           category: data.category || "",
           driveLink: data.driveLink || "",
+          aboutMe: (pd.aboutMe as string) || "",
+          linkedin: (pd.linkedin as string) || "",
+          github: (pd.github as string) || "",
+          tenthMarksCardLink: (pd.tenthMarksCardLink as string) || "",
+          twelfthMarksCardLink: (pd.twelfthMarksCardLink as string) || "",
         });
-        // Auto-enter edit mode if profile is incomplete
+        setSkills((pd.skills as string[]) || []);
+        setCertifications((pd.certifications as string[]) || []);
         if (!data.profileComplete) setEditing(true);
       }
     } catch { /* silently handle */ } finally { setLoading(false); }
@@ -125,6 +196,60 @@ export default function StudentProfilePage() {
 
   useEffect(() => { fetchProfile(); }, [fetchProfile]);
 
+  /* ─── Photo Upload ───────────────────────────────── */
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const maxSize = 2 * 1024 * 1024;
+    if (file.size > maxSize) {
+      showToast("error", "Image must be under 2MB");
+      return;
+    }
+    const validTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      showToast("error", "Only JPEG, PNG, or WebP images allowed");
+      return;
+    }
+
+    try {
+      setUploadingPhoto(true);
+      const res = await studentApi.uploadProfilePhoto(file);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const photoUrl = (res as any)?.data?.photoUrl;
+      if (photoUrl && profile) {
+        setProfile({ ...profile, photoUrl });
+      }
+      showToast("success", "Profile photo updated!");
+    } catch {
+      showToast("error", "Failed to upload photo");
+    } finally {
+      setUploadingPhoto(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  /* ─── Add / Remove Skills ────────────────────────── */
+  const addSkill = () => {
+    const s = newSkill.trim();
+    if (s && !skills.includes(s)) {
+      setSkills([...skills, s]);
+      setNewSkill("");
+    }
+  };
+  const removeSkill = (s: string) => setSkills(skills.filter((x) => x !== s));
+
+  /* ─── Add / Remove Certifications ────────────────── */
+  const addCert = () => {
+    const c = newCert.trim();
+    if (c && !certifications.includes(c)) {
+      setCertifications([...certifications, c]);
+      setNewCert("");
+    }
+  };
+  const removeCert = (c: string) => setCertifications(certifications.filter((x) => x !== c));
+
+  /* ─── Save ───────────────────────────────────────── */
   const mandatoryFilled = !!(
     form.fullName && form.phone && form.dateOfBirth && form.gender &&
     form.tenthPercent && form.twelfthPercent && form.cgpa
@@ -133,8 +258,7 @@ export default function StudentProfilePage() {
   const handleSave = async () => {
     if (!profile) return;
     if (!mandatoryFilled) {
-      setToast({ type: "error", msg: "Please fill all required fields (marked with *)" });
-      setTimeout(() => setToast(null), 3000);
+      showToast("error", "Please fill all required fields (marked with *)");
       return;
     }
     try {
@@ -157,200 +281,523 @@ export default function StudentProfilePage() {
         familyIncome: form.familyIncome ? parseInt(form.familyIncome) : undefined,
         category: form.category || undefined,
         driveLink: form.driveLink || undefined,
+        skills,
+        certifications,
+        aboutMe: form.aboutMe || undefined,
+        linkedin: form.linkedin || undefined,
+        github: form.github || undefined,
+        tenthMarksCardLink: form.tenthMarksCardLink || undefined,
+        twelfthMarksCardLink: form.twelfthMarksCardLink || undefined,
       });
-      setToast({ type: "success", msg: "Profile updated successfully!" });
+      showToast("success", "Profile updated successfully!");
       setEditing(false);
       fetchProfile();
     } catch {
-      setToast({ type: "error", msg: "Failed to update profile" });
+      showToast("error", "Failed to update profile");
     } finally {
       setSaving(false);
-      setTimeout(() => setToast(null), 3000);
     }
   };
 
-  const skills = (profile?.profileData?.skills as string[]) || [];
-  const certifications = (profile?.profileData?.certifications as string[]) || [];
-  const linkedin = (profile?.profileData?.linkedin as string) || "";
-  const github = (profile?.profileData?.github as string) || "";
-
   const placementLabel: Record<string, { label: string; color: string; bg: string }> = {
-    none: { label: "Not Applied", color: "text-slate-500", bg: "bg-slate-50" },
+    none: { label: "Not Applied", color: "text-slate-500", bg: "bg-slate-100" },
     shortlisted: { label: "Shortlisted", color: "text-blue-600", bg: "bg-blue-50" },
     interview_scheduled: { label: "Interview", color: "text-violet-600", bg: "bg-violet-50" },
     offered: { label: "Offered", color: "text-amber-600", bg: "bg-amber-50" },
-    placed: { label: "Placed", color: "text-emerald-600", bg: "bg-emerald-50" },
+    placed: { label: "Placed ✓", color: "text-emerald-600", bg: "bg-emerald-50" },
     not_placed: { label: "Not Placed", color: "text-red-600", bg: "bg-red-50" },
   };
 
-  // Form sections use the extracted components below
+  /* ═══════════════════════════════ RENDER ═════════════════════════════════ */
+
+  if (loading) {
+    return (
+      <div className="page-enter">
+        <Header userName="Student" userRole="Student" greeting="My Profile" subtitle="Loading..." />
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+          <p className="text-sm text-muted-foreground">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="page-enter">
+        <Header userName="Student" userRole="Student" greeting="My Profile" subtitle="" />
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <AlertCircle className="w-10 h-10 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">Profile not found</p>
+        </div>
+      </div>
+    );
+  }
+
+  const st = placementLabel[profile.placementStatus] || placementLabel.none;
+  const aboutMe = form.aboutMe || "";
 
   return (
     <div className="page-enter">
-      <Header userName={profile?.fullName || "Student"} userRole="Student"
-        greeting={!profile?.profileComplete ? "Complete Your Profile" : "My Profile"}
-        subtitle={!profile?.profileComplete ? "Fill in all required fields to access placement features" : "Manage your academic and professional profile"} />
+      <Header userName={profile.fullName || "Student"} userRole="Student"
+        greeting={!profile.profileComplete ? "Complete Your Profile" : "My Profile"}
+        subtitle={!profile.profileComplete ? "Fill in all required fields to access placement features" : ""} />
 
+      {/* Toast */}
       {toast && (
-        <div className={cn("fixed top-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium animate-in slide-in-from-top-2",
-          toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white")}>
+        <div className={cn("fixed top-6 right-6 z-50 flex items-center gap-2.5 px-5 py-3 rounded-2xl shadow-2xl text-sm font-semibold",
+          "animate-in slide-in-from-top-2 backdrop-blur-md",
+          toast.type === "success" ? "bg-emerald-600/95 text-white" : "bg-red-600/95 text-white")}>
           {toast.type === "success" ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
           {toast.msg}
         </div>
       )}
 
-      <div className="px-4 sm:px-6 md:px-8 pb-10 space-y-6">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
-            <p className="text-sm text-muted-foreground">Loading profile...</p>
-          </div>
-        ) : !profile ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <AlertCircle className="w-10 h-10 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">Profile not found</p>
-          </div>
-        ) : (
-          <>
-            {/* Incomplete banner */}
-            {!profile.profileComplete && (
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
-                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-amber-800">Profile Incomplete</p>
-                  <p className="text-xs text-amber-600">Fill all fields marked with * to unlock placement features.</p>
-                </div>
-                {!editing && (
-                  <button onClick={() => setEditing(true)}
-                    className="px-4 py-2 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 transition-colors">
-                    Complete Now
-                  </button>
-                )}
-              </div>
-            )}
+      {/* Hidden file input */}
+      <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp"
+        className="hidden" onChange={handlePhotoUpload} id="profile-photo-input" aria-label="Upload profile photo" />
 
-            {/* Profile header card */}
-            <div className="i-card p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                <div className="flex items-start gap-4 sm:gap-5">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-xl sm:text-2xl font-bold shadow-lg shadow-indigo-500/30 flex-shrink-0">
+      <div className="px-4 sm:px-6 md:px-8 pb-28 md:pb-10 space-y-5 max-w-5xl mx-auto">
+
+        {/* ────────── Incomplete Banner ────────── */}
+        {!profile.profileComplete && (
+          <div className="flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-200/80">
+            <div className="p-2 rounded-xl bg-amber-100">
+              <AlertCircle className="w-5 h-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-bold text-amber-800">Profile Incomplete</p>
+              <p className="text-xs text-amber-600">Fill all fields marked with * to unlock placement features.</p>
+            </div>
+          </div>
+        )}
+
+        {/* ════════════════════ HERO CARD ═════════════════════ */}
+        <div className="i-card overflow-hidden">
+          {/* Cover Banner */}
+          <div className="h-32 sm:h-40 relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-700" />
+            <div className="absolute inset-0 opacity-[0.08]"
+              style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} />
+            {/* Floating sparkle */}
+            <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+              <Sparkles className="w-5 h-5 text-white/30" />
+            </div>
+          </div>
+
+          {/* Profile Info Area */}
+          <div className="relative px-5 sm:px-8 pb-6">
+            {/* Avatar */}
+            <div className="relative -mt-14 sm:-mt-16 mb-4">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                className="group relative w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-white shadow-xl overflow-hidden bg-gradient-to-br from-indigo-500 to-violet-600 cursor-pointer focus:outline-none focus:ring-4 focus:ring-indigo-500/20"
+                aria-label="Change profile photo"
+              >
+                {profile.photoUrl ? (
+                  <img src={profile.photoUrl} alt={profile.fullName}
+                    className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-white text-2xl sm:text-3xl font-bold">
                     {profile.fullName?.split(" ").map((n) => n[0]).join("").slice(0, 2)}
                   </div>
-                  <div className="min-w-0">
-                    <h2 className="text-lg sm:text-xl font-bold text-foreground truncate">{profile.fullName}</h2>
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">{profile.usn} · {profile.department}</p>
-                    <div className="flex items-center gap-2 mt-2 flex-wrap">
-                      {(() => {
-                        const st = placementLabel[profile.placementStatus] || placementLabel.none;
-                        return <span className={cn("text-[10px] font-semibold px-2.5 py-1 rounded-full", st.bg, st.color)}>{st.label}</span>;
-                      })()}
-                      {profile.profileComplete && (
-                        <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 inline-flex items-center gap-1">
-                          <ShieldCheck className="w-3 h-3" /> Verified
-                        </span>
+                )}
+                {/* Camera overlay */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center">
+                  {uploadingPhoto ? (
+                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                  ) : (
+                    <Camera className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                  )}
+                </div>
+              </button>
+            </div>
+
+            {/* Name / Info Row */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">{profile.fullName}</h1>
+                <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
+                  <span className="font-medium">{profile.usn}</span>
+                  <span className="text-border">·</span>
+                  <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" />{profile.department}</span>
+                  {profile.semester && (
+                    <>
+                      <span className="text-border">·</span>
+                      <span>Sem {profile.semester}</span>
+                    </>
+                  )}
+                </p>
+                {/* Badges */}
+                <div className="flex items-center gap-2 mt-3 flex-wrap">
+                  <span className={cn("text-[10px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wide", st.bg, st.color)}>{st.label}</span>
+                  {profile.profileComplete && (
+                    <span className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-600 inline-flex items-center gap-1 uppercase tracking-wide">
+                      <ShieldCheck className="w-3 h-3" /> Verified
+                    </span>
+                  )}
+                </div>
+                {/* Social Links */}
+                {(form.linkedin || form.github || profile.user?.email) && !editing && (
+                  <div className="flex items-center gap-3 mt-3">
+                    {profile.user?.email && (
+                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Mail className="w-3.5 h-3.5" />{profile.user.email}
+                      </span>
+                    )}
+                    {form.linkedin && (
+                      <a href={form.linkedin} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium">
+                        <Globe className="w-3.5 h-3.5" />LinkedIn
+                      </a>
+                    )}
+                    {form.github && (
+                      <a href={form.github} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-slate-700 hover:text-slate-900 font-medium">
+                        <GitBranch className="w-3.5 h-3.5" />GitHub
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Edit / Save Button */}
+              <button onClick={() => { if (editing) handleSave(); else setEditing(true); }} disabled={saving}
+                className={cn("flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shrink-0",
+                  editing
+                    ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 active:scale-[0.98]"
+                    : "bg-white border border-border/60 text-foreground hover:bg-muted/60 shadow-sm")}>
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : editing ? <Save className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
+                {editing ? (saving ? "Saving..." : "Save Profile") : "Edit Profile"}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ════════════════ ABOUT SECTION ═════════════════ */}
+        <div className="i-card p-5 sm:p-6">
+          <SectionHeader icon={User} title="About" />
+          {editing ? (
+            <div className="space-y-3">
+              <textarea value={form.aboutMe} onChange={(e) => setField("aboutMe", e.target.value)}
+                rows={3} maxLength={1000} placeholder="Write a brief summary about yourself, your interests, and career goals..."
+                className="w-full px-4 py-3 rounded-xl border border-border/60 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 bg-white/80 resize-none transition-all" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <InlineInput label="LinkedIn URL" value={form.linkedin} onChange={(v) => setField("linkedin", v)}
+                  editing={editing} placeholder="https://linkedin.com/in/yourname" />
+                <InlineInput label="GitHub URL" value={form.github} onChange={(v) => setField("github", v)}
+                  editing={editing} placeholder="https://github.com/yourname" />
+              </div>
+            </div>
+          ) : (
+            <div>
+              {aboutMe ? (
+                <div>
+                  <p className={cn("text-sm text-muted-foreground leading-relaxed", !aboutExpanded && aboutMe.length > 200 && "line-clamp-3")}>
+                    {aboutMe}
+                  </p>
+                  {aboutMe.length > 200 && (
+                    <button onClick={() => setAboutExpanded(!aboutExpanded)}
+                      className="flex items-center gap-1 text-xs font-semibold text-indigo-600 mt-2 hover:text-indigo-700">
+                      {aboutExpanded ? <><ChevronUp className="w-3 h-3" />Show less</> : <><ChevronDown className="w-3 h-3" />Show more</>}
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground/50 italic">No bio added yet. Click Edit to add one.</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ════════════════ ACADEMIC STATS BAR ═════════════════ */}
+        <div className="i-card p-5 sm:p-6">
+          <SectionHeader icon={Trophy} title="Academic Highlights" />
+          <div className="flex items-center justify-around flex-wrap gap-4">
+            <StatRing value={Number(form.cgpa) || 0} max={10} label="CGPA" color="#6366f1" />
+            <StatRing value={Number(form.tenthPercent) || 0} max={100} label="10th %" color="#10b981" />
+            <StatRing value={Number(form.twelfthPercent) || 0} max={100} label="12th %" color="#8b5cf6" />
+            <div className="flex flex-col items-center gap-1.5">
+              <div className="w-16 h-16 rounded-full border-4 flex items-center justify-center"
+                style={{ borderColor: Number(form.backlogs) === 0 ? "#10b981" : "#ef4444" }}>
+                <span className="text-sm font-bold text-foreground">{form.backlogs || "0"}</span>
+              </div>
+              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Backlogs</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ════════════════ MAIN CONTENT GRID ═════════════════ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+          {/* ─── LEFT COLUMN (2/3) ─── */}
+          <div className="lg:col-span-2 space-y-5">
+
+            {/* Education */}
+            <div className="i-card p-5 sm:p-6">
+              <SectionHeader icon={GraduationCap} title="Education" />
+              <div className="space-y-4">
+                {/* Current Degree */}
+                <div className="flex gap-4 p-4 rounded-xl bg-gradient-to-r from-indigo-50/50 to-violet-50/50 border border-indigo-100/60">
+                  <div className="p-2.5 rounded-xl bg-indigo-100 h-fit">
+                    <BookOpen className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-foreground">B.E. / B.Tech — {profile.department}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Maharaja Institute of Technology, Mysuru</p>
+                    <div className="flex items-center gap-4 mt-2 flex-wrap">
+                      {editing ? (
+                        <div className="grid grid-cols-3 gap-3 w-full">
+                          <InlineInput label="CGPA" value={form.cgpa} onChange={(v) => setField("cgpa", v)} editing={editing} type="number" required placeholder="8.50" />
+                          <InlineInput label="Semester" value={form.semester} onChange={(v) => setField("semester", v)} editing={editing} type="number" placeholder="6" />
+                          <InlineInput label="Backlogs" value={form.backlogs} onChange={(v) => setField("backlogs", v)} editing={editing} type="number" placeholder="0" />
+                        </div>
+                      ) : (
+                        <>
+                          {form.cgpa && <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">CGPA {form.cgpa}</span>}
+                          {form.semester && <span className="text-xs text-muted-foreground">Semester {form.semester}</span>}
+                        </>
                       )}
                     </div>
                   </div>
                 </div>
-                <button onClick={() => { if (editing) handleSave(); else setEditing(true); }} disabled={saving}
-                  className={cn("flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all w-full sm:w-auto justify-center",
-                    editing ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/20" : "bg-muted text-foreground hover:bg-muted/80")}>
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : editing ? <Save className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
-                  {editing ? (saving ? "Saving..." : "Save Profile") : "Edit Profile"}
-                </button>
+
+                {/* 12th Standard */}
+                <div className="flex gap-4 p-4 rounded-xl bg-white border border-border/40">
+                  <div className="p-2.5 rounded-xl bg-violet-50 h-fit">
+                    <GraduationCap className="w-5 h-5 text-violet-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-foreground">12th Standard (PUC / Higher Secondary)</p>
+                    {editing ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                        <InlineInput label="Percentage" value={form.twelfthPercent} onChange={(v) => setField("twelfthPercent", v)} editing={editing} type="number" required placeholder="88.6" />
+                        <InlineSelect label="Board" value={form.twelfthBoard} onChange={(v) => setField("twelfthBoard", v)} editing={editing} options={BOARD_OPTIONS} />
+                        <InlineInput label="Year" value={form.twelfthYear} onChange={(v) => setField("twelfthYear", v)} editing={editing} type="number" placeholder="2022" />
+                        <InlineSelect label="Stream" value={form.twelfthStream} onChange={(v) => setField("twelfthStream", v)} editing={editing} options={STREAM_OPTIONS} />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                        {form.twelfthPercent && <span className="text-xs font-semibold text-violet-600 bg-violet-50 px-2.5 py-1 rounded-full">{form.twelfthPercent}%</span>}
+                        {form.twelfthBoard && <span className="text-xs text-muted-foreground">{form.twelfthBoard}</span>}
+                        {form.twelfthYear && <span className="text-xs text-muted-foreground">· {form.twelfthYear}</span>}
+                        {form.twelfthStream && <span className="text-xs text-muted-foreground">· {form.twelfthStream}</span>}
+                      </div>
+                    )}
+                    {/* 12th Marks Card Link */}
+                    {editing ? (
+                      <div className="mt-3">
+                        <InlineInput label="12th Marks Card (Drive Link)" value={form.twelfthMarksCardLink}
+                          onChange={(v) => setField("twelfthMarksCardLink", v)} editing={editing}
+                          placeholder="https://drive.google.com/..." />
+                      </div>
+                    ) : form.twelfthMarksCardLink ? (
+                      <a href={form.twelfthMarksCardLink} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 mt-2">
+                        <FileText className="w-3.5 h-3.5" />View Marks Card<ExternalLink className="w-3 h-3" />
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
+
+                {/* 10th Standard */}
+                <div className="flex gap-4 p-4 rounded-xl bg-white border border-border/40">
+                  <div className="p-2.5 rounded-xl bg-emerald-50 h-fit">
+                    <GraduationCap className="w-5 h-5 text-emerald-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-foreground">10th Standard (SSLC)</p>
+                    {editing ? (
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
+                        <InlineInput label="Percentage" value={form.tenthPercent} onChange={(v) => setField("tenthPercent", v)} editing={editing} type="number" required placeholder="92.4" />
+                        <InlineSelect label="Board" value={form.tenthBoard} onChange={(v) => setField("tenthBoard", v)} editing={editing} options={BOARD_OPTIONS} />
+                        <InlineInput label="Year" value={form.tenthYear} onChange={(v) => setField("tenthYear", v)} editing={editing} type="number" placeholder="2020" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                        {form.tenthPercent && <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">{form.tenthPercent}%</span>}
+                        {form.tenthBoard && <span className="text-xs text-muted-foreground">{form.tenthBoard}</span>}
+                        {form.tenthYear && <span className="text-xs text-muted-foreground">· {form.tenthYear}</span>}
+                      </div>
+                    )}
+                    {/* 10th Marks Card Link */}
+                    {editing ? (
+                      <div className="mt-3">
+                        <InlineInput label="10th Marks Card (Drive Link)" value={form.tenthMarksCardLink}
+                          onChange={(v) => setField("tenthMarksCardLink", v)} editing={editing}
+                          placeholder="https://drive.google.com/..." />
+                      </div>
+                    ) : form.tenthMarksCardLink ? (
+                      <a href={form.tenthMarksCardLink} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 mt-2">
+                        <FileText className="w-3.5 h-3.5" />View Marks Card<ExternalLink className="w-3 h-3" />
+                      </a>
+                    ) : null}
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Form sections */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Personal Info */}
-              <div className="i-card p-5 space-y-4">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <User className="w-4 h-4 text-indigo-500" /> Personal Information
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <InputField label="Full Name" value={form.fullName} onChange={(v) => setField("fullName", v)} editing={editing} required placeholder="John Doe" />
-                  <InputField label="Phone" value={form.phone} onChange={(v) => setField("phone", v)} editing={editing} required placeholder="+91 9876543210" />
-                  <InputField label="Date of Birth" value={form.dateOfBirth} onChange={(v) => setField("dateOfBirth", v)} editing={editing} type="date" required />
-                  <SelectField label="Gender" value={form.gender} onChange={(v) => setField("gender", v)} editing={editing} options={GENDER_OPTIONS} required />
-                  <SelectField label="Category" value={form.category} onChange={(v) => setField("category", v)} editing={editing} options={CATEGORY_OPTIONS} />
-                  <InputField label="Family Income (₹/yr)" value={form.familyIncome} onChange={(v) => setField("familyIncome", v)} editing={editing} type="number" placeholder="500000" />
+            {/* Skills */}
+            <div className="i-card p-5 sm:p-6">
+              <SectionHeader icon={Code} title="Skills">
+                {!editing && skills.length > 0 && (
+                  <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2.5 py-1 rounded-full">{skills.length} skills</span>
+                )}
+              </SectionHeader>
+              {editing && (
+                <div className="flex gap-2 mb-4">
+                  <input value={newSkill} onChange={(e) => setNewSkill(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addSkill(); } }}
+                    placeholder="Type a skill and press Enter..."
+                    className="flex-1 px-3.5 py-2.5 rounded-xl border border-border/60 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 bg-white/80 transition-all" />
+                  <button onClick={addSkill} type="button"
+                    className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 transition-colors flex items-center gap-1.5 shrink-0">
+                    <Plus className="w-4 h-4" />Add
+                  </button>
                 </div>
-                <div className="pt-2 border-t border-border">
-                  <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Email</p>
+              )}
+              {skills.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {skills.map((s) => (
+                    <span key={s} className={cn(
+                      "inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl transition-all",
+                      "bg-gradient-to-r from-indigo-50 to-violet-50 text-indigo-700 border border-indigo-100/60"
+                    )}>
+                      {s}
+                      {editing && (
+                        <button onClick={() => removeSkill(s)} type="button" className="hover:text-red-500 transition-colors" aria-label={`Remove ${s}`}>
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground/50 italic">{editing ? "Add your technical and soft skills" : "No skills added yet"}</p>
+              )}
+            </div>
+
+            {/* Certifications */}
+            <div className="i-card p-5 sm:p-6">
+              <SectionHeader icon={Award} title="Certifications">
+                {!editing && certifications.length > 0 && (
+                  <span className="text-[10px] font-bold text-muted-foreground bg-muted px-2.5 py-1 rounded-full">{certifications.length}</span>
+                )}
+              </SectionHeader>
+              {editing && (
+                <div className="flex gap-2 mb-4">
+                  <input value={newCert} onChange={(e) => setNewCert(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCert(); } }}
+                    placeholder="e.g. AWS Cloud Practitioner, NPTEL Java..."
+                    className="flex-1 px-3.5 py-2.5 rounded-xl border border-border/60 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 bg-white/80 transition-all" />
+                  <button onClick={addCert} type="button"
+                    className="px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 transition-colors flex items-center gap-1.5 shrink-0">
+                    <Plus className="w-4 h-4" />Add
+                  </button>
+                </div>
+              )}
+              {certifications.length > 0 ? (
+                <div className="space-y-2.5">
+                  {certifications.map((c, i) => (
+                    <div key={c} className="flex items-center gap-3 group">
+                      <div className="flex flex-col items-center">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-sm">
+                          <Award className="w-4 h-4 text-white" />
+                        </div>
+                        {i < certifications.length - 1 && <div className="w-px h-3 bg-border/40 mt-1" />}
+                      </div>
+                      <div className="flex-1 flex items-center justify-between py-1">
+                        <span className="text-sm font-medium text-foreground">{c}</span>
+                        {editing && (
+                          <button onClick={() => removeCert(c)} type="button"
+                            className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all" aria-label={`Remove ${c}`}>
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground/50 italic">{editing ? "Add your certifications and achievements" : "No certifications added"}</p>
+              )}
+            </div>
+          </div>
+
+          {/* ─── RIGHT COLUMN (1/3) ─── */}
+          <div className="space-y-5">
+
+            {/* Personal Info */}
+            <div className="i-card p-5 sm:p-6">
+              <SectionHeader icon={User} title="Personal Info" />
+              <div className="space-y-3">
+                <InlineInput label="Full Name" value={form.fullName} onChange={(v) => setField("fullName", v)} editing={editing} required placeholder="John Doe" />
+                <InlineInput label="Phone" value={form.phone} onChange={(v) => setField("phone", v)} editing={editing} required placeholder="+91 9876543210" />
+                <InlineInput label="Date of Birth" value={form.dateOfBirth} onChange={(v) => setField("dateOfBirth", v)} editing={editing} type="date" required />
+                <InlineSelect label="Gender" value={form.gender} onChange={(v) => setField("gender", v)} editing={editing} options={GENDER_OPTIONS} required />
+                <InlineSelect label="Category" value={form.category} onChange={(v) => setField("category", v)} editing={editing} options={CATEGORY_OPTIONS} />
+                <InlineInput label="Family Income (₹/yr)" value={form.familyIncome} onChange={(v) => setField("familyIncome", v)} editing={editing} type="number" placeholder="500000" />
+                {/* Email (read-only) */}
+                <div className="pt-2 border-t border-border/40">
+                  <label className="block text-[10px] font-semibold text-muted-foreground/80 uppercase tracking-wider mb-1.5">Email</label>
                   <p className="text-sm text-muted-foreground flex items-center gap-2"><Mail className="w-3.5 h-3.5" />{profile.user?.email || "—"}</p>
                 </div>
               </div>
-
-              {/* Academic Info */}
-              <div className="i-card p-5 space-y-4">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4 text-indigo-500" /> Academic Details
-                </h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  <InputField label="CGPA" value={form.cgpa} onChange={(v) => setField("cgpa", v)} editing={editing} type="number" required placeholder="8.50" />
-                  <InputField label="Semester" value={form.semester} onChange={(v) => setField("semester", v)} editing={editing} type="number" placeholder="6" />
-                  <InputField label="Backlogs" value={form.backlogs} onChange={(v) => setField("backlogs", v)} editing={editing} type="number" placeholder="0" />
-                </div>
-                <div className="pt-3 border-t border-border">
-                  <p className="text-xs font-semibold text-foreground mb-3">10th Standard</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <InputField label="Percentage" value={form.tenthPercent} onChange={(v) => setField("tenthPercent", v)} editing={editing} type="number" required placeholder="92.4" />
-                    <SelectField label="Board" value={form.tenthBoard} onChange={(v) => setField("tenthBoard", v)} editing={editing} options={BOARD_OPTIONS} />
-                    <InputField label="Year" value={form.tenthYear} onChange={(v) => setField("tenthYear", v)} editing={editing} type="number" placeholder="2020" />
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-border">
-                  <p className="text-xs font-semibold text-foreground mb-3">12th Standard</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <InputField label="Percentage" value={form.twelfthPercent} onChange={(v) => setField("twelfthPercent", v)} editing={editing} type="number" required placeholder="88.6" />
-                    <SelectField label="Board" value={form.twelfthBoard} onChange={(v) => setField("twelfthBoard", v)} editing={editing} options={BOARD_OPTIONS} />
-                    <InputField label="Year" value={form.twelfthYear} onChange={(v) => setField("twelfthYear", v)} editing={editing} type="number" placeholder="2022" />
-                  </div>
-                  <div className="mt-3">
-                    <SelectField label="Stream" value={form.twelfthStream} onChange={(v) => setField("twelfthStream", v)} editing={editing} options={STREAM_OPTIONS} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Links & Resume */}
-              <div className="i-card p-5 space-y-4">
-                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                  <Globe className="w-4 h-4 text-indigo-500" /> Links & Resume
-                </h3>
-                <InputField label="Resume Drive Link" value={form.driveLink} onChange={(v) => setField("driveLink", v)} editing={editing} placeholder="https://drive.google.com/..." />
-                {linkedin && <a href={linkedin} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-indigo-600 hover:underline"><ExternalLink className="w-3 h-3" /> LinkedIn</a>}
-                {github && <a href={github} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-xs text-indigo-600 hover:underline"><GitBranch className="w-3 h-3" /> GitHub</a>}
-              </div>
-
-              {/* Skills & Certs */}
-              <div className="space-y-6">
-                <div className="i-card p-5 space-y-3">
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2"><Code className="w-4 h-4 text-indigo-500" /> Skills</h3>
-                  {skills.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">{skills.map((s) => <span key={s} className="text-[10px] font-semibold px-2.5 py-1.5 rounded-full bg-indigo-50 text-indigo-600">{s}</span>)}</div>
-                  ) : (<p className="text-xs text-muted-foreground">No skills added yet</p>)}
-                </div>
-                <div className="i-card p-5 space-y-3">
-                  <h3 className="text-sm font-semibold text-foreground flex items-center gap-2"><Award className="w-4 h-4 text-indigo-500" /> Certifications</h3>
-                  {certifications.length > 0 ? (
-                    <div className="space-y-2">{certifications.map((c) => <div key={c} className="flex items-center gap-2 text-xs text-foreground"><CheckCircle2 className="w-3 h-3 text-emerald-500 flex-shrink-0" />{c}</div>)}</div>
-                  ) : (<p className="text-xs text-muted-foreground">No certifications added</p>)}
-                </div>
-              </div>
             </div>
 
-            {/* Save floating button for mobile */}
-            {editing && (
-              <div className="fixed bottom-24 left-0 right-0 px-4 md:hidden z-40">
-                <button onClick={handleSave} disabled={saving}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-semibold text-sm shadow-xl shadow-indigo-500/30">
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  {saving ? "Saving..." : `Save Profile${!mandatoryFilled ? " (Fill required fields)" : ""}`}
-                </button>
+            {/* Documents & Links */}
+            <div className="i-card p-5 sm:p-6">
+              <SectionHeader icon={Link2} title="Documents & Links" />
+              <div className="space-y-3">
+                <InlineInput label="Resume (Drive Link)" value={form.driveLink} onChange={(v) => setField("driveLink", v)}
+                  editing={editing} placeholder="https://drive.google.com/..." />
+
+                {/* View links when not editing */}
+                {!editing && (
+                  <div className="space-y-2 pt-2 border-t border-border/40">
+                    {form.driveLink && (
+                      <a href={form.driveLink} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors group">
+                        <span className="flex items-center gap-2 text-xs font-medium text-foreground"><FileText className="w-4 h-4 text-indigo-500" />Resume</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-indigo-600 transition-colors" />
+                      </a>
+                    )}
+                    {form.tenthMarksCardLink && (
+                      <a href={form.tenthMarksCardLink} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors group">
+                        <span className="flex items-center gap-2 text-xs font-medium text-foreground"><FileText className="w-4 h-4 text-emerald-500" />10th Marks Card</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-indigo-600 transition-colors" />
+                      </a>
+                    )}
+                    {form.twelfthMarksCardLink && (
+                      <a href={form.twelfthMarksCardLink} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors group">
+                        <span className="flex items-center gap-2 text-xs font-medium text-foreground"><FileText className="w-4 h-4 text-violet-500" />12th Marks Card</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-indigo-600 transition-colors" />
+                      </a>
+                    )}
+                    {!form.driveLink && !form.tenthMarksCardLink && !form.twelfthMarksCardLink && (
+                      <p className="text-xs text-muted-foreground/50 italic">No documents linked yet</p>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
-          </>
+            </div>
+          </div>
+        </div>
+
+        {/* ────────── Mobile Floating Save Button ────────── */}
+        {editing && (
+          <div className="fixed bottom-24 left-0 right-0 px-4 md:hidden z-40">
+            <button onClick={handleSave} disabled={saving} type="button"
+              className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold text-sm shadow-2xl shadow-indigo-500/30 active:scale-[0.98] transition-transform">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {saving ? "Saving..." : `Save Profile${!mandatoryFilled ? " (Fill required fields)" : ""}`}
+            </button>
+          </div>
         )}
       </div>
     </div>

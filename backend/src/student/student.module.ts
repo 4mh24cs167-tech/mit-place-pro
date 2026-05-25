@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { StudentController } from './student.controller';
 import { StudentService } from './student.service';
+import { UploadModule } from '../upload/upload.module';
 import { Student } from '../entities/student.entity';
 import { Job } from '../entities/job.entity';
 import { Application } from '../entities/application.entity';
@@ -23,8 +24,10 @@ import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
       DriveRegistration,
       DriveSlot,
     ]),
+    UploadModule,
   ],
   controllers: [StudentController],
   providers: [StudentService],
 })
 export class StudentModule {}
+
