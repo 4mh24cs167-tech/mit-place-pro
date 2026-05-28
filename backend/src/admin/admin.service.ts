@@ -313,23 +313,33 @@ export class AdminService {
       hqCity: dto.hqCity || null,
     });
 
-    await this.auditRepo.save({
-      actorUserId: actorId,
-      action: 'CREATE_COMPANY',
-      entityType: 'company',
-      entityId: company.id,
-      newValue: { name: dto.name, email: dto.hrEmail } as unknown as Record<string, unknown>,
-    });
+    // Audit log (non-critical — don't let it crash company creation)
+    try {
+      await this.auditRepo.save({
+        actorUserId: actorId,
+        action: 'CREATE_COMPANY',
+        entityType: 'company',
+        entityId: company.id,
+        newValue: { name: dto.name, email: dto.hrEmail } as unknown as Record<string, unknown>,
+      });
+    } catch (auditErr) {
+      this.logger.warn(`Audit log save failed: ${(auditErr as Error).message}`);
+    }
 
     // Send credentials via email (fire-and-forget, don't block response)
-    const loginUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000') + '/login';
-    const emailSent = await this.emailService.sendCompanyCredentials({
-      companyName: dto.name,
-      hrName: dto.hrName,
-      email: dto.hrEmail.toLowerCase(),
-      temporaryPassword: rawPassword,
-      loginUrl,
-    });
+    let emailSent = false;
+    try {
+      const loginUrl = this.configService.get<string>('FRONTEND_URL', 'https://mitm-placepro.vercel.app') + '/login';
+      emailSent = await this.emailService.sendCompanyCredentials({
+        companyName: dto.name,
+        hrName: dto.hrName,
+        email: dto.hrEmail.toLowerCase(),
+        temporaryPassword: rawPassword,
+        loginUrl,
+      });
+    } catch (emailErr) {
+      this.logger.warn(`Company credentials email failed: ${(emailErr as Error).message}`);
+    }
 
     return {
       company,
