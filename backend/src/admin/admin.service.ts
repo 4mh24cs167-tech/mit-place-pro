@@ -101,7 +101,7 @@ export class AdminService {
       .take(limit)
       .orderBy('batch.name', 'DESC')
       .addOrderBy('student.department', 'ASC')
-      .addOrderBy('student.fullName', 'ASC');
+      .addOrderBy('student.usn', 'ASC');
 
     if (search) {
       queryBuilder.andWhere(
