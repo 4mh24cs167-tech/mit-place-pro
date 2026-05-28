@@ -365,4 +365,88 @@ export class EmailService {
     }
     return sentCount;
   }
+
+  async getSmtpStatus() {
+    const smtpHost = this.configService.get<string>('SMTP_HOST', 'smtp-relay.brevo.com');
+    const smtpPort = this.configService.get<number>('SMTP_PORT', 587);
+    const smtpUser = this.configService.get<string>('SMTP_USER', '');
+    const smtpPass = this.configService.get<string>('SMTP_PASS', '');
+    const smtpFrom = this.configService.get<string>('SMTP_FROM', '');
+
+    const details = {
+      smtpHost,
+      smtpPort: Number(smtpPort),
+      smtpUser: smtpUser ? `${smtpUser.substring(0, 3)}...${smtpUser.split('@')[1] || ''}` : '(not configured)',
+      smtpFrom,
+      hasSmtpPass: !!smtpPass,
+      isTransporterInitialized: !!this.transporter,
+    };
+
+    const portsToTest = [587, 465, 2525];
+    const testResults: Array<{ port: number; secure: boolean; success: boolean; error: string | null }> = [];
+
+    if (smtpUser && smtpPass) {
+      for (const port of portsToTest) {
+        try {
+          const testTransporter = nodemailer.createTransport({
+            host: smtpHost,
+            port,
+            secure: port === 465,
+            auth: { user: smtpUser, pass: smtpPass },
+            connectionTimeout: 4000,
+            greetingTimeout: 4000,
+            socketTimeout: 5000,
+          });
+          await testTransporter.verify();
+          testResults.push({ port, secure: port === 465, success: true, error: null });
+        } catch (err) {
+          testResults.push({ port, secure: port === 465, success: false, error: (err as Error).message });
+        }
+      }
+    }
+
+    return {
+      ...details,
+      testResults,
+    };
+  }
+
+  async sendDirectTestEmail(toEmail: string): Promise<{ success: boolean; message: string; error?: string }> {
+    const smtpUser = this.configService.get<string>('SMTP_USER', '');
+    const smtpPass = this.configService.get<string>('SMTP_PASS', '');
+    if (!smtpUser || !smtpPass) {
+      return { success: false, message: 'SMTP credentials not configured in environment' };
+    }
+
+    const transporterToUse = this.transporter || nodemailer.createTransport({
+      host: this.configService.get<string>('SMTP_HOST', 'smtp-relay.brevo.com'),
+      port: this.configService.get<number>('SMTP_PORT', 587),
+      secure: false,
+      auth: { user: smtpUser, pass: smtpPass },
+      connectionTimeout: 5000,
+    });
+
+    try {
+      const info = await transporterToUse.sendMail({
+        from: this.getFrom(),
+        to: toEmail,
+        subject: '🎓 MITM PlacePro SMTP Connection Test',
+        html: this.wrapHtml(
+          'SMTP Diagnostic Test',
+          'linear-gradient(135deg,#3b82f6,#1d4ed8)',
+          `<p style="font-size:16px;color:#1a1a2e;">Hello!</p>
+           <p style="font-size:14px;color:#4a4a68;line-height:1.7;">
+             This is a direct diagnostic test email triggered from the MITM PlacePro admin controls.
+             If you are reading this email, it means your SMTP configuration and outbound connections are fully functional!
+           </p>
+           <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin:20px 0;font-size:13px;color:#166534;">
+             ✅ SMTP host, username, and password verified successfully. Outbound mail queue accepted the message.
+           </div>`
+        ),
+      });
+      return { success: true, message: `Email accepted by SMTP relay. Message ID: ${info.messageId}` };
+    } catch (e) {
+      return { success: false, message: 'Failed to send mail', error: (e as Error).message };
+    }
+  }
 }

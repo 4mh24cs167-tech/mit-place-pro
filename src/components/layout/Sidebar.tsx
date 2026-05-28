@@ -23,6 +23,7 @@ import {
   X,
   Layers,
   Megaphone,
+  Server,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -42,6 +43,7 @@ const navConfigs = {
     { label: "Slots", href: "/admin/slots", icon: CalendarClock },
     { label: "Posters", href: "/admin/posters", icon: ImageIcon },
     { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+    { label: "Diagnostics", href: "/admin/diagnostics", icon: Server },
   ],
   company: [
     { label: "Dashboard", href: "/company/dashboard", icon: Home },

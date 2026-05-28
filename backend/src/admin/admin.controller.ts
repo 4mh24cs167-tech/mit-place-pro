@@ -340,4 +340,17 @@ export class AdminController {
     const data = await this.driveService.deleteDrive(id, actorId);
     return { success: true, ...data };
   }
+
+  // ─── SMTP Diagnostics ──────────────────────────
+  @Get('smtp/status')
+  async getSmtpStatus() {
+    const status = await this.adminService.getSmtpStatus();
+    return { success: true, data: status };
+  }
+
+  @Post('smtp/test')
+  async sendSmtpTestEmail(@Body('email') email: string) {
+    const result = await this.adminService.sendSmtpTestEmail(email);
+    return result;
+  }
 }

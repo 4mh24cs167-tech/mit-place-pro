@@ -969,4 +969,12 @@ export class AdminService {
 
     return { message: `Department "${dept.code}" deleted` };
   }
+
+  async getSmtpStatus() {
+    return this.emailService.getSmtpStatus();
+  }
+
+  async sendSmtpTestEmail(toEmail: string) {
+    return this.emailService.sendDirectTestEmail(toEmail);
+  }
 }

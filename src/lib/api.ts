@@ -161,6 +161,8 @@ export const authApi = {
 export const adminApi = {
   getDashboard: () => apiFetch('/api/v1/admin/dashboard'),
   getActivity: (limit = 10) => apiFetch(`/api/v1/admin/activity?limit=${limit}`),
+  getSmtpStatus: () => apiFetch('/api/v1/admin/smtp/status'),
+  sendSmtpTest: (email: string) => apiFetch('/api/v1/admin/smtp/test', { method: 'POST', body: { email } }),
 
   // Students
   listStudents: (params?: { page?: number; limit?: number; search?: string; department?: string; status?: string; batch?: string }) => {
