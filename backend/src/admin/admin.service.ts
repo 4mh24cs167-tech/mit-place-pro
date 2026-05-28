@@ -6,7 +6,7 @@ import * as bcrypt from 'bcryptjs';
 import { User, UserRole } from '../entities/user.entity';
 import { Student } from '../entities/student.entity';
 import { Batch } from '../entities/batch.entity';
-import { Department } from '../entities/department.entity';
+import { Department, DepartmentType, SEMESTERS_BY_TYPE } from '../entities/department.entity';
 import { Company } from '../entities/company.entity';
 import { Job } from '../entities/job.entity';
 import { Application } from '../entities/application.entity';
@@ -791,8 +791,12 @@ export class AdminService {
     const batch = await this.batchRepo.findOne({ where: { id: batchId } });
     if (!batch) throw new NotFoundException('Batch not found');
 
-    if (batch.currentSemester >= 8) {
-      throw new BadRequestException('Batch already at maximum semester (8)');
+    // Look up department to get max semesters
+    const dept = await this.departmentRepo.findOne({ where: { code: batch.department } });
+    const maxSemesters = dept?.totalSemesters || 8;
+
+    if (batch.currentSemester >= maxSemesters) {
+      throw new BadRequestException(`Batch already at maximum semester (${maxSemesters})`);
     }
 
     const oldSemester = batch.currentSemester;
@@ -852,23 +856,25 @@ export class AdminService {
     return this.departmentRepo.find({ order: { code: 'ASC' } });
   }
 
-  async createDepartment(data: { code: string; name: string }, actorId: string) {
+  async createDepartment(data: { code: string; name: string; type?: string }, actorId: string) {
     const code = data.code.trim().toUpperCase();
     const name = data.name.trim();
+    const deptType = (data.type as DepartmentType) || DepartmentType.UG;
+    const totalSemesters = SEMESTERS_BY_TYPE[deptType] || 8;
 
     if (!code || !name) throw new BadRequestException('Code and name are required');
 
     const existing = await this.departmentRepo.findOne({ where: { code } });
     if (existing) throw new ConflictException(`Department "${code}" already exists`);
 
-    const dept = await this.departmentRepo.save({ code, name });
+    const dept = await this.departmentRepo.save({ code, name, type: deptType, totalSemesters });
 
     await this.auditRepo.save({
       actorUserId: actorId,
       action: 'CREATE_DEPARTMENT',
       entityType: 'department',
       entityId: dept.id,
-      newValue: { code, name } as unknown as Record<string, unknown>,
+      newValue: { code, name, type: deptType, totalSemesters } as unknown as Record<string, unknown>,
     });
 
     return dept;

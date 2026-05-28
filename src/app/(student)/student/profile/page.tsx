@@ -21,11 +21,14 @@ interface StudentProfile {
   tenthPercent: number | null; tenthBoard: string | null; tenthYear: number | null;
   twelfthPercent: number | null; twelfthBoard: string | null;
   twelfthYear: number | null; twelfthStream: string | null;
-  backlogs: number; driveLink: string | null; familyIncome: number | null;
+  backlogs: number; driveLink: string | null; resumeLink: string | null;
+  familyIncome: number | null;
   category: string | null; profileData: Record<string, unknown>;
   profileComplete: boolean; placementStatus: string;
   photoUrl?: string | null;
   user?: { email: string };
+  departmentType?: 'UG' | 'PG' | 'DEGREE';
+  totalSemesters?: number;
 }
 
 const GENDER_OPTIONS = ["Male", "Female", "Other"];
@@ -136,9 +139,11 @@ export default function StudentProfilePage() {
     fullName: "", phone: "", dateOfBirth: "", gender: "",
     semester: "", cgpa: "", tenthPercent: "", tenthBoard: "", tenthYear: "",
     twelfthPercent: "", twelfthBoard: "", twelfthYear: "", twelfthStream: "",
-    backlogs: "0", familyIncome: "", category: "", driveLink: "",
+    backlogs: "0", familyIncome: "", category: "", driveLink: "", resumeLink: "",
     aboutMe: "", linkedin: "", github: "",
     tenthMarksCardLink: "", twelfthMarksCardLink: "",
+    // PG-specific
+    ugDegreeName: "", ugUniversity: "", ugCgpa: "", ugYearOfPassing: "",
   });
 
   const [skills, setSkills] = useState<string[]>([]);
@@ -181,11 +186,17 @@ export default function StudentProfilePage() {
           familyIncome: data.familyIncome?.toString() || "",
           category: data.category || "",
           driveLink: data.driveLink || "",
+          resumeLink: data.resumeLink || "",
           aboutMe: (pd.aboutMe as string) || "",
           linkedin: (pd.linkedin as string) || "",
           github: (pd.github as string) || "",
           tenthMarksCardLink: (pd.tenthMarksCardLink as string) || "",
           twelfthMarksCardLink: (pd.twelfthMarksCardLink as string) || "",
+          // PG fields
+          ugDegreeName: (pd.ugDegreeName as string) || "",
+          ugUniversity: (pd.ugUniversity as string) || "",
+          ugCgpa: (pd.ugCgpa as number)?.toString() || "",
+          ugYearOfPassing: (pd.ugYearOfPassing as number)?.toString() || "",
         });
         setSkills((pd.skills as string[]) || []);
         setCertifications((pd.certifications as string[]) || []);
@@ -281,6 +292,7 @@ export default function StudentProfilePage() {
         familyIncome: form.familyIncome ? parseInt(form.familyIncome) : undefined,
         category: form.category || undefined,
         driveLink: form.driveLink || undefined,
+        resumeLink: form.resumeLink || undefined,
         skills,
         certifications,
         aboutMe: form.aboutMe || undefined,
@@ -288,6 +300,11 @@ export default function StudentProfilePage() {
         github: form.github || undefined,
         tenthMarksCardLink: form.tenthMarksCardLink || undefined,
         twelfthMarksCardLink: form.twelfthMarksCardLink || undefined,
+        // PG-specific fields
+        ugDegreeName: form.ugDegreeName || undefined,
+        ugUniversity: form.ugUniversity || undefined,
+        ugCgpa: form.ugCgpa ? parseFloat(form.ugCgpa) : undefined,
+        ugYearOfPassing: form.ugYearOfPassing ? parseInt(form.ugYearOfPassing) : undefined,
       });
       showToast("success", "Profile updated successfully!");
       setEditing(false);
@@ -545,7 +562,11 @@ export default function StudentProfilePage() {
                     <BookOpen className="w-5 h-5 text-indigo-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-foreground">B.E. / B.Tech — {profile.department}</p>
+                    <p className="text-sm font-bold text-foreground">
+                      {profile.departmentType === 'PG' ? 'M.Tech / MBA / MCA' :
+                       profile.departmentType === 'DEGREE' ? 'Degree Program' :
+                       'B.E. / B.Tech'} — {profile.department}
+                    </p>
                     <p className="text-xs text-muted-foreground mt-0.5">Maharaja Institute of Technology, Mysuru</p>
                     <div className="flex items-center gap-4 mt-2 flex-wrap">
                       {editing ? (
@@ -563,6 +584,37 @@ export default function StudentProfilePage() {
                     </div>
                   </div>
                 </div>
+
+                {/* PG: Undergraduate Education */}
+                {profile.departmentType === 'PG' && (
+                  <div className="flex gap-4 p-4 rounded-xl bg-gradient-to-r from-violet-50/50 to-purple-50/50 border border-violet-100/60">
+                    <div className="p-2.5 rounded-xl bg-violet-100 h-fit">
+                      <Sparkles className="w-5 h-5 text-violet-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-foreground">Undergraduate Education</p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Completed UG Degree</p>
+                      {editing ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                          <InlineInput label="UG Degree" value={form.ugDegreeName} onChange={(v) => setField("ugDegreeName", v)} editing={editing} placeholder="B.Tech CSE" />
+                          <InlineInput label="University" value={form.ugUniversity} onChange={(v) => setField("ugUniversity", v)} editing={editing} placeholder="VTU" />
+                          <InlineInput label="CGPA / %" value={form.ugCgpa} onChange={(v) => setField("ugCgpa", v)} editing={editing} type="number" placeholder="8.5" />
+                          <InlineInput label="Year of Passing" value={form.ugYearOfPassing} onChange={(v) => setField("ugYearOfPassing", v)} editing={editing} type="number" placeholder="2024" />
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                          {form.ugDegreeName && <span className="text-xs font-semibold text-violet-600 bg-violet-50 px-2.5 py-1 rounded-full">{form.ugDegreeName}</span>}
+                          {form.ugUniversity && <span className="text-xs text-muted-foreground">{form.ugUniversity}</span>}
+                          {form.ugCgpa && <span className="text-xs text-muted-foreground">· CGPA {form.ugCgpa}</span>}
+                          {form.ugYearOfPassing && <span className="text-xs text-muted-foreground">· {form.ugYearOfPassing}</span>}
+                          {!form.ugDegreeName && !form.ugUniversity && (
+                            <span className="text-xs text-muted-foreground/50 italic">UG details not added yet</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* 12th Standard */}
                 <div className="flex gap-4 p-4 rounded-xl bg-white border border-border/40">
@@ -752,16 +804,25 @@ export default function StudentProfilePage() {
             <div className="i-card p-5 sm:p-6">
               <SectionHeader icon={Link2} title="Documents & Links" />
               <div className="space-y-3">
-                <InlineInput label="Resume (Drive Link)" value={form.driveLink} onChange={(v) => setField("driveLink", v)}
+                <InlineInput label="Resume (Drive Link)" value={form.resumeLink} onChange={(v) => setField("resumeLink", v)}
+                  editing={editing} placeholder="https://drive.google.com/..." />
+                <InlineInput label="Documents Folder (Drive Link)" value={form.driveLink} onChange={(v) => setField("driveLink", v)}
                   editing={editing} placeholder="https://drive.google.com/..." />
 
                 {/* View links when not editing */}
                 {!editing && (
                   <div className="space-y-2 pt-2 border-t border-border/40">
+                    {form.resumeLink && (
+                      <a href={form.resumeLink} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors group">
+                        <span className="flex items-center gap-2 text-xs font-medium text-foreground"><FileText className="w-4 h-4 text-indigo-500" />Resume</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-indigo-600 transition-colors" />
+                      </a>
+                    )}
                     {form.driveLink && (
                       <a href={form.driveLink} target="_blank" rel="noopener noreferrer"
                         className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors group">
-                        <span className="flex items-center gap-2 text-xs font-medium text-foreground"><FileText className="w-4 h-4 text-indigo-500" />Resume</span>
+                        <span className="flex items-center gap-2 text-xs font-medium text-foreground"><FileText className="w-4 h-4 text-blue-500" />Documents Folder</span>
                         <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-indigo-600 transition-colors" />
                       </a>
                     )}
@@ -779,7 +840,7 @@ export default function StudentProfilePage() {
                         <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-indigo-600 transition-colors" />
                       </a>
                     )}
-                    {!form.driveLink && !form.tenthMarksCardLink && !form.twelfthMarksCardLink && (
+                    {!form.resumeLink && !form.driveLink && !form.tenthMarksCardLink && !form.twelfthMarksCardLink && (
                       <p className="text-xs text-muted-foreground/50 italic">No documents linked yet</p>
                     )}
                   </div>

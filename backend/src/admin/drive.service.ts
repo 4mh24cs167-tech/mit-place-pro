@@ -4,8 +4,10 @@ import { Repository, In } from 'typeorm';
 import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
 import { Job } from '../entities/job.entity';
 import { Student } from '../entities/student.entity';
+import { User } from '../entities/user.entity';
 import { Notification } from '../entities/notification.entity';
 import { AuditLog } from '../entities/audit-log.entity';
+import { EmailService } from './email.service';
 
 @Injectable()
 export class DriveService {
@@ -17,8 +19,10 @@ export class DriveService {
     @InjectRepository(DriveSlot) private readonly slotRepo: Repository<DriveSlot>,
     @InjectRepository(Job) private readonly jobRepo: Repository<Job>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Notification) private readonly notificationRepo: Repository<Notification>,
     @InjectRepository(AuditLog) private readonly auditRepo: Repository<AuditLog>,
+    private readonly emailService: EmailService,
   ) {}
 
   // ─── Create a Drive ─────────────────────────────
@@ -76,6 +80,32 @@ export class DriveService {
       entityId: drive.id,
       newValue: { title: drive.title, type: drive.type, notified: eligibleStudents.length } as unknown as Record<string, unknown>,
     });
+
+    // Send email announcements to eligible students (fire-and-forget)
+    if (eligibleStudents.length > 0) {
+      const userIds = eligibleStudents.map(s => s.userId);
+      const users = await this.userRepo.find({ where: { id: In(userIds) } });
+      const emails = users.map(u => u.email).filter(Boolean);
+
+      if (emails.length > 0) {
+        const driveDate2 = drive.driveDate
+          ? new Date(drive.driveDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+          : undefined;
+
+        this.emailService.sendDriveAnnouncementEmail({
+          emails,
+          driveName: drive.title,
+          companyName: job.company?.name || 'A company',
+          driveDate: driveDate2,
+          description: drive.description || undefined,
+          eligibleDepartments: drive.departments,
+        }).then(count => {
+          this.logger.log(`📧 Drive announcement emails sent: ${count}`);
+        }).catch(err => {
+          this.logger.error(`❌ Drive announcement email failed`, err);
+        });
+      }
+    }
 
     return {
       ...drive,
