@@ -331,15 +331,23 @@ export class AdminService {
       this.logger.warn(`Audit log save failed: ${(auditErr as Error).message}`);
     }
 
-    // Send credentials via email — truly fire-and-forget, don't block response
-    const loginUrl = this.configService.get<string>('FRONTEND_URL', 'https://mitm-placepro.vercel.app') + '/login';
-    this.emailService.sendCompanyCredentials({
-      companyName: dto.name,
-      hrName: dto.hrName,
-      email: dto.hrEmail.toLowerCase(),
-      temporaryPassword: rawPassword,
-      loginUrl,
-    }).catch((e) => this.logger.warn(`Company credentials email failed: ${(e as Error).message}`));
+    // Send credentials via email — await with timeout for honest feedback
+    let emailSent = false;
+    try {
+      const loginUrl = this.configService.get<string>('FRONTEND_URL', 'https://mitm-placepro.vercel.app') + '/login';
+      const emailPromise = this.emailService.sendCompanyCredentials({
+        companyName: dto.name,
+        hrName: dto.hrName,
+        email: dto.hrEmail.toLowerCase(),
+        temporaryPassword: rawPassword,
+        loginUrl,
+      });
+      // Wait max 10s for email, then give up
+      const timeout = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 10000));
+      emailSent = await Promise.race([emailPromise, timeout]);
+    } catch (e) {
+      this.logger.warn(`Company credentials email failed: ${(e as Error).message}`);
+    }
 
     return {
       company,
@@ -347,7 +355,7 @@ export class AdminService {
         email: dto.hrEmail.toLowerCase(),
         temporaryPassword: rawPassword,
       },
-      emailSent: true, // optimistic — email is queued
+      emailSent,
     };
   }
 
