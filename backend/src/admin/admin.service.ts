@@ -326,20 +326,15 @@ export class AdminService {
       this.logger.warn(`Audit log save failed: ${(auditErr as Error).message}`);
     }
 
-    // Send credentials via email (fire-and-forget, don't block response)
-    let emailSent = false;
-    try {
-      const loginUrl = this.configService.get<string>('FRONTEND_URL', 'https://mitm-placepro.vercel.app') + '/login';
-      emailSent = await this.emailService.sendCompanyCredentials({
-        companyName: dto.name,
-        hrName: dto.hrName,
-        email: dto.hrEmail.toLowerCase(),
-        temporaryPassword: rawPassword,
-        loginUrl,
-      });
-    } catch (emailErr) {
-      this.logger.warn(`Company credentials email failed: ${(emailErr as Error).message}`);
-    }
+    // Send credentials via email — truly fire-and-forget, don't block response
+    const loginUrl = this.configService.get<string>('FRONTEND_URL', 'https://mitm-placepro.vercel.app') + '/login';
+    this.emailService.sendCompanyCredentials({
+      companyName: dto.name,
+      hrName: dto.hrName,
+      email: dto.hrEmail.toLowerCase(),
+      temporaryPassword: rawPassword,
+      loginUrl,
+    }).catch((e) => this.logger.warn(`Company credentials email failed: ${(e as Error).message}`));
 
     return {
       company,
@@ -347,7 +342,7 @@ export class AdminService {
         email: dto.hrEmail.toLowerCase(),
         temporaryPassword: rawPassword,
       },
-      emailSent,
+      emailSent: true, // optimistic — email is queued
     };
   }
 
