@@ -35,6 +35,8 @@ const GENDER_OPTIONS = ["Male", "Female", "Other"];
 const CATEGORY_OPTIONS = ["General", "OBC", "SC", "ST", "EWS", "Other"];
 const STREAM_OPTIONS = ["Science", "Commerce", "Arts"];
 const BOARD_OPTIONS = ["CBSE", "ICSE", "State Board", "IB", "Other"];
+const DIPLOMA_BOARD_OPTIONS = ["AICTE", "State Board of Technical Education", "Other"];
+const DIPLOMA_BRANCH_OPTIONS = ["Computer Science", "Information Science", "Electronics", "Electrical", "Mechanical", "Civil", "Other"];
 
 /* ────────────────────────────── Stat Ring ─────────────────────────────────── */
 
@@ -142,6 +144,8 @@ export default function StudentProfilePage() {
     backlogs: "0", familyIncome: "", category: "", driveLink: "", resumeLink: "",
     aboutMe: "", linkedin: "", github: "",
     tenthMarksCardLink: "", twelfthMarksCardLink: "",
+    qualificationType: "12th" as "12th" | "Diploma",
+    diplomaBranch: "",
     // PG-specific
     ugDegreeName: "", ugUniversity: "", ugCgpa: "", ugYearOfPassing: "",
   });
@@ -192,6 +196,8 @@ export default function StudentProfilePage() {
           github: (pd.github as string) || "",
           tenthMarksCardLink: (pd.tenthMarksCardLink as string) || "",
           twelfthMarksCardLink: (pd.twelfthMarksCardLink as string) || "",
+          qualificationType: ((pd.qualificationType as string) || "12th") as "12th" | "Diploma",
+          diplomaBranch: (pd.diplomaBranch as string) || "",
           // PG fields
           ugDegreeName: (pd.ugDegreeName as string) || "",
           ugUniversity: (pd.ugUniversity as string) || "",
@@ -300,6 +306,10 @@ export default function StudentProfilePage() {
         github: form.github || undefined,
         tenthMarksCardLink: form.tenthMarksCardLink || undefined,
         twelfthMarksCardLink: form.twelfthMarksCardLink || undefined,
+        profileData: {
+          qualificationType: form.qualificationType,
+          diplomaBranch: form.diplomaBranch || undefined,
+        },
         // PG-specific fields
         ugDegreeName: form.ugDegreeName || undefined,
         ugUniversity: form.ugUniversity || undefined,
@@ -535,7 +545,7 @@ export default function StudentProfilePage() {
           <div className="flex items-center justify-around flex-wrap gap-4">
             <StatRing value={Number(form.cgpa) || 0} max={10} label="CGPA" color="#6366f1" />
             <StatRing value={Number(form.tenthPercent) || 0} max={100} label="10th %" color="#10b981" />
-            <StatRing value={Number(form.twelfthPercent) || 0} max={100} label="12th %" color="#8b5cf6" />
+            <StatRing value={Number(form.twelfthPercent) || 0} max={100} label={form.qualificationType === "Diploma" ? "Diploma %" : "12th %"} color="#8b5cf6" />
             <div className="flex flex-col items-center gap-1.5">
               <div className="w-16 h-16 rounded-full border-4 flex items-center justify-center"
                 style={{ borderColor: Number(form.backlogs) === 0 ? "#10b981" : "#ef4444" }}>
@@ -616,32 +626,66 @@ export default function StudentProfilePage() {
                   </div>
                 )}
 
-                {/* 12th Standard */}
+                {/* 12th / Diploma Toggle + Section */}
                 <div className="flex gap-4 p-4 rounded-xl bg-white border border-border/40">
                   <div className="p-2.5 rounded-xl bg-violet-50 h-fit">
                     <GraduationCap className="w-5 h-5 text-violet-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-foreground">12th Standard (PUC / Higher Secondary)</p>
+                    {/* Toggle: 12th / Diploma */}
+                    <div className="flex items-center gap-3 mb-1">
+                      <p className="text-sm font-bold text-foreground">
+                        {form.qualificationType === "Diploma" ? "Diploma" : "12th Standard (PUC / Higher Secondary)"}
+                      </p>
+                      {editing && (
+                        <div className="flex rounded-lg border border-border overflow-hidden text-[10px] font-semibold">
+                          <button
+                            onClick={() => { setField("qualificationType", "12th"); setField("diplomaBranch", ""); }}
+                            className={cn("px-3 py-1.5 transition-colors",
+                              form.qualificationType === "12th" ? "bg-violet-600 text-white" : "bg-white text-muted-foreground hover:bg-muted/50"
+                            )}
+                          >12th / PUC</button>
+                          <button
+                            onClick={() => setField("qualificationType", "Diploma")}
+                            className={cn("px-3 py-1.5 transition-colors",
+                              form.qualificationType === "Diploma" ? "bg-violet-600 text-white" : "bg-white text-muted-foreground hover:bg-muted/50"
+                            )}
+                          >Diploma</button>
+                        </div>
+                      )}
+                    </div>
+
                     {editing ? (
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
                         <InlineInput label="Percentage" value={form.twelfthPercent} onChange={(v) => setField("twelfthPercent", v)} editing={editing} type="number" required placeholder="88.6" />
-                        <InlineSelect label="Board" value={form.twelfthBoard} onChange={(v) => setField("twelfthBoard", v)} editing={editing} options={BOARD_OPTIONS} />
+                        <InlineSelect
+                          label={form.qualificationType === "Diploma" ? "Board" : "Board"}
+                          value={form.twelfthBoard}
+                          onChange={(v) => setField("twelfthBoard", v)}
+                          editing={editing}
+                          options={form.qualificationType === "Diploma" ? DIPLOMA_BOARD_OPTIONS : BOARD_OPTIONS}
+                        />
                         <InlineInput label="Year" value={form.twelfthYear} onChange={(v) => setField("twelfthYear", v)} editing={editing} type="number" placeholder="2022" />
-                        <InlineSelect label="Stream" value={form.twelfthStream} onChange={(v) => setField("twelfthStream", v)} editing={editing} options={STREAM_OPTIONS} />
+                        {form.qualificationType === "Diploma" ? (
+                          <InlineSelect label="Branch" value={form.diplomaBranch} onChange={(v) => setField("diplomaBranch", v)} editing={editing} options={DIPLOMA_BRANCH_OPTIONS} />
+                        ) : (
+                          <InlineSelect label="Stream" value={form.twelfthStream} onChange={(v) => setField("twelfthStream", v)} editing={editing} options={STREAM_OPTIONS} />
+                        )}
                       </div>
                     ) : (
                       <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                        {form.qualificationType === "Diploma" && <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">DIPLOMA</span>}
                         {form.twelfthPercent && <span className="text-xs font-semibold text-violet-600 bg-violet-50 px-2.5 py-1 rounded-full">{form.twelfthPercent}%</span>}
                         {form.twelfthBoard && <span className="text-xs text-muted-foreground">{form.twelfthBoard}</span>}
                         {form.twelfthYear && <span className="text-xs text-muted-foreground">· {form.twelfthYear}</span>}
-                        {form.twelfthStream && <span className="text-xs text-muted-foreground">· {form.twelfthStream}</span>}
+                        {form.qualificationType === "Diploma" && form.diplomaBranch && <span className="text-xs text-muted-foreground">· {form.diplomaBranch}</span>}
+                        {form.qualificationType !== "Diploma" && form.twelfthStream && <span className="text-xs text-muted-foreground">· {form.twelfthStream}</span>}
                       </div>
                     )}
-                    {/* 12th Marks Card Link */}
+                    {/* Marks Card Link */}
                     {editing ? (
                       <div className="mt-3">
-                        <InlineInput label="12th Marks Card (Drive Link)" value={form.twelfthMarksCardLink}
+                        <InlineInput label={form.qualificationType === "Diploma" ? "Diploma Marks Card (Drive Link)" : "12th Marks Card (Drive Link)"} value={form.twelfthMarksCardLink}
                           onChange={(v) => setField("twelfthMarksCardLink", v)} editing={editing}
                           placeholder="https://drive.google.com/..." />
                       </div>
