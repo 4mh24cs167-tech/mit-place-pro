@@ -29,23 +29,36 @@ export class EmailService {
     const smtpUser = this.configService.get<string>('SMTP_USER', '');
     const smtpPass = this.configService.get<string>('SMTP_PASS', '');
 
-    if (smtpUser && smtpPass) {
-      this.transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        auth: { user: smtpUser, pass: smtpPass },
-      });
-
-      try {
-        await this.transporter.verify();
-        this.logger.log(`✅ Email service connected via ${smtpHost}:${smtpPort}`);
-      } catch (err) {
-        this.logger.error(`❌ Email SMTP verification failed: ${(err as Error).message}`);
-      }
-    } else {
+    if (!smtpUser || !smtpPass) {
       this.logger.warn('⚠️ No SMTP credentials — emails will be logged but NOT sent.');
+      return;
     }
+
+    // Try primary port, then fallback to 465 SSL
+    const portsToTry = [smtpPort, smtpPort === 587 ? 465 : 587];
+
+    for (const port of portsToTry) {
+      try {
+        this.transporter = nodemailer.createTransport({
+          host: smtpHost,
+          port,
+          secure: port === 465,
+          auth: { user: smtpUser, pass: smtpPass },
+          connectionTimeout: 8000,
+          greetingTimeout: 8000,
+          socketTimeout: 15000,
+        });
+
+        await this.transporter.verify();
+        this.logger.log(`✅ Email service connected via ${smtpHost}:${port}`);
+        return; // success — stop trying
+      } catch (err) {
+        this.logger.warn(`❌ SMTP port ${port} failed: ${(err as Error).message}`);
+        this.transporter = null as unknown as nodemailer.Transporter;
+      }
+    }
+
+    this.logger.error('❌ All SMTP ports failed. Emails will NOT be sent.');
   }
 
   // ─── Shared HTML wrapper with college logo ──────
