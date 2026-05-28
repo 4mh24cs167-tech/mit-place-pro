@@ -244,9 +244,9 @@ export const adminApi = {
 
   // Departments
   listDepartments: () => apiFetch('/api/v1/admin/departments'),
-  createDepartment: (data: { code: string; name: string }) =>
+  createDepartment: (data: { code: string; name: string; type?: string }) =>
     apiFetch('/api/v1/admin/departments', { method: 'POST', body: data }),
-  updateDepartment: (id: string, data: { code?: string; name?: string }) =>
+  updateDepartment: (id: string, data: { code?: string; name?: string; type?: string }) =>
     apiFetch(`/api/v1/admin/departments/${id}`, { method: 'PATCH', body: data }),
   deleteDepartment: (id: string) =>
     apiFetch(`/api/v1/admin/departments/${id}`, { method: 'DELETE' }),

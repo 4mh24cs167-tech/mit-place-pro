@@ -83,6 +83,9 @@ export class Student {
   @Column({ type: 'varchar', length: 500, nullable: true, name: 'drive_link' })
   driveLink: string | null;
 
+  @Column({ type: 'varchar', length: 500, nullable: true, name: 'resume_link' })
+  resumeLink: string | null;
+
   @Column({ type: 'bigint', nullable: true, name: 'family_income' })
   familyIncome: number | null;
 

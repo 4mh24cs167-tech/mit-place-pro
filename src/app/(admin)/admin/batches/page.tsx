@@ -20,7 +20,11 @@ interface BatchRecord {
   createdAt: string;
 }
 
-
+interface DeptInfo {
+  code: string;
+  type: 'UG' | 'PG' | 'DEGREE';
+  totalSemesters: number;
+}
 
 export default function AdminBatchesPage() {
   const { user } = useAuth();
@@ -28,6 +32,7 @@ export default function AdminBatchesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [DEPARTMENTS, setDepartments] = useState<string[]>([]);
+  const [deptInfoMap, setDeptInfoMap] = useState<Record<string, DeptInfo>>({});
 
   // Create modal state
   const [showCreate, setShowCreate] = useState(false);
@@ -67,7 +72,15 @@ export default function AdminBatchesPage() {
     (async () => {
       try {
         const res = await adminApi.listDepartments();
-        if (res.data) setDepartments((res.data as Array<{ code: string }>).map(d => d.code));
+        if (res.data) {
+          const depts = res.data as Array<{ code: string; type?: string; totalSemesters?: number }>;
+          setDepartments(depts.map(d => d.code));
+          const map: Record<string, DeptInfo> = {};
+          for (const d of depts) {
+            map[d.code] = { code: d.code, type: (d.type as DeptInfo['type']) || 'UG', totalSemesters: d.totalSemesters || 8 };
+          }
+          setDeptInfoMap(map);
+        }
       } catch { /* empty */ }
     })();
   }, [fetchBatches]);
@@ -98,8 +111,9 @@ export default function AdminBatchesPage() {
   };
 
   const handlePromote = async (batch: BatchRecord) => {
-    if (batch.currentSemester >= 8) {
-      showToast("error", "Batch already at maximum semester (8)");
+    const maxSem = deptInfoMap[batch.department]?.totalSemesters || 8;
+    if (batch.currentSemester >= maxSem) {
+      showToast("error", `Batch already at maximum semester (${maxSem})`);
       return;
     }
     const confirmed = window.confirm(
@@ -305,12 +319,12 @@ export default function AdminBatchesPage() {
                 <div className="mb-4">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Semester Progress</span>
-                    <span className="text-[10px] text-muted-foreground">{batch.currentSemester}/8</span>
+                    <span className="text-[10px] text-muted-foreground">{batch.currentSemester}/{deptInfoMap[batch.department]?.totalSemesters || 8}</span>
                   </div>
                   <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
                     <div
                       className={cn("h-full rounded-full transition-all duration-700", getSemesterBarColor(batch.currentSemester))}
-                      style={{ width: `${(batch.currentSemester / 8) * 100}%` }}
+                      style={{ width: `${(batch.currentSemester / (deptInfoMap[batch.department]?.totalSemesters || 8)) * 100}%` }}
                     />
                   </div>
                 </div>
@@ -319,10 +333,10 @@ export default function AdminBatchesPage() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handlePromote(batch)}
-                    disabled={promotingId === batch.id || batch.currentSemester >= 8}
+                    disabled={promotingId === batch.id || batch.currentSemester >= (deptInfoMap[batch.department]?.totalSemesters || 8)}
                     className={cn(
                       "flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all",
-                      batch.currentSemester >= 8
+                      batch.currentSemester >= (deptInfoMap[batch.department]?.totalSemesters || 8)
                         ? "bg-muted text-muted-foreground cursor-not-allowed"
                         : "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30"
                     )}
@@ -332,7 +346,7 @@ export default function AdminBatchesPage() {
                     ) : (
                       <ArrowUpCircle className="w-4 h-4" />
                     )}
-                    {batch.currentSemester >= 8 ? "Max Sem" : "Promote"}
+                    {(deptInfoMap[batch.department]?.totalSemesters || 8) <= batch.currentSemester ? "Max Sem" : "Promote"}
                   </button>
                   <button
                     onClick={() => handleDelete(batch)}
@@ -410,7 +424,7 @@ export default function AdminBatchesPage() {
               <div>
                 <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Current Semester *</label>
                 <div className="grid grid-cols-8 gap-1.5">
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+                  {Array.from({ length: deptInfoMap[createDept]?.totalSemesters || 8 }, (_, i) => i + 1).map((sem) => (
                     <button
                       key={sem}
                       onClick={() => setCreateSemester(sem)}

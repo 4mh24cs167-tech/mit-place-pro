@@ -14,6 +14,8 @@ interface DepartmentRecord {
   id: string;
   code: string;
   name: string;
+  type: 'UG' | 'PG' | 'DEGREE';
+  totalSemesters: number;
   isActive: boolean;
   createdAt: string;
 }
@@ -28,6 +30,7 @@ export default function AdminDepartmentsPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [createCode, setCreateCode] = useState("");
   const [createName, setCreateName] = useState("");
+  const [createType, setCreateType] = useState<'UG' | 'PG' | 'DEGREE'>('UG');
   const [isCreating, setIsCreating] = useState(false);
 
   // Edit state
@@ -68,11 +71,12 @@ export default function AdminDepartmentsPage() {
     }
     setIsCreating(true);
     try {
-      await adminApi.createDepartment({ code: createCode.trim(), name: createName.trim() });
-      showToast("success", `Department "${createCode.trim().toUpperCase()}" created`);
+      await adminApi.createDepartment({ code: createCode.trim(), name: createName.trim(), type: createType });
+      showToast("success", `Department "${createCode.trim().toUpperCase()}" created as ${createType}`);
       setShowCreate(false);
       setCreateCode("");
       setCreateName("");
+      setCreateType('UG');
       fetchDepartments();
     } catch (err: unknown) {
       showToast("error", err instanceof Error ? err.message : "Failed to create department");
@@ -226,6 +230,8 @@ export default function AdminDepartmentsPage() {
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider p-3 pl-5 w-28">Code</th>
                   <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider p-3">Full Name</th>
+                  <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider p-3 w-20">Type</th>
+                  <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider p-3 w-20">Sems</th>
                   <th className="text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-wider p-3 w-28">Status</th>
                   <th className="text-right text-[10px] font-semibold text-muted-foreground uppercase tracking-wider p-3 pr-5 w-28">Actions</th>
                 </tr>
@@ -282,6 +288,17 @@ export default function AdminDepartmentsPage() {
                         </td>
                         <td className="p-3">
                           <span className="text-sm text-foreground">{dept.name}</span>
+                        </td>
+                        <td className="p-3">
+                          <span className={cn(
+                            "text-[10px] font-bold px-2 py-1 rounded-full",
+                            dept.type === 'PG' ? "bg-violet-50 text-violet-600" :
+                            dept.type === 'DEGREE' ? "bg-emerald-50 text-emerald-600" :
+                            "bg-indigo-50 text-indigo-600"
+                          )}>{dept.type || 'UG'}</span>
+                        </td>
+                        <td className="p-3">
+                          <span className="text-xs font-medium text-muted-foreground">{dept.totalSemesters || 8}</span>
                         </td>
                         <td className="p-3">
                           <span className={cn(
@@ -356,6 +373,36 @@ export default function AdminDepartmentsPage() {
                 />
               </div>
 
+              {/* Type */}
+              <div>
+                <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">
+                  Department Type *
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {([
+                    { value: 'UG' as const, label: 'UG', sub: '8 Semesters', color: 'indigo' },
+                    { value: 'PG' as const, label: 'PG', sub: '4 Semesters', color: 'violet' },
+                    { value: 'DEGREE' as const, label: 'Degree', sub: '6 Semesters', color: 'emerald' },
+                  ]).map(opt => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setCreateType(opt.value)}
+                      className={cn(
+                        "px-3 py-2.5 rounded-lg border text-center transition-all",
+                        createType === opt.value
+                          ? opt.color === 'indigo' ? "bg-indigo-600 border-indigo-600 text-white"
+                          : opt.color === 'violet' ? "bg-violet-600 border-violet-600 text-white"
+                          : "bg-emerald-600 border-emerald-600 text-white"
+                          : "bg-white border-border text-foreground hover:border-indigo-300"
+                      )}
+                    >
+                      <p className="text-xs font-bold">{opt.label}</p>
+                      <p className={cn("text-[10px]", createType === opt.value ? "text-white/80" : "text-muted-foreground")}>{opt.sub}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Name */}
               <div>
                 <label htmlFor="dept-name" className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">
@@ -379,6 +426,13 @@ export default function AdminDepartmentsPage() {
                   <p className="text-sm font-semibold text-foreground">
                     <span className="bg-white px-2 py-0.5 rounded text-indigo-700 font-bold mr-2">{createCode.trim().toUpperCase()}</span>
                     {createName.trim()}
+                    <span className={cn(
+                      "ml-2 text-[10px] font-bold px-2 py-0.5 rounded-full",
+                      createType === 'PG' ? "bg-violet-50 text-violet-600" :
+                      createType === 'DEGREE' ? "bg-emerald-50 text-emerald-600" :
+                      "bg-indigo-50 text-indigo-600"
+                    )}>{createType}</span>
+                    <span className="ml-1 text-xs text-muted-foreground">({createType === 'PG' ? 4 : createType === 'DEGREE' ? 6 : 8} semesters)</span>
                   </p>
                 </div>
               )}

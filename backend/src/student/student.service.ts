@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, ConflictException, B
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, MoreThanOrEqual } from 'typeorm';
 import { Student } from '../entities/student.entity';
+import { Department } from '../entities/department.entity';
 import { Job } from '../entities/job.entity';
 import { Application } from '../entities/application.entity';
 import { Cv } from '../entities/cv.entity';
@@ -14,6 +15,7 @@ import { UpdateProfileDto, ApplyJobDto } from './dto/student.dto';
 export class StudentService {
   constructor(
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
+    @InjectRepository(Department) private readonly departmentRepo: Repository<Department>,
     @InjectRepository(Job) private readonly jobRepo: Repository<Job>,
     @InjectRepository(Application) private readonly applicationRepo: Repository<Application>,
     @InjectRepository(Cv) private readonly cvRepo: Repository<Cv>,
@@ -31,7 +33,15 @@ export class StudentService {
       relations: ['user'],
     });
     if (!student) throw new NotFoundException('Student profile not found');
-    return student;
+
+    // Resolve department type for frontend
+    const dept = await this.departmentRepo.findOne({ where: { code: student.department } });
+    const result = {
+      ...student,
+      departmentType: dept?.type || 'UG',
+      totalSemesters: dept?.totalSemesters || 8,
+    };
+    return result;
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
@@ -60,6 +70,7 @@ export class StudentService {
     if (dto.familyIncome !== undefined) student.familyIncome = dto.familyIncome;
     if (dto.category) student.category = dto.category;
     if (dto.driveLink !== undefined) student.driveLink = dto.driveLink;
+    if (dto.resumeLink !== undefined) student.resumeLink = dto.resumeLink;
     if (dto.addressJson) student.addressJson = dto.addressJson;
 
     if (dto.profileData) {
@@ -72,7 +83,7 @@ export class StudentService {
       student.profileData = { ...(student.profileData || {}), certifications: dto.certifications };
     }
 
-    // New extended profile fields — stored in profileData JSONB
+    // Extended profile fields — stored in profileData JSONB
     if (dto.linkedin !== undefined) {
       student.profileData = { ...(student.profileData || {}), linkedin: dto.linkedin };
     }
@@ -87,6 +98,20 @@ export class StudentService {
     }
     if (dto.twelfthMarksCardLink !== undefined) {
       student.profileData = { ...(student.profileData || {}), twelfthMarksCardLink: dto.twelfthMarksCardLink };
+    }
+
+    // PG-specific fields — stored in profileData JSONB
+    if (dto.ugDegreeName !== undefined) {
+      student.profileData = { ...(student.profileData || {}), ugDegreeName: dto.ugDegreeName };
+    }
+    if (dto.ugUniversity !== undefined) {
+      student.profileData = { ...(student.profileData || {}), ugUniversity: dto.ugUniversity };
+    }
+    if (dto.ugCgpa !== undefined) {
+      student.profileData = { ...(student.profileData || {}), ugCgpa: dto.ugCgpa };
+    }
+    if (dto.ugYearOfPassing !== undefined) {
+      student.profileData = { ...(student.profileData || {}), ugYearOfPassing: dto.ugYearOfPassing };
     }
 
     // Calculate profile completeness — all 7 mandatory fields must be filled

@@ -126,6 +126,34 @@ export class UpdateProfileDto {
   @IsString()
   @MaxLength(1000)
   aboutMe?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  resumeLink?: string;
+
+  // ─── PG-Specific Fields (stored in profileData) ──
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  ugDegreeName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  ugUniversity?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  ugCgpa?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(2000)
+  @Max(2030)
+  ugYearOfPassing?: number;
 }
 
 export class ApplyJobDto {

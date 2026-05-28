@@ -55,12 +55,15 @@ export interface Student {
   department: string;
   semester: number | null;
   driveLink: string | null;
+  resumeLink: string | null;
   familyIncome: number | null;
   category: string | null;
   profileData: ProfileData;
   profileComplete: boolean;
   placementStatus: PlacementStatus;
   email?: string;
+  departmentType?: 'UG' | 'PG' | 'DEGREE';
+  totalSemesters?: number;
 }
 
 export interface Address {
@@ -79,6 +82,15 @@ export interface ProfileData {
   certifications?: CertificationEntry[];
   achievements?: string[];
   languages?: LanguageEntry[];
+  linkedin?: string;
+  github?: string;
+  aboutMe?: string;
+  tenthMarksCardLink?: string;
+  twelfthMarksCardLink?: string;
+  ugDegreeName?: string;
+  ugUniversity?: string;
+  ugCgpa?: number;
+  ugYearOfPassing?: number;
 }
 
 export interface ExperienceEntry {

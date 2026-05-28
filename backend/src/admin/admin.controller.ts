@@ -202,7 +202,7 @@ export class AdminController {
 
   @Post('departments')
   async createDepartment(
-    @Body() body: { code: string; name: string },
+    @Body() body: { code: string; name: string; type?: string },
     @CurrentUser('id') actorId: string,
   ) {
     const data = await this.adminService.createDepartment(body, actorId);
