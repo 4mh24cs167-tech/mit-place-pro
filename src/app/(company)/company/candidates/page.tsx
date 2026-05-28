@@ -8,6 +8,7 @@ import {
   Search, Download, Eye, FileText, SortAsc, Loader2, Users,
   CalendarDays, Clock, MapPin, ChevronDown, ChevronUp, ChevronRight,
   GraduationCap, Building2, CheckSquare, Square, AlertTriangle, Send,
+  X, Phone, Mail, ExternalLink, Globe, Award, Code, Link2,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 
@@ -24,6 +25,58 @@ interface Candidate {
   atsScore: number | null;
   currentRound: number;
   finalResult: string;
+  // Enhanced profile fields
+  phone?: string | null;
+  email?: string | null;
+  gender?: string | null;
+  tenthPercent?: number | null;
+  twelfthPercent?: number | null;
+  backlogs?: number;
+  resumeLink?: string | null;
+  driveLink?: string | null;
+  skills?: string[];
+  certifications?: string[];
+  linkedin?: string | null;
+  github?: string | null;
+  aboutMe?: string | null;
+  profileComplete?: boolean;
+}
+
+interface StudentProfileData {
+  id: string;
+  fullName: string;
+  usn: string;
+  department: string;
+  batchName?: string | null;
+  semester?: number | null;
+  cgpa?: number | null;
+  email?: string | null;
+  phone?: string | null;
+  gender?: string | null;
+  dateOfBirth?: string | null;
+  tenthPercent?: number | null;
+  tenthBoard?: string | null;
+  tenthYear?: number | null;
+  twelfthPercent?: number | null;
+  twelfthBoard?: string | null;
+  twelfthYear?: number | null;
+  twelfthStream?: string | null;
+  backlogs?: number;
+  resumeLink?: string | null;
+  driveLink?: string | null;
+  familyIncome?: number | null;
+  category?: string | null;
+  profileComplete?: boolean;
+  placementStatus?: string;
+  skills?: string[];
+  certifications?: string[];
+  linkedin?: string | null;
+  github?: string | null;
+  aboutMe?: string | null;
+  tenthMarksCardLink?: string | null;
+  twelfthMarksCardLink?: string | null;
+  qualificationType?: string;
+  diplomaBranch?: string | null;
 }
 
 interface JobInfo {
@@ -59,6 +112,24 @@ export default function CompanyCandidatesPage() {
   const [activeRound, setActiveRound] = useState<number>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  // ─── Profile Modal State ───────────────────────
+  const [profileModalStudent, setProfileModalStudent] = useState<StudentProfileData | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+
+  const openStudentProfile = async (studentId: string) => {
+    setProfileLoading(true);
+    setProfileModalStudent(null);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const res = await companyApi.getStudentProfile(studentId) as any;
+      if (res?.data) setProfileModalStudent(res.data);
+    } catch {
+      showToast("error", "Failed to load student profile");
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   const showToast = (type: "success" | "error", msg: string) => {
     setToast({ type, msg });
@@ -546,8 +617,14 @@ export default function CompanyCandidatesPage() {
                                           {c.currentRound > 0 && <span className="text-[10px] font-medium">R{c.currentRound}</span>}
                                           <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-full capitalize", sc.bg, sc.text)}>{c.finalResult || "pending"}</span>
                                           <div className="flex items-center gap-1">
-                                            <button onClick={(e) => { e.stopPropagation(); showToast("success", `Viewing: ${c.studentName}`); }} className="p-1 rounded hover:bg-muted" title="View"><Eye className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                                            <button onClick={(e) => { e.stopPropagation(); showToast("success", "Resume: coming soon"); }} className="p-1 rounded hover:bg-muted" title="CV"><FileText className="w-3.5 h-3.5 text-muted-foreground" /></button>
+                                            <button onClick={(e) => { e.stopPropagation(); openStudentProfile(c.studentId); }} className="p-1 rounded hover:bg-indigo-50 transition-colors" title="View Profile"><Eye className="w-3.5 h-3.5 text-indigo-500 hover:text-indigo-700" /></button>
+                                            {(c.resumeLink || c.driveLink) ? (
+                                              <a href={c.resumeLink || c.driveLink || "#"} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="p-1 rounded hover:bg-violet-50 transition-colors" title="View Resume">
+                                                <FileText className="w-3.5 h-3.5 text-violet-500 hover:text-violet-700" />
+                                              </a>
+                                            ) : (
+                                              <button onClick={(e) => { e.stopPropagation(); showToast("error", "No resume uploaded yet"); }} className="p-1 rounded hover:bg-muted" title="No Resume"><FileText className="w-3.5 h-3.5 text-muted-foreground/40" /></button>
+                                            )}
                                           </div>
                                         </div>
                                       </div>
@@ -615,6 +692,212 @@ export default function CompanyCandidatesPage() {
                 {isSubmitting ? "Submitting..." : "Confirm & Send Emails"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* ═══ Student Profile Modal ═══ */}
+      {(profileModalStudent || profileLoading) && (
+        <div className="fixed inset-0 z-50 flex items-start justify-end bg-black/40" onClick={() => { setProfileModalStudent(null); setProfileLoading(false); }}>
+          <div
+            className="bg-white w-full max-w-lg h-full overflow-y-auto shadow-2xl animate-in slide-in-from-right duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {profileLoading && !profileModalStudent ? (
+              <div className="flex flex-col items-center justify-center h-64 gap-3">
+                <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                <p className="text-sm text-muted-foreground">Loading profile...</p>
+              </div>
+            ) : profileModalStudent ? (
+              <>
+                {/* Header */}
+                <div className="sticky top-0 z-10 bg-gradient-to-r from-indigo-600 to-violet-600 p-5 text-white">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center text-lg font-bold">
+                        {getInitials(profileModalStudent.fullName)}
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold">{profileModalStudent.fullName}</h2>
+                        <p className="text-sm text-white/80">{profileModalStudent.usn}</p>
+                        <p className="text-xs text-white/70">{profileModalStudent.department} · Sem {profileModalStudent.semester}</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setProfileModalStudent(null)} className="p-1.5 rounded-lg hover:bg-white/20 transition-colors">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-5 space-y-5">
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="p-3 rounded-xl bg-indigo-50 text-center">
+                      <p className="text-xl font-bold text-indigo-700">{profileModalStudent.cgpa ?? "—"}</p>
+                      <p className="text-[10px] font-semibold text-indigo-500 uppercase">CGPA</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-emerald-50 text-center">
+                      <p className="text-xl font-bold text-emerald-700">{profileModalStudent.tenthPercent ?? "—"}%</p>
+                      <p className="text-[10px] font-semibold text-emerald-500 uppercase">10th</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-violet-50 text-center">
+                      <p className="text-xl font-bold text-violet-700">{profileModalStudent.twelfthPercent ?? "—"}%</p>
+                      <p className="text-[10px] font-semibold text-violet-500 uppercase">
+                        {profileModalStudent.qualificationType === "Diploma" ? "Diploma" : "12th"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Contact Info */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Contact</h4>
+                    <div className="grid grid-cols-1 gap-2">
+                      {profileModalStudent.email && (
+                        <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted/30">
+                          <Mail className="w-4 h-4 text-blue-500" />
+                          <span className="text-sm text-foreground">{profileModalStudent.email}</span>
+                        </div>
+                      )}
+                      {profileModalStudent.phone && (
+                        <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted/30">
+                          <Phone className="w-4 h-4 text-emerald-500" />
+                          <span className="text-sm text-foreground">{profileModalStudent.phone}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* About */}
+                  {profileModalStudent.aboutMe && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">About</h4>
+                      <p className="text-sm text-foreground leading-relaxed bg-muted/20 p-3 rounded-xl">{profileModalStudent.aboutMe}</p>
+                    </div>
+                  )}
+
+                  {/* Academic Details */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Academics</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20">
+                        <div className="flex items-center gap-2">
+                          <GraduationCap className="w-4 h-4 text-indigo-500" />
+                          <span className="text-sm font-medium">Department</span>
+                        </div>
+                        <span className="text-sm text-foreground font-semibold">{profileModalStudent.department}</span>
+                      </div>
+                      {profileModalStudent.batchName && (
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20">
+                          <span className="text-sm font-medium text-muted-foreground">Batch</span>
+                          <span className="text-sm font-semibold">{profileModalStudent.batchName}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20">
+                        <span className="text-sm font-medium text-muted-foreground">Backlogs</span>
+                        <span className={cn("text-sm font-semibold", (profileModalStudent.backlogs ?? 0) === 0 ? "text-emerald-600" : "text-red-600")}>
+                          {profileModalStudent.backlogs ?? 0}
+                        </span>
+                      </div>
+                      {profileModalStudent.category && (
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20">
+                          <span className="text-sm font-medium text-muted-foreground">Category</span>
+                          <span className="text-sm font-semibold">{profileModalStudent.category}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Skills */}
+                  {profileModalStudent.skills && profileModalStudent.skills.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Code className="w-3.5 h-3.5" /> Skills
+                      </h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {profileModalStudent.skills.map((s, i) => (
+                          <span key={i} className="text-xs font-medium px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Certifications */}
+                  {profileModalStudent.certifications && profileModalStudent.certifications.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Award className="w-3.5 h-3.5" /> Certifications
+                      </h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {profileModalStudent.certifications.map((c, i) => (
+                          <span key={i} className="text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-100">{c}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Links */}
+                  <div className="space-y-2">
+                    <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                      <Link2 className="w-3.5 h-3.5" /> Links & Documents
+                    </h4>
+                    <div className="space-y-2">
+                      {profileModalStudent.resumeLink && (
+                        <a href={profileModalStudent.resumeLink} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-2.5 p-3 rounded-xl bg-violet-50 border border-violet-100 hover:bg-violet-100 transition-colors">
+                          <FileText className="w-4 h-4 text-violet-600" />
+                          <span className="text-sm font-medium text-violet-700 flex-1">Resume</span>
+                          <ExternalLink className="w-3.5 h-3.5 text-violet-400" />
+                        </a>
+                      )}
+                      {profileModalStudent.driveLink && (
+                        <a href={profileModalStudent.driveLink} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-2.5 p-3 rounded-xl bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors">
+                          <Globe className="w-4 h-4 text-blue-600" />
+                          <span className="text-sm font-medium text-blue-700 flex-1">Drive Folder</span>
+                          <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+                        </a>
+                      )}
+                      {profileModalStudent.tenthMarksCardLink && (
+                        <a href={profileModalStudent.tenthMarksCardLink} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-50 border border-emerald-100 hover:bg-emerald-100 transition-colors">
+                          <FileText className="w-4 h-4 text-emerald-600" />
+                          <span className="text-sm font-medium text-emerald-700 flex-1">10th Marks Card</span>
+                          <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
+                        </a>
+                      )}
+                      {profileModalStudent.twelfthMarksCardLink && (
+                        <a href={profileModalStudent.twelfthMarksCardLink} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-2.5 p-3 rounded-xl bg-amber-50 border border-amber-100 hover:bg-amber-100 transition-colors">
+                          <FileText className="w-4 h-4 text-amber-600" />
+                          <span className="text-sm font-medium text-amber-700 flex-1">
+                            {profileModalStudent.qualificationType === "Diploma" ? "Diploma Marks Card" : "12th Marks Card"}
+                          </span>
+                          <ExternalLink className="w-3.5 h-3.5 text-amber-400" />
+                        </a>
+                      )}
+                      {profileModalStudent.linkedin && (
+                        <a href={profileModalStudent.linkedin} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-2.5 p-3 rounded-xl bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors">
+                          <Globe className="w-4 h-4 text-blue-700" />
+                          <span className="text-sm font-medium text-blue-700 flex-1">LinkedIn</span>
+                          <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+                        </a>
+                      )}
+                      {profileModalStudent.github && (
+                        <a href={profileModalStudent.github} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-2.5 p-3 rounded-xl bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors">
+                          <Code className="w-4 h-4 text-gray-700" />
+                          <span className="text-sm font-medium text-gray-700 flex-1">GitHub</span>
+                          <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
+                        </a>
+                      )}
+                      {!profileModalStudent.resumeLink && !profileModalStudent.driveLink && !profileModalStudent.linkedin && !profileModalStudent.github && (
+                        <p className="text-xs text-muted-foreground italic p-3">No links or documents uploaded yet.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : null}
           </div>
         </div>
       )}

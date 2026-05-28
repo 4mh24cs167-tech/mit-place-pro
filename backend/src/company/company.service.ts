@@ -166,24 +166,103 @@ export class CompanyService {
 
     const applications = await this.applicationRepo.find({
       where: { jobId, adminApproved: true },
-      relations: ['student', 'student.batch'],
+      relations: ['student', 'student.batch', 'student.user'],
       order: { matchScore: 'DESC' },
     });
 
-    return applications.map((app) => ({
-      applicationId: app.id,
-      studentId: app.studentId,
-      studentName: app.student?.fullName,
-      usn: app.student?.usn,
-      department: app.student?.department,
-      batchName: app.student?.batch?.name || null,
-      semester: app.student?.semester,
-      cgpa: app.student?.cgpa,
-      matchScore: app.matchScore,
-      atsScore: app.atsScore,
-      currentRound: app.currentRound,
-      finalResult: app.finalResult,
-    }));
+    return applications.map((app) => {
+      const student = app.student;
+      const pd = (student?.profileData || {}) as Record<string, unknown>;
+      return {
+        applicationId: app.id,
+        studentId: app.studentId,
+        studentName: student?.fullName,
+        usn: student?.usn,
+        department: student?.department,
+        batchName: student?.batch?.name || null,
+        semester: student?.semester,
+        cgpa: student?.cgpa,
+        matchScore: app.matchScore,
+        atsScore: app.atsScore,
+        currentRound: app.currentRound,
+        finalResult: app.finalResult,
+        // ─── Enhanced profile fields ───
+        phone: student?.phone || null,
+        email: student?.user?.email || null,
+        gender: student?.gender || null,
+        tenthPercent: student?.tenthPercent || null,
+        twelfthPercent: student?.twelfthPercent || null,
+        backlogs: student?.backlogs ?? 0,
+        resumeLink: student?.resumeLink || null,
+        driveLink: student?.driveLink || null,
+        skills: (pd.skills as string[]) || [],
+        certifications: (pd.certifications as string[]) || [],
+        linkedin: (pd.linkedin as string) || null,
+        github: (pd.github as string) || null,
+        aboutMe: (pd.aboutMe as string) || null,
+        profileComplete: student?.profileComplete || false,
+      };
+    });
+  }
+
+  async getStudentProfile(userId: string, studentId: string) {
+    const company = await this.companyRepo.findOne({ where: { userId } });
+    if (!company) throw new NotFoundException('Company profile not found');
+
+    // Verify the student has applied to one of this company's jobs
+    const jobs = await this.jobRepo.find({ where: { companyId: company.id } });
+    if (jobs.length === 0) throw new NotFoundException('No jobs found');
+
+    const jobIds = jobs.map(j => j.id);
+    const application = await this.applicationRepo.findOne({
+      where: { studentId, jobId: In(jobIds), adminApproved: true },
+    });
+    if (!application) throw new ForbiddenException('Student has not applied to your jobs');
+
+    // Get full student profile
+    const student = await this.studentRepo.findOne({
+      where: { id: studentId },
+      relations: ['user', 'batch'],
+    });
+    if (!student) throw new NotFoundException('Student not found');
+
+    const pd = (student.profileData || {}) as Record<string, unknown>;
+    return {
+      id: student.id,
+      fullName: student.fullName,
+      usn: student.usn,
+      department: student.department,
+      batchName: student.batch?.name || null,
+      semester: student.semester,
+      cgpa: student.cgpa,
+      email: student.user?.email || null,
+      phone: student.phone || null,
+      gender: student.gender || null,
+      dateOfBirth: student.dateOfBirth || null,
+      tenthPercent: student.tenthPercent || null,
+      tenthBoard: student.tenthBoard || null,
+      tenthYear: student.tenthYear || null,
+      twelfthPercent: student.twelfthPercent || null,
+      twelfthBoard: student.twelfthBoard || null,
+      twelfthYear: student.twelfthYear || null,
+      twelfthStream: student.twelfthStream || null,
+      backlogs: student.backlogs ?? 0,
+      resumeLink: student.resumeLink || null,
+      driveLink: student.driveLink || null,
+      familyIncome: student.familyIncome || null,
+      category: student.category || null,
+      profileComplete: student.profileComplete || false,
+      placementStatus: student.placementStatus,
+      skills: (pd.skills as string[]) || [],
+      certifications: (pd.certifications as string[]) || [],
+      linkedin: (pd.linkedin as string) || null,
+      github: (pd.github as string) || null,
+      aboutMe: (pd.aboutMe as string) || null,
+      tenthMarksCardLink: (pd.tenthMarksCardLink as string) || null,
+      twelfthMarksCardLink: (pd.twelfthMarksCardLink as string) || null,
+      qualificationType: (pd.qualificationType as string) || '12th',
+      diplomaBranch: (pd.diplomaBranch as string) || null,
+    };
   }
 
   // ─── Attendance & Results ─────────────────────

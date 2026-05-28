@@ -106,6 +106,15 @@ export class CompanyController {
     return { success: true, data };
   }
 
+  @Get('students/:studentId')
+  async getStudentProfile(
+    @CurrentUser('id') userId: string,
+    @Param('studentId') studentId: string,
+  ) {
+    const data = await this.companyService.getStudentProfile(userId, studentId);
+    return { success: true, data };
+  }
+
   // ─── Drives (slots, student counts, depts) ────
   @Get('drives')
   async getMyDrives(@CurrentUser('id') userId: string) {
