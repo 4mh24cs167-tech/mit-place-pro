@@ -25,7 +25,7 @@ export class EmailService {
 
   private async initTransporter() {
     const smtpHost = this.configService.get<string>('SMTP_HOST', 'smtp-relay.brevo.com');
-    const smtpPort = this.configService.get<number>('SMTP_PORT', 587);
+    const smtpPort = Number(this.configService.get<number>('SMTP_PORT', 587));
     const smtpUser = this.configService.get<string>('SMTP_USER', '');
     const smtpPass = this.configService.get<string>('SMTP_PASS', '');
 
@@ -34,31 +34,25 @@ export class EmailService {
       return;
     }
 
-    // Try primary port, then fallback to 465 SSL
-    const portsToTry = [smtpPort, smtpPort === 587 ? 465 : 587];
+    // Always create a standard transporter during startup using the configured host/port
+    this.transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: { user: smtpUser, pass: smtpPass },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 20000,
+    });
 
-    for (const port of portsToTry) {
-      try {
-        this.transporter = nodemailer.createTransport({
-          host: smtpHost,
-          port,
-          secure: port === 465,
-          auth: { user: smtpUser, pass: smtpPass },
-          connectionTimeout: 8000,
-          greetingTimeout: 8000,
-          socketTimeout: 15000,
-        });
-
-        await this.transporter.verify();
-        this.logger.log(`✅ Email service connected via ${smtpHost}:${port}`);
-        return; // success — stop trying
-      } catch (err) {
-        this.logger.warn(`❌ SMTP port ${port} failed: ${(err as Error).message}`);
-        this.transporter = null as unknown as nodemailer.Transporter;
-      }
-    }
-
-    this.logger.error('❌ All SMTP ports failed. Emails will NOT be sent.');
+    // Verify in background so it doesn't block startup or destroy the transporter permanently if it fails
+    this.transporter.verify()
+      .then(() => {
+        this.logger.log(`✅ SMTP connection verified and ready via ${smtpHost}:${smtpPort}`);
+      })
+      .catch((err) => {
+        this.logger.warn(`⚠️ SMTP connection verification failed on startup: ${err.message}. Outbound emails will attempt dynamic delivery (including Brevo HTTP API).`);
+      });
   }
 
   // ─── Shared HTML wrapper with college logo ──────
@@ -94,12 +88,95 @@ export class EmailService {
     return `"${this.fromName}" <${fromEmail}>`;
   }
 
+  // ─── Central Dispatcher with Brevo HTTP API Bypass & NodeMailer SMTP fallback ───
+  private async sendEmail(options: { to: string | string[]; subject: string; html: string }): Promise<boolean> {
+    const smtpUser = this.configService.get<string>('SMTP_USER', '');
+    const smtpPass = this.configService.get<string>('SMTP_PASS', '');
+    const smtpFrom = this.configService.get<string>('SMTP_FROM', smtpUser);
+
+    if (!smtpUser || !smtpPass) {
+      this.logger.warn(`⚠️ No SMTP credentials configured. Email logged: [Subject: "${options.subject}"]`);
+      return false;
+    }
+
+    const recipients = Array.isArray(options.to) ? options.to : [options.to];
+
+    // ─── 1. Attempt Brevo HTTP API First (Immune to Render Free Tier SMTP Outbound Blocks) ───
+    if (smtpPass.startsWith('xsmtpsib-')) {
+      try {
+        this.logger.log(`🔄 Attempting Brevo HTTP REST API to send to: ${recipients.join(', ')}`);
+        
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'api-key': smtpPass,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            sender: {
+              name: this.fromName,
+              email: smtpFrom,
+            },
+            to: recipients.map(email => ({ email })),
+            subject: options.subject,
+            htmlContent: options.html,
+          }),
+        });
+
+        if (response.ok) {
+          const resData = await response.json().catch(() => ({}));
+          this.logger.log(`✅ Email sent successfully via Brevo HTTP API! Message ID: ${resData.messageId || 'N/A'}`);
+          return true;
+        } else {
+          const errText = await response.text();
+          this.logger.warn(`⚠️ Brevo HTTP API status ${response.status}: ${errText}. Falling back to Nodemailer SMTP...`);
+        }
+      } catch (httpErr) {
+        this.logger.warn(`⚠️ Brevo HTTP API failed: ${(httpErr as Error).message}. Falling back to Nodemailer SMTP...`);
+      }
+    }
+
+    // ─── 2. Fallback to standard Nodemailer SMTP ───
+    if (!this.transporter) {
+      // Recreate transporter in case it was missing
+      this.transporter = nodemailer.createTransport({
+        host: this.configService.get<string>('SMTP_HOST', 'smtp-relay.brevo.com'),
+        port: Number(this.configService.get<number>('SMTP_PORT', 587)),
+        secure: Number(this.configService.get<number>('SMTP_PORT', 587)) === 465,
+        auth: { user: smtpUser, pass: smtpPass },
+        connectionTimeout: 8000,
+      });
+    }
+
+    try {
+      this.logger.log(`🔄 Attempting SMTP fallback to send to: ${recipients.join(', ')}`);
+      
+      const mailOptions: nodemailer.SendMailOptions = {
+        from: this.getFrom(),
+        subject: options.subject,
+        html: options.html,
+      };
+
+      if (Array.isArray(options.to)) {
+        mailOptions.bcc = options.to;
+      } else {
+        mailOptions.to = options.to;
+      }
+
+      await this.transporter.sendMail(mailOptions);
+      this.logger.log(`✅ Email sent successfully via SMTP fallback!`);
+      return true;
+    } catch (smtpErr) {
+      this.logger.error(`❌ SMTP fallback failed completely: ${(smtpErr as Error).message}`);
+      return false;
+    }
+  }
+
   // ═══════════════════════════════════════════════════
   // 1. Company Welcome / Credentials Email
   // ═══════════════════════════════════════════════════
   async sendCompanyCredentials(credentials: CompanyCredentials): Promise<boolean> {
-    if (!this.transporter) return false;
-
     const body = `
       <p style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0 0 16px;">Welcome, ${credentials.hrName || credentials.companyName}!</p>
       <p style="font-size:14px;color:#4a4a68;line-height:1.7;margin:0 0 24px;">
@@ -139,30 +216,17 @@ export class EmailService {
       </ul>
     `;
 
-    try {
-      await this.transporter.sendMail({
-        from: this.getFrom(),
-        to: credentials.email,
-        subject: `🎓 Welcome to MITM PlacePro — Your Company Login Credentials`,
-        html: this.wrapHtml('Welcome to MITM PlacePro', 'linear-gradient(135deg,#6366f1,#8b5cf6)', body),
-      });
-      this.logger.log(`✅ Company credentials email sent to ${credentials.email}`);
-      return true;
-    } catch (error) {
-      this.logger.error(`❌ Failed to send company email to ${credentials.email}`, error);
-      return false;
-    }
+    return this.sendEmail({
+      to: credentials.email,
+      subject: `🎓 Welcome to MITM PlacePro — Your Company Login Credentials`,
+      html: this.wrapHtml('Welcome to MITM PlacePro', 'linear-gradient(135deg,#6366f1,#8b5cf6)', body),
+    });
   }
 
   // ═══════════════════════════════════════════════════
   // 2. OTP / Password Reset Email
   // ═══════════════════════════════════════════════════
   async sendOtpEmail(email: string, otp: string): Promise<boolean> {
-    if (!this.transporter) {
-      this.logger.warn('SMTP not configured. OTP email skipped. OTP for debug: ' + otp);
-      return false;
-    }
-
     const otpDigits = otp.split('').map(d => `
       <span style="display:inline-block;width:44px;height:52px;line-height:52px;text-align:center;
         font-size:24px;font-weight:700;color:#1a1a2e;background:#f0f0ff;border:2px solid #e0e3ff;
@@ -186,19 +250,11 @@ export class EmailService {
       </p>
     `;
 
-    try {
-      await this.transporter.sendMail({
-        from: this.getFrom(),
-        to: email,
-        subject: '🔐 Your Password Reset OTP — MITM PlacePro',
-        html: this.wrapHtml('Password Reset', 'linear-gradient(135deg,#6366f1,#8b5cf6)', body),
-      });
-      this.logger.log(`✅ OTP email sent to ${email}`);
-      return true;
-    } catch (error) {
-      this.logger.error(`❌ Failed to send OTP email to ${email}`, error);
-      return false;
-    }
+    return this.sendEmail({
+      to: email,
+      subject: '🔐 Your Password Reset OTP — MITM PlacePro',
+      html: this.wrapHtml('Password Reset', 'linear-gradient(135deg,#6366f1,#8b5cf6)', body),
+    });
   }
 
   // ═══════════════════════════════════════════════════
@@ -208,7 +264,6 @@ export class EmailService {
     email: string; studentName: string; jobTitle: string;
     companyName: string; roundNumber: number; totalRounds: number; loginUrl: string;
   }): Promise<boolean> {
-    if (!this.transporter) return false;
     const isFinal = data.roundNumber >= data.totalRounds;
 
     const body = `
@@ -237,21 +292,13 @@ export class EmailService {
       : 'linear-gradient(135deg,#2563eb,#3b82f6)';
     const title = isFinal ? 'Congratulations! You\'re Placed!' : `Round ${data.roundNumber} — Selected!`;
 
-    try {
-      await this.transporter.sendMail({
-        from: this.getFrom(),
-        to: data.email,
-        subject: isFinal
-          ? `🎉 Congratulations! You're placed at ${data.companyName} — MITM PlacePro`
-          : `✅ Round ${data.roundNumber} Cleared — ${data.jobTitle} at ${data.companyName}`,
-        html: this.wrapHtml(title, headerBg, body),
-      });
-      this.logger.log(`✅ Round-selected email sent to ${data.email}`);
-      return true;
-    } catch (error) {
-      this.logger.error(`❌ Failed to send round-selected email to ${data.email}`, error);
-      return false;
-    }
+    return this.sendEmail({
+      to: data.email,
+      subject: isFinal
+        ? `🎉 Congratulations! You're placed at ${data.companyName} — MITM PlacePro`
+        : `✅ Round ${data.roundNumber} Cleared — ${data.jobTitle} at ${data.companyName}`,
+      html: this.wrapHtml(title, headerBg, body),
+    });
   }
 
   // ═══════════════════════════════════════════════════
@@ -261,8 +308,6 @@ export class EmailService {
     email: string; studentName: string; jobTitle: string;
     companyName: string; roundNumber: number; loginUrl: string;
   }): Promise<boolean> {
-    if (!this.transporter) return false;
-
     const body = `
       <p style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0 0 16px;">Hi ${data.studentName},</p>
       <p style="font-size:14px;color:#4a4a68;line-height:1.7;margin:0 0 24px;">
@@ -279,19 +324,11 @@ export class EmailService {
       </div>
     `;
 
-    try {
-      await this.transporter.sendMail({
-        from: this.getFrom(),
-        to: data.email,
-        subject: `Round ${data.roundNumber} Result — ${data.jobTitle} at ${data.companyName}`,
-        html: this.wrapHtml(`Round ${data.roundNumber} Update`, 'linear-gradient(135deg,#6366f1,#8b5cf6)', body),
-      });
-      this.logger.log(`✅ Round-rejected email sent to ${data.email}`);
-      return true;
-    } catch (error) {
-      this.logger.error(`❌ Failed to send round-rejected email to ${data.email}`, error);
-      return false;
-    }
+    return this.sendEmail({
+      to: data.email,
+      subject: `Round ${data.roundNumber} Result — ${data.jobTitle} at ${data.companyName}`,
+      html: this.wrapHtml(`Round ${data.roundNumber} Update`, 'linear-gradient(135deg,#6366f1,#8b5cf6)', body),
+    });
   }
 
   // ═══════════════════════════════════════════════════
@@ -301,7 +338,7 @@ export class EmailService {
     emails: string[]; driveName: string; companyName: string;
     driveDate?: string; description?: string; eligibleDepartments?: string[];
   }): Promise<number> {
-    if (!this.transporter || data.emails.length === 0) return 0;
+    if (data.emails.length === 0) return 0;
     const loginUrl = this.configService.get<string>('FRONTEND_URL', 'https://mitm-placepro.vercel.app');
 
     const body = `
@@ -350,22 +387,21 @@ export class EmailService {
     const batchSize = 50;
     for (let i = 0; i < data.emails.length; i += batchSize) {
       const batch = data.emails.slice(i, i + batchSize);
-      try {
-        await this.transporter.sendMail({
-          from: this.getFrom(),
-          bcc: batch,
-          subject: `🚀 New Drive: ${data.companyName} — ${data.driveName}`,
-          html: htmlContent,
-        });
+      const success = await this.sendEmail({
+        to: batch,
+        subject: `🚀 New Drive: ${data.companyName} — ${data.driveName}`,
+        html: htmlContent,
+      });
+      if (success) {
         sentCount += batch.length;
-        this.logger.log(`📧 Drive announcement batch sent: ${batch.length} emails`);
-      } catch (error) {
-        this.logger.error(`❌ Failed to send drive announcement batch`, error);
       }
     }
     return sentCount;
   }
 
+  // ═══════════════════════════════════════════════════
+  // 6. SMTP Diagnostics & Connections Verification
+  // ═══════════════════════════════════════════════════
   async getSmtpStatus() {
     const smtpHost = this.configService.get<string>('SMTP_HOST', 'smtp-relay.brevo.com');
     const smtpPort = this.configService.get<number>('SMTP_PORT', 587);
@@ -412,41 +448,27 @@ export class EmailService {
   }
 
   async sendDirectTestEmail(toEmail: string): Promise<{ success: boolean; message: string; error?: string }> {
-    const smtpUser = this.configService.get<string>('SMTP_USER', '');
-    const smtpPass = this.configService.get<string>('SMTP_PASS', '');
-    if (!smtpUser || !smtpPass) {
-      return { success: false, message: 'SMTP credentials not configured in environment' };
-    }
-
-    const transporterToUse = this.transporter || nodemailer.createTransport({
-      host: this.configService.get<string>('SMTP_HOST', 'smtp-relay.brevo.com'),
-      port: this.configService.get<number>('SMTP_PORT', 587),
-      secure: false,
-      auth: { user: smtpUser, pass: smtpPass },
-      connectionTimeout: 5000,
+    const success = await this.sendEmail({
+      to: toEmail,
+      subject: '🎓 MITM PlacePro SMTP Connection Test',
+      html: this.wrapHtml(
+        'SMTP Diagnostic Test',
+        'linear-gradient(135deg,#3b82f6,#1d4ed8)',
+        `<p style="font-size:16px;color:#1a1a2e;">Hello!</p>
+         <p style="font-size:14px;color:#4a4a68;line-height:1.7;">
+           This is a direct connection validation email triggered from the MITM PlacePro admin controls.
+           If you are reading this, your outbound connection is fully active!
+         </p>
+         <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin:20px 0;font-size:13px;color:#166534;">
+           ✅ SMTP / Brevo REST API communication completed successfully!
+         </div>`
+      ),
     });
 
-    try {
-      const info = await transporterToUse.sendMail({
-        from: this.getFrom(),
-        to: toEmail,
-        subject: '🎓 MITM PlacePro SMTP Connection Test',
-        html: this.wrapHtml(
-          'SMTP Diagnostic Test',
-          'linear-gradient(135deg,#3b82f6,#1d4ed8)',
-          `<p style="font-size:16px;color:#1a1a2e;">Hello!</p>
-           <p style="font-size:14px;color:#4a4a68;line-height:1.7;">
-             This is a direct diagnostic test email triggered from the MITM PlacePro admin controls.
-             If you are reading this email, it means your SMTP configuration and outbound connections are fully functional!
-           </p>
-           <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin:20px 0;font-size:13px;color:#166534;">
-             ✅ SMTP host, username, and password verified successfully. Outbound mail queue accepted the message.
-           </div>`
-        ),
-      });
-      return { success: true, message: `Email accepted by SMTP relay. Message ID: ${info.messageId}` };
-    } catch (e) {
-      return { success: false, message: 'Failed to send mail', error: (e as Error).message };
+    if (success) {
+      return { success: true, message: `Email delivered successfully!` };
+    } else {
+      return { success: false, message: 'Failed to deliver email. Check backend logs.' };
     }
   }
 }
