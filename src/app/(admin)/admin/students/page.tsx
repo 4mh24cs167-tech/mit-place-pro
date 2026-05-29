@@ -43,6 +43,8 @@ export default function AdminStudentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [deptFilter, setDeptFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [searchResults, setSearchResults] = useState<StudentRecord[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   // Department pagination state (15 departments per page)
   const [departmentPage, setDepartmentPage] = useState(1);
@@ -104,6 +106,34 @@ export default function AdminStudentsPage() {
   useEffect(() => {
     fetchMetadata();
   }, []);
+
+  // Debounced search for unified search view
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const delayDebounce = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const res = await adminApi.listStudents({
+          search: searchQuery,
+          limit: 100,
+          status: statusFilter !== "all" ? statusFilter : undefined,
+        });
+        if (res.data) {
+          setSearchResults(res.data as StudentRecord[]);
+        }
+      } catch (err) {
+        console.error("Failed to search students:", err);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery, statusFilter]);
 
   // Fetch students for a specific batch and department with 50 limit and USN order
   const fetchStudentsForBatch = useCallback(async (batchName: string, deptCode: string, studentPage: number) => {
@@ -697,6 +727,114 @@ export default function AdminStudentsPage() {
                 </div>
               </div>
             ))}
+          </div>
+        ) : searchQuery.trim() ? (
+          <div className="i-card p-5 border border-border bg-white shadow-sm rounded-2xl">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-border/50">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
+                  <Search className="w-5 h-5 text-indigo-600" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-foreground">Search Results</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Found {searchResults.length} student{searchResults.length !== 1 ? 's' : ''} matching &quot;{searchQuery}&quot;
+                  </p>
+                </div>
+              </div>
+              {searchLoading && <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />}
+            </div>
+
+            {searchLoading && searchResults.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 gap-3">
+                <Loader2 className="w-7 h-7 text-indigo-600 animate-spin" />
+                <p className="text-sm text-muted-foreground">Searching students...</p>
+              </div>
+            ) : searchResults.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="w-10 h-10 text-muted-foreground/40 mx-auto mb-3" />
+                <h4 className="text-sm font-semibold text-foreground">No students found</h4>
+                <p className="text-xs text-muted-foreground mt-1">Try another search term or filter.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {searchResults.map(student => {
+                  const statusCfg = getStatusConfig(student.placementStatus);
+                  const completionPct = student.profileComplete ? 100 : 35;
+                  return (
+                    <div key={student.id} className="p-4 rounded-xl border border-border/60 bg-white hover:shadow-md transition-all group relative">
+                      {/* Delete Student */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (deletingId === student.id) return;
+                          if (!confirm(`Delete ${student.fullName} (${student.usn})? This cannot be undone.`)) return;
+                          setDeletingId(student.id);
+                          adminApi.deleteStudent(student.id)
+                            .then(() => {
+                              setSearchResults(prev => prev.filter(s => s.id !== student.id));
+                              fetchMetadata();
+                            })
+                            .catch(() => alert('Failed to delete student'))
+                            .finally(() => setDeletingId(null));
+                        }}
+                        disabled={deletingId === student.id}
+                        className="absolute top-3 right-3 w-7 h-7 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-all disabled:opacity-50"
+                        title="Delete student"
+                      >
+                        {deletingId === student.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                      </button>
+
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center text-xs font-bold text-indigo-700">
+                            {getInitials(student.fullName)}
+                          </div>
+                          <div>
+                            <h5 className="text-xs sm:text-sm font-semibold text-foreground truncate max-w-[130px] group-hover:text-indigo-600 transition-colors">
+                              {student.fullName}
+                            </h5>
+                            <p className="text-[10px] text-muted-foreground font-mono">{student.usn}</p>
+                          </div>
+                        </div>
+                        <span className={cn("text-[9px] font-semibold px-2 py-0.5 rounded-full mr-8", statusCfg.bg, statusCfg.color)}>
+                          {statusCfg.label}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-1.5 mb-3">
+                        <div className="text-center p-1 rounded-lg bg-muted/40">
+                          <p className="text-xs font-bold text-foreground">{student.cgpa ?? '-'}</p>
+                          <p className="text-[9px] text-muted-foreground">CGPA</p>
+                        </div>
+                        <div className="text-center p-1 rounded-lg bg-muted/40">
+                          <p className="text-xs font-bold text-foreground">{student.tenthPercent ?? '-'}%</p>
+                          <p className="text-[9px] text-muted-foreground">10th</p>
+                        </div>
+                        <div className="text-center p-1 rounded-lg bg-muted/40">
+                          <p className="text-xs font-bold text-foreground">{student.twelfthPercent ?? '-'}%</p>
+                          <p className="text-[9px] text-muted-foreground">12th</p>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 mb-2 text-[10px] text-muted-foreground">
+                        <span className="font-semibold bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded">{student.department}</span>
+                        {student.batchName && <span className="bg-gray-100 text-gray-700 px-1.5 py-0.5 rounded">{student.batchName}</span>}
+                        <span>Sem {student.semester}</span>
+                        {student.backlogs > 0 && <span className="text-red-500 font-semibold">{student.backlogs} Backlog</span>}
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div className={cn("h-full rounded-full", completionPct === 100 ? "bg-emerald-500" : "bg-amber-500")} style={{ width: `${completionPct}%` }} />
+                        </div>
+                        <span className="text-[9px] font-medium text-muted-foreground">{completionPct}%</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ) : filteredDepts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
