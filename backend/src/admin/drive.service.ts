@@ -8,6 +8,7 @@ import { User } from '../entities/user.entity';
 import { Notification } from '../entities/notification.entity';
 import { AuditLog } from '../entities/audit-log.entity';
 import { EmailService } from './email.service';
+import { Application } from '../entities/application.entity';
 
 @Injectable()
 export class DriveService {
@@ -22,6 +23,7 @@ export class DriveService {
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Notification) private readonly notificationRepo: Repository<Notification>,
     @InjectRepository(AuditLog) private readonly auditRepo: Repository<AuditLog>,
+    @InjectRepository(Application) private readonly applicationRepo: Repository<Application>,
     private readonly emailService: EmailService,
   ) {}
 
@@ -276,6 +278,9 @@ export class DriveService {
     drive.status = 'screening';
     await this.driveRepo.save(drive);
 
+    // Sync registrations to job applications
+    await this.syncApprovedRegistrationsToApplications(driveId);
+
     await this.auditRepo.save({
       actorUserId: actorId,
       action: 'APPROVE_ALL_DRIVE',
@@ -336,6 +341,9 @@ export class DriveService {
     drive.status = 'scheduled';
     await this.driveRepo.save(drive);
 
+    // Sync registrations to job applications
+    await this.syncApprovedRegistrationsToApplications(driveId);
+
     await this.auditRepo.save({
       actorUserId: actorId,
       action: 'ALLOCATE_DRIVE_SLOTS',
@@ -355,6 +363,11 @@ export class DriveService {
     const oldStatus = drive.status;
     drive.status = status as Drive['status'];
     await this.driveRepo.save(drive);
+
+    // Sync approved registrations if moving to active status
+    if (['screening', 'scheduled', 'completed'].includes(status)) {
+      await this.syncApprovedRegistrationsToApplications(driveId);
+    }
 
     await this.auditRepo.save({
       actorUserId: actorId,
@@ -383,5 +396,56 @@ export class DriveService {
     });
 
     return { message: 'Drive deleted' };
+  }
+
+  // ─── Sync Approved Drive Registrations to Job Applications ───
+  async syncApprovedRegistrationsToApplications(driveId: string): Promise<void> {
+    try {
+      const drive = await this.driveRepo.findOne({
+        where: { id: driveId },
+        relations: ['job'],
+      });
+      if (!drive || !drive.jobId) return;
+
+      // 1. Automatically publish associated job if it is still a draft
+      if (drive.job && drive.job.status === 'draft') {
+        drive.job.status = 'open';
+        await this.jobRepo.save(drive.job);
+        this.logger.log(`Auto-published job ${drive.jobId} associated with drive ${driveId}`);
+      }
+
+      // 2. Fetch all approved registrations for this drive
+      const approvedRegs = await this.regRepo.find({
+        where: { driveId, status: 'approved' },
+      });
+
+      if (approvedRegs.length === 0) return;
+
+      // 3. Sync to official applications table
+      for (const reg of approvedRegs) {
+        const existingApp = await this.applicationRepo.findOne({
+          where: { studentId: reg.studentId, jobId: drive.jobId },
+        });
+
+        if (!existingApp) {
+          await this.applicationRepo.save({
+            studentId: reg.studentId,
+            jobId: drive.jobId,
+            adminApproved: true,
+            adminApprovedAt: new Date(),
+            currentRound: 1,
+            finalResult: 'pending',
+            matchScore: 75.00,
+          });
+        } else if (existingApp.adminApproved !== true) {
+          existingApp.adminApproved = true;
+          existingApp.adminApprovedAt = new Date();
+          await this.applicationRepo.save(existingApp);
+        }
+      }
+      this.logger.log(`Synced ${approvedRegs.length} approved drive registrations to job applications for drive ${driveId}`);
+    } catch (err) {
+      this.logger.error(`Error syncing drive registrations to applications for drive ${driveId}:`, err);
+    }
   }
 }
