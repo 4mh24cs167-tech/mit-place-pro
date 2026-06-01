@@ -24,6 +24,7 @@ import {
   DriveRegistration,
   DriveSlot,
 } from './entities';
+import { RoundMeeting, MeetingGroup, MeetingAssignment } from './entities';
 
 const entities = [
   User,
@@ -43,6 +44,9 @@ const entities = [
   Drive,
   DriveRegistration,
   DriveSlot,
+  RoundMeeting,
+  MeetingGroup,
+  MeetingAssignment,
 ];
 
 @Module({

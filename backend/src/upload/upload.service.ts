@@ -14,13 +14,14 @@ export class UploadService {
     this.region = this.configService.get<string>('AWS_S3_REGION', 'ap-south-1');
     this.bucket = this.configService.get<string>('AWS_S3_BUCKET', '');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     this.s3 = new S3Client({
       region: this.region,
       credentials: {
         accessKeyId: this.configService.get<string>('AWS_ACCESS_KEY_ID', ''),
         secretAccessKey: this.configService.get<string>('AWS_SECRET_ACCESS_KEY', ''),
       },
-    });
+    } as any);
 
     if (!this.bucket) {
       this.logger.warn('AWS_S3_BUCKET is not set. File uploads will fail.');
