@@ -164,6 +164,10 @@ export default function CompanyRoundsPage() {
   // GD Groups
   const [gdGroups, setGdGroups] = useState<GroupForm[]>([]);
   const [studentsPerGroup, setStudentsPerGroup] = useState(5);
+  const [gdGroupMode, setGdGroupMode] = useState<"by_size" | "by_count">("by_size");
+  const [numberOfGroups, setNumberOfGroups] = useState(4);
+  const [gdDuration, setGdDuration] = useState(10);
+  const [gdStartTime, setGdStartTime] = useState("");
 
   // One-on-One Slots
   const [oneOnOneSlots, setOneOnOneSlots] = useState<SlotForm[]>([]);
@@ -349,6 +353,10 @@ export default function CompanyRoundsPage() {
     setSlotDuration(30);
     setSlotStartTime("");
     setStudentsPerGroup(5);
+    setGdGroupMode("by_size");
+    setNumberOfGroups(4);
+    setGdDuration(10);
+    setGdStartTime("");
     setIsMeetingModalOpen(true);
   };
 
@@ -364,23 +372,47 @@ export default function CompanyRoundsPage() {
       return;
     }
 
+    // Randomly shuffle candidates
     const shuffled = [...roundCandidates].sort(() => Math.random() - 0.5);
     const groups: GroupForm[] = [];
-    const numGroups = Math.ceil(shuffled.length / studentsPerGroup);
 
-    for (let i = 0; i < numGroups; i++) {
-      const groupStudents = shuffled.slice(i * studentsPerGroup, (i + 1) * studentsPerGroup);
+    // Calculate group count based on mode
+    let groupCount: number;
+    let perGroup: number;
+    if (gdGroupMode === "by_count") {
+      groupCount = Math.max(1, Math.min(numberOfGroups, shuffled.length));
+      perGroup = Math.ceil(shuffled.length / groupCount);
+    } else {
+      perGroup = Math.max(1, studentsPerGroup);
+      groupCount = Math.ceil(shuffled.length / perGroup);
+    }
+
+    for (let i = 0; i < groupCount; i++) {
+      const groupStudents = shuffled.slice(i * perGroup, (i + 1) * perGroup);
+      if (groupStudents.length === 0) continue;
+
+      // Auto-calculate time if start time and duration are provided
+      let groupTime = "";
+      if (gdStartTime) {
+        const [hours, mins] = gdStartTime.split(":").map(Number);
+        const totalMins = hours * 60 + mins + (i * gdDuration);
+        const h = Math.floor(totalMins / 60) % 24;
+        const m = totalMins % 60;
+        groupTime = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+      }
+
       groups.push({
         groupName: `Group ${String.fromCharCode(65 + i)}`,
         meetingLink: "",
         scheduledDate: meetingDate,
-        scheduledTime: "",
+        scheduledTime: groupTime,
         studentIds: groupStudents.map(s => s.studentId),
       });
     }
 
     setGdGroups(groups);
-    showToast("success", `Created ${numGroups} groups with ~${studentsPerGroup} students each`);
+    const actualPerGroup = groups.length > 0 ? Math.round(shuffled.length / groups.length) : 0;
+    showToast("success", `Created ${groups.length} groups with ~${actualPerGroup} students each${gdStartTime ? `, ${gdDuration} min apart` : ""}`);
   };
 
   // Auto-generate one-on-one slots
@@ -927,25 +959,91 @@ export default function CompanyRoundsPage() {
               {/* ─── GD Group Config ─── */}
               {meetingType === "group_discussion" && (
                 <div className="border-2 border-pink-100 rounded-xl p-4 space-y-4 bg-pink-50/30">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <Users className="w-4 h-4 text-pink-600" />
-                      Group Configuration
-                    </h4>
-                    <div className="flex items-center gap-2">
-                      <label htmlFor="students-per-group" className="text-xs text-muted-foreground">Students per group:</label>
+                  <h4 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                    <Users className="w-4 h-4 text-pink-600" />
+                    Group Configuration
+                  </h4>
+
+                  {/* Grouping Mode Toggle */}
+                  <div className="flex items-center gap-2 p-1 bg-pink-100/60 rounded-lg w-fit">
+                    <button
+                      onClick={() => setGdGroupMode("by_size")}
+                      className={cn(
+                        "px-3 py-1.5 rounded-md text-xs font-semibold transition-all",
+                        gdGroupMode === "by_size" ? "bg-white text-pink-700 shadow-sm" : "text-pink-600/70 hover:text-pink-700"
+                      )}
+                    >
+                      By Students per Group
+                    </button>
+                    <button
+                      onClick={() => setGdGroupMode("by_count")}
+                      className={cn(
+                        "px-3 py-1.5 rounded-md text-xs font-semibold transition-all",
+                        gdGroupMode === "by_count" ? "bg-white text-pink-700 shadow-sm" : "text-pink-600/70 hover:text-pink-700"
+                      )}
+                    >
+                      By Number of Groups
+                    </button>
+                  </div>
+
+                  {/* Config Row */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {gdGroupMode === "by_size" ? (
+                      <div>
+                        <label htmlFor="students-per-group" className="text-[10px] font-semibold text-muted-foreground block mb-1">Students per Group</label>
+                        <input
+                          id="students-per-group"
+                          type="number"
+                          min={2}
+                          max={30}
+                          value={studentsPerGroup}
+                          onChange={(e) => setStudentsPerGroup(Number(e.target.value))}
+                          className="w-full px-2 py-1.5 rounded-lg border border-border text-sm text-center outline-none"
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <label htmlFor="num-groups" className="text-[10px] font-semibold text-muted-foreground block mb-1">Number of Groups</label>
+                        <input
+                          id="num-groups"
+                          type="number"
+                          min={2}
+                          max={50}
+                          value={numberOfGroups}
+                          onChange={(e) => setNumberOfGroups(Number(e.target.value))}
+                          className="w-full px-2 py-1.5 rounded-lg border border-border text-sm text-center outline-none"
+                        />
+                      </div>
+                    )}
+                    <div>
+                      <label htmlFor="gd-duration" className="text-[10px] font-semibold text-muted-foreground block mb-1">Duration / Group</label>
+                      <div className="flex items-center gap-1">
+                        <input
+                          id="gd-duration"
+                          type="number"
+                          min={5}
+                          max={120}
+                          value={gdDuration}
+                          onChange={(e) => setGdDuration(Number(e.target.value))}
+                          className="w-full px-2 py-1.5 rounded-lg border border-border text-sm text-center outline-none"
+                        />
+                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">min</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor="gd-start-time" className="text-[10px] font-semibold text-muted-foreground block mb-1">Start Time</label>
                       <input
-                        id="students-per-group"
-                        type="number"
-                        min={2}
-                        max={20}
-                        value={studentsPerGroup}
-                        onChange={(e) => setStudentsPerGroup(Number(e.target.value))}
-                        className="w-16 px-2 py-1 rounded-lg border border-border text-sm text-center outline-none"
+                        id="gd-start-time"
+                        type="time"
+                        value={gdStartTime}
+                        onChange={(e) => setGdStartTime(e.target.value)}
+                        className="w-full px-2 py-1.5 rounded-lg border border-border text-sm outline-none"
                       />
+                    </div>
+                    <div className="flex items-end">
                       <button
                         onClick={autoGenerateGroups}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700 transition-colors"
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700 transition-colors"
                       >
                         <Shuffle className="w-3 h-3" />
                         Auto Group
@@ -953,42 +1051,43 @@ export default function CompanyRoundsPage() {
                     </div>
                   </div>
 
+                  {/* Preview info */}
+                  {gdGroups.length === 0 && (
+                    <div className="text-center py-3 text-xs text-muted-foreground bg-white/50 rounded-lg border border-pink-100">
+                      <Users className="w-5 h-5 mx-auto mb-1 text-pink-400" />
+                      {gdGroupMode === "by_size"
+                        ? `Will create ~${Math.ceil(getCandidatesForRound(meetingRound).length / Math.max(1, studentsPerGroup))} groups of ${studentsPerGroup} students`
+                        : `Will create ${numberOfGroups} groups of ~${Math.ceil(getCandidatesForRound(meetingRound).length / Math.max(1, numberOfGroups))} students`
+                      }
+                      {gdStartTime && ` · ${gdDuration} min apart starting at ${gdStartTime}`}
+                    </div>
+                  )}
+
                   {gdGroups.length > 0 && (
                     <div className="space-y-3">
                       {gdGroups.map((group, gi) => (
-                        <div key={gi} className="bg-white rounded-lg p-3 border border-pink-100">
-                          <div className="grid grid-cols-3 gap-2 mb-2">
-                            <div>
-                              <label htmlFor={`group-name-${gi}`} className="text-[10px] text-muted-foreground">Group Name</label>
-                              <input
-                                id={`group-name-${gi}`}
-                                type="text"
-                                value={group.groupName}
-                                onChange={(e) => {
-                                  const updated = [...gdGroups];
-                                  updated[gi].groupName = e.target.value;
-                                  setGdGroups(updated);
-                                }}
-                                className="w-full px-2 py-1.5 rounded-lg border border-border text-xs outline-none"
-                              />
+                        <div key={gi} className="bg-white rounded-xl p-4 border border-pink-100 shadow-sm">
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-pink-100 to-pink-200 flex items-center justify-center text-xs font-bold text-pink-700">
+                                {String.fromCharCode(65 + gi)}
+                              </div>
+                              <div>
+                                <input
+                                  id={`group-name-${gi}`}
+                                  type="text"
+                                  value={group.groupName}
+                                  onChange={(e) => {
+                                    const updated = [...gdGroups];
+                                    updated[gi].groupName = e.target.value;
+                                    setGdGroups(updated);
+                                  }}
+                                  className="text-sm font-semibold text-foreground bg-transparent outline-none border-b border-transparent hover:border-pink-200 focus:border-pink-400 transition-colors"
+                                />
+                                <p className="text-[10px] text-muted-foreground">{group.studentIds.length} members{group.scheduledTime && ` · ${group.scheduledTime}`}</p>
+                              </div>
                             </div>
-                            <div>
-                              <label htmlFor={`group-link-${gi}`} className="text-[10px] text-muted-foreground">Meeting Link</label>
-                              <input
-                                id={`group-link-${gi}`}
-                                type="url"
-                                value={group.meetingLink}
-                                onChange={(e) => {
-                                  const updated = [...gdGroups];
-                                  updated[gi].meetingLink = e.target.value;
-                                  setGdGroups(updated);
-                                }}
-                                placeholder="https://..."
-                                className="w-full px-2 py-1.5 rounded-lg border border-border text-xs outline-none"
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor={`group-time-${gi}`} className="text-[10px] text-muted-foreground">Time</label>
+                            <div className="flex items-center gap-2">
                               <input
                                 id={`group-time-${gi}`}
                                 type="time"
@@ -998,15 +1097,33 @@ export default function CompanyRoundsPage() {
                                   updated[gi].scheduledTime = e.target.value;
                                   setGdGroups(updated);
                                 }}
-                                className="w-full px-2 py-1.5 rounded-lg border border-border text-xs outline-none"
+                                className="px-2 py-1 rounded-lg border border-border text-[10px] outline-none w-24"
                               />
                             </div>
                           </div>
-                          <div className="flex flex-wrap gap-1">
+                          <div>
+                            <label htmlFor={`group-link-${gi}`} className="text-[10px] text-muted-foreground mb-1 block">Meeting Link</label>
+                            <input
+                              id={`group-link-${gi}`}
+                              type="url"
+                              value={group.meetingLink}
+                              onChange={(e) => {
+                                const updated = [...gdGroups];
+                                updated[gi].meetingLink = e.target.value;
+                                setGdGroups(updated);
+                              }}
+                              placeholder="https://zoom.us/j/... or https://meet.google.com/..."
+                              className="w-full px-2 py-1.5 rounded-lg border border-border text-xs outline-none mb-2"
+                            />
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
                             {group.studentIds.map((sid) => {
                               const cand = candidates.find(c => c.studentId === sid);
                               return (
-                                <span key={sid} className="text-[10px] bg-pink-50 text-pink-700 px-2 py-0.5 rounded-full border border-pink-200">
+                                <span key={sid} className="inline-flex items-center gap-1 text-[10px] bg-pink-50 text-pink-700 px-2.5 py-1 rounded-full border border-pink-200 font-medium">
+                                  <span className="w-4 h-4 rounded-full bg-pink-200 flex items-center justify-center text-[8px] font-bold text-pink-800">
+                                    {(cand?.studentName || "?").charAt(0).toUpperCase()}
+                                  </span>
                                   {cand?.studentName || cand?.usn || sid.slice(0, 8)}
                                 </span>
                               );
@@ -1014,9 +1131,10 @@ export default function CompanyRoundsPage() {
                           </div>
                         </div>
                       ))}
-                      <p className="text-[10px] text-muted-foreground text-center">
-                        {gdGroups.length} groups · {gdGroups.reduce((sum, g) => sum + g.studentIds.length, 0)} students assigned
-                      </p>
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground bg-white/60 rounded-lg px-3 py-2 border border-pink-100">
+                        <span>👥 {gdGroups.length} groups · {gdGroups.reduce((sum, g) => sum + g.studentIds.length, 0)} students assigned</span>
+                        {gdStartTime && <span>🕒 {gdDuration} min each, starting {gdStartTime}</span>}
+                      </div>
                     </div>
                   )}
                 </div>
