@@ -11,6 +11,7 @@ import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { Student } from '../entities/student.entity';
 import { Drive, DriveSlot, DriveRegistration } from '../entities/drive.entity';
+import { RoundMeeting, MeetingGroup, MeetingAssignment } from '../entities/round-meeting.entity';
 
 @Module({
   imports: [
@@ -25,6 +26,9 @@ import { Drive, DriveSlot, DriveRegistration } from '../entities/drive.entity';
       Drive,
       DriveSlot,
       DriveRegistration,
+      RoundMeeting,
+      MeetingGroup,
+      MeetingAssignment,
     ]),
     AdminModule,
   ],

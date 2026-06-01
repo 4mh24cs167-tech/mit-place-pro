@@ -195,3 +195,114 @@ export class UpdateJobRoundsDto {
   @Type(() => RoundConfigDto)
   roundsConfig: RoundConfigDto[];
 }
+
+export class GroupConfigDto {
+  @IsString()
+  groupName: string;
+
+  @IsOptional()
+  @IsString()
+  meetingLink?: string;
+
+  @IsOptional()
+  @IsString()
+  scheduledDate?: string;
+
+  @IsOptional()
+  @IsString()
+  scheduledTime?: string;
+
+  @IsOptional()
+  @IsNumber()
+  maxParticipants?: number;
+
+  @IsArray()
+  @IsString({ each: true })
+  studentIds: string[];
+}
+
+export class OneOnOneSlotDto {
+  @IsString()
+  studentId: string;
+
+  @IsOptional()
+  @IsString()
+  personalLink?: string;
+
+  @IsOptional()
+  @IsString()
+  scheduledStart?: string;
+
+  @IsOptional()
+  @IsString()
+  scheduledEnd?: string;
+}
+
+export class CreateRoundMeetingDto {
+  @IsString()
+  jobId: string;
+
+  @IsNumber()
+  roundNumber: number;
+
+  @IsEnum(['virtual', 'group_discussion', 'one_on_one'])
+  meetingType: string;
+
+  @IsOptional()
+  @IsString()
+  meetingLink?: string;
+
+  @IsOptional()
+  @IsString()
+  scheduledDate?: string;
+
+  @IsOptional()
+  @IsString()
+  scheduledTime?: string;
+
+  @IsOptional()
+  @IsString()
+  venue?: string;
+
+  @IsOptional()
+  @IsString()
+  instructions?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GroupConfigDto)
+  groups?: GroupConfigDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => OneOnOneSlotDto)
+  slots?: OneOnOneSlotDto[];
+}
+
+export class UpdateRoundMeetingDto {
+  @IsOptional()
+  @IsString()
+  meetingLink?: string;
+
+  @IsOptional()
+  @IsString()
+  scheduledDate?: string;
+
+  @IsOptional()
+  @IsString()
+  scheduledTime?: string;
+
+  @IsOptional()
+  @IsString()
+  venue?: string;
+
+  @IsOptional()
+  @IsString()
+  instructions?: string;
+
+  @IsOptional()
+  @IsEnum(['scheduled', 'in_progress', 'completed'])
+  status?: string;
+}

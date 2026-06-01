@@ -9,6 +9,7 @@ import { Cv } from '../entities/cv.entity';
 import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
+import { MeetingAssignment } from '../entities/round-meeting.entity';
 import { UpdateProfileDto, ApplyJobDto } from './dto/student.dto';
 
 @Injectable()
@@ -24,6 +25,7 @@ export class StudentService {
     @InjectRepository(Drive) private readonly driveRepo: Repository<Drive>,
     @InjectRepository(DriveRegistration) private readonly driveRegRepo: Repository<DriveRegistration>,
     @InjectRepository(DriveSlot) private readonly driveSlotRepo: Repository<DriveSlot>,
+    @InjectRepository(MeetingAssignment) private readonly meetingAssignmentRepo: Repository<MeetingAssignment>,
   ) {}
 
   // ─── Profile ────────────────────────────────────
@@ -490,5 +492,37 @@ export class StudentService {
         })) : [], // Only show slots if approved
       };
     });
+  }
+
+  // ─── Meetings ──────────────────────────────────────
+  async getMyMeetings(userId: string) {
+    const student = await this.studentRepo.findOne({ where: { userId } });
+    if (!student) throw new NotFoundException('Student profile not found');
+
+    const assignments = await this.meetingAssignmentRepo.find({
+      where: { studentId: student.id },
+      relations: ['roundMeeting', 'roundMeeting.job', 'roundMeeting.job.company', 'meetingGroup'],
+      order: { createdAt: 'DESC' },
+    });
+
+    return assignments.map(a => ({
+      id: a.id,
+      meetingType: a.roundMeeting?.meetingType,
+      roundNumber: a.roundMeeting?.roundNumber,
+      jobTitle: a.roundMeeting?.job?.title || null,
+      companyName: a.roundMeeting?.job?.company?.name || null,
+      meetingLink: a.personalLink || a.meetingGroup?.meetingLink || a.roundMeeting?.meetingLink || null,
+      scheduledDate: a.roundMeeting?.scheduledDate || a.meetingGroup?.scheduledDate || null,
+      scheduledTime: a.roundMeeting?.scheduledTime || a.meetingGroup?.scheduledTime || null,
+      venue: a.roundMeeting?.venue || null,
+      instructions: a.roundMeeting?.instructions || null,
+      groupName: a.meetingGroup?.groupName || null,
+      personalLink: a.personalLink,
+      scheduledStart: a.scheduledStart,
+      scheduledEnd: a.scheduledEnd,
+      status: a.status,
+      meetingStatus: a.roundMeeting?.status,
+      createdAt: a.createdAt,
+    }));
   }
 }

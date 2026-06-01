@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Patch, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
 import { CompanyService } from './company.service';
 import { Auth, CurrentUser } from '../auth/auth.decorators';
 import { UserRole } from '../entities/user.entity';
-import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto, UpdateCompanyProfileDto, SubmitRoundResultsDto, UpdateJobRoundsDto } from './dto/company.dto';
+import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto, UpdateCompanyProfileDto, SubmitRoundResultsDto, UpdateJobRoundsDto, CreateRoundMeetingDto, UpdateRoundMeetingDto } from './dto/company.dto';
 
 @Controller('api/v1/company')
 @Auth(UserRole.COMPANY)
@@ -148,6 +148,53 @@ export class CompanyController {
     @Body() dto: SubmitRoundResultsDto,
   ) {
     const data = await this.companyService.submitRoundResults(userId, jobId, dto);
+    return { success: true, data };
+  }
+
+  // ─── Round Meetings ───────────────────────────────
+  @Post('meetings')
+  async createRoundMeeting(
+    @CurrentUser('id') userId: string,
+    @Body() dto: CreateRoundMeetingDto,
+  ) {
+    const data = await this.companyService.createRoundMeeting(userId, dto);
+    return { success: true, data };
+  }
+
+  @Get('jobs/:jobId/meetings')
+  async getRoundMeetings(
+    @CurrentUser('id') userId: string,
+    @Param('jobId') jobId: string,
+  ) {
+    const data = await this.companyService.getRoundMeetings(userId, jobId);
+    return { success: true, data };
+  }
+
+  @Get('meetings/:meetingId')
+  async getRoundMeeting(
+    @CurrentUser('id') userId: string,
+    @Param('meetingId') meetingId: string,
+  ) {
+    const data = await this.companyService.getRoundMeeting(userId, meetingId);
+    return { success: true, data };
+  }
+
+  @Patch('meetings/:meetingId')
+  async updateRoundMeeting(
+    @CurrentUser('id') userId: string,
+    @Param('meetingId') meetingId: string,
+    @Body() dto: UpdateRoundMeetingDto,
+  ) {
+    const data = await this.companyService.updateRoundMeeting(userId, meetingId, dto);
+    return { success: true, data };
+  }
+
+  @Delete('meetings/:meetingId')
+  async deleteRoundMeeting(
+    @CurrentUser('id') userId: string,
+    @Param('meetingId') meetingId: string,
+  ) {
+    const data = await this.companyService.deleteRoundMeeting(userId, meetingId);
     return { success: true, data };
   }
 }

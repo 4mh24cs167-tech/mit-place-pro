@@ -105,6 +105,13 @@ export class StudentController {
     return { success: true, data };
   }
 
+  // ─── Meetings ──────────────────────────────────────
+  @Get('meetings')
+  async getMyMeetings(@CurrentUser('id') userId: string) {
+    const data = await this.studentService.getMyMeetings(userId);
+    return { success: true, data };
+  }
+
   // ─── Notifications ─────────────────────────────
   @Get('notifications')
   async getNotifications(@CurrentUser('id') userId: string) {

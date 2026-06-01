@@ -10,7 +10,9 @@ import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { Student } from '../entities/student.entity';
 import { Drive, DriveSlot, DriveRegistration } from '../entities/drive.entity';
-import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto, SubmitRoundResultsDto, UpdateJobRoundsDto } from './dto/company.dto';
+import { RoundMeeting, MeetingGroup, MeetingAssignment } from '../entities/round-meeting.entity';
+import type { MeetingStatus } from '../entities/round-meeting.entity';
+import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto, SubmitRoundResultsDto, UpdateJobRoundsDto, CreateRoundMeetingDto, UpdateRoundMeetingDto } from './dto/company.dto';
 import { EmailService } from '../admin/email.service';
 
 @Injectable()
@@ -28,6 +30,9 @@ export class CompanyService {
     @InjectRepository(Drive) private readonly driveRepo: Repository<Drive>,
     @InjectRepository(DriveSlot) private readonly driveSlotRepo: Repository<DriveSlot>,
     @InjectRepository(DriveRegistration) private readonly driveRegRepo: Repository<DriveRegistration>,
+    @InjectRepository(RoundMeeting) private readonly roundMeetingRepo: Repository<RoundMeeting>,
+    @InjectRepository(MeetingGroup) private readonly meetingGroupRepo: Repository<MeetingGroup>,
+    @InjectRepository(MeetingAssignment) private readonly meetingAssignmentRepo: Repository<MeetingAssignment>,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
   ) {}
@@ -525,5 +530,275 @@ export class CompanyService {
       rejected: rejectedCount,
       isFinalRound,
     };
+  }
+
+  // ─── Round Meetings ─────────────────────────────────
+  async createRoundMeeting(userId: string, dto: CreateRoundMeetingDto) {
+    const company = await this.companyRepo.findOne({ where: { userId } });
+    if (!company) throw new NotFoundException('Company profile not found');
+
+    const job = await this.jobRepo.findOne({ where: { id: dto.jobId, companyId: company.id } });
+    if (!job) throw new NotFoundException('Job not found');
+
+    if (dto.roundNumber < 1 || dto.roundNumber > job.numRounds) {
+      throw new BadRequestException(`Invalid round ${dto.roundNumber}. Job has ${job.numRounds} rounds.`);
+    }
+
+    const meeting = await this.roundMeetingRepo.save({
+      jobId: dto.jobId,
+      roundNumber: dto.roundNumber,
+      meetingType: dto.meetingType as 'virtual' | 'group_discussion' | 'one_on_one',
+      meetingLink: dto.meetingLink || null,
+      scheduledDate: dto.scheduledDate || null,
+      scheduledTime: dto.scheduledTime || null,
+      venue: dto.venue || null,
+      instructions: dto.instructions || null,
+      status: 'scheduled' as const,
+    });
+
+    const applications = await this.applicationRepo.find({
+      where: { jobId: dto.jobId, adminApproved: true, currentRound: dto.roundNumber, finalResult: 'pending' },
+      relations: ['student', 'student.user'],
+    });
+
+    const loginUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000') + '/login';
+
+    if (dto.meetingType === 'virtual') {
+      for (const app of applications) {
+        await this.meetingAssignmentRepo.save({
+          roundMeetingId: meeting.id,
+          applicationId: app.id,
+          studentId: app.studentId,
+          status: 'notified' as const,
+        });
+
+        if (app.student) {
+          await this.notificationRepo.save({
+            userId: app.student.userId,
+            type: 'meeting_scheduled',
+            title: `📹 Virtual Meeting — ${job.title} Round ${dto.roundNumber}`,
+            body: `A virtual meeting has been scheduled. ${dto.meetingLink ? 'Join link: ' + dto.meetingLink : 'Check your dashboard for details.'}`,
+            metadata: { jobId: job.id, meetingId: meeting.id, meetingLink: dto.meetingLink, roundNumber: dto.roundNumber },
+          });
+
+          if (app.student.user?.email) {
+            this.emailService.sendMeetingScheduledEmail({
+              email: app.student.user.email,
+              studentName: app.student.fullName,
+              jobTitle: job.title,
+              companyName: company.name,
+              roundNumber: dto.roundNumber,
+              meetingType: 'virtual',
+              meetingLink: dto.meetingLink || null,
+              scheduledDate: dto.scheduledDate || null,
+              scheduledTime: dto.scheduledTime || null,
+              instructions: dto.instructions || null,
+              groupName: null,
+              loginUrl,
+            }).catch((e) => this.logger.error('Meeting email failed', e));
+          }
+        }
+      }
+    } else if (dto.meetingType === 'group_discussion' && dto.groups) {
+      for (const groupConfig of dto.groups) {
+        const group = await this.meetingGroupRepo.save({
+          roundMeetingId: meeting.id,
+          groupName: groupConfig.groupName,
+          meetingLink: groupConfig.meetingLink || null,
+          scheduledDate: groupConfig.scheduledDate || null,
+          scheduledTime: groupConfig.scheduledTime || null,
+          maxParticipants: groupConfig.maxParticipants || null,
+        });
+
+        for (const studentId of groupConfig.studentIds) {
+          const app = applications.find(a => a.studentId === studentId);
+          if (app) {
+            await this.meetingAssignmentRepo.save({
+              roundMeetingId: meeting.id,
+              meetingGroupId: group.id,
+              applicationId: app.id,
+              studentId: app.studentId,
+              status: 'notified' as const,
+            });
+
+            if (app.student) {
+              await this.notificationRepo.save({
+                userId: app.student.userId,
+                type: 'meeting_scheduled',
+                title: `👥 Group Discussion — ${job.title} Round ${dto.roundNumber}`,
+                body: `You are assigned to ${groupConfig.groupName}. ${groupConfig.meetingLink ? 'Join link: ' + groupConfig.meetingLink : 'Check your dashboard.'}`,
+                metadata: { jobId: job.id, meetingId: meeting.id, groupId: group.id, groupName: groupConfig.groupName, meetingLink: groupConfig.meetingLink, roundNumber: dto.roundNumber },
+              });
+
+              if (app.student.user?.email) {
+                this.emailService.sendMeetingScheduledEmail({
+                  email: app.student.user.email,
+                  studentName: app.student.fullName,
+                  jobTitle: job.title,
+                  companyName: company.name,
+                  roundNumber: dto.roundNumber,
+                  meetingType: 'group_discussion',
+                  meetingLink: groupConfig.meetingLink || null,
+                  scheduledDate: groupConfig.scheduledDate || dto.scheduledDate || null,
+                  scheduledTime: groupConfig.scheduledTime || dto.scheduledTime || null,
+                  instructions: dto.instructions || null,
+                  groupName: groupConfig.groupName,
+                  loginUrl,
+                }).catch((e) => this.logger.error('Meeting email failed', e));
+              }
+            }
+          }
+        }
+      }
+    } else if (dto.meetingType === 'one_on_one' && dto.slots) {
+      for (const slot of dto.slots) {
+        const app = applications.find(a => a.studentId === slot.studentId);
+        if (app) {
+          await this.meetingAssignmentRepo.save({
+            roundMeetingId: meeting.id,
+            applicationId: app.id,
+            studentId: app.studentId,
+            personalLink: slot.personalLink || null,
+            scheduledStart: slot.scheduledStart ? new Date(slot.scheduledStart) : null,
+            scheduledEnd: slot.scheduledEnd ? new Date(slot.scheduledEnd) : null,
+            status: 'notified' as const,
+          });
+
+          if (app.student) {
+            await this.notificationRepo.save({
+              userId: app.student.userId,
+              type: 'meeting_scheduled',
+              title: `🎯 Interview Scheduled — ${job.title} Round ${dto.roundNumber}`,
+              body: `Your one-on-one interview has been scheduled. ${slot.personalLink ? 'Join link: ' + slot.personalLink : 'Check your dashboard for details.'}`,
+              metadata: { jobId: job.id, meetingId: meeting.id, personalLink: slot.personalLink, roundNumber: dto.roundNumber },
+            });
+
+            if (app.student.user?.email) {
+              this.emailService.sendMeetingScheduledEmail({
+                email: app.student.user.email,
+                studentName: app.student.fullName,
+                jobTitle: job.title,
+                companyName: company.name,
+                roundNumber: dto.roundNumber,
+                meetingType: 'one_on_one',
+                meetingLink: slot.personalLink || null,
+                scheduledDate: dto.scheduledDate || null,
+                scheduledTime: slot.scheduledStart || null,
+                instructions: dto.instructions || null,
+                groupName: null,
+                loginUrl,
+              }).catch((e) => this.logger.error('Meeting email failed', e));
+            }
+          }
+        }
+      }
+    }
+
+    return this.roundMeetingRepo.findOne({
+      where: { id: meeting.id },
+      relations: ['groups', 'groups.assignments', 'assignments'],
+    });
+  }
+
+  async getRoundMeetings(userId: string, jobId: string) {
+    const company = await this.companyRepo.findOne({ where: { userId } });
+    if (!company) throw new NotFoundException('Company profile not found');
+
+    const job = await this.jobRepo.findOne({ where: { id: jobId, companyId: company.id } });
+    if (!job) throw new NotFoundException('Job not found');
+
+    const meetings = await this.roundMeetingRepo.find({
+      where: { jobId },
+      relations: ['groups', 'groups.assignments', 'groups.assignments.student', 'assignments', 'assignments.student'],
+      order: { roundNumber: 'ASC', createdAt: 'DESC' },
+    });
+
+    return meetings.map(m => ({
+      id: m.id,
+      jobId: m.jobId,
+      roundNumber: m.roundNumber,
+      meetingType: m.meetingType,
+      meetingLink: m.meetingLink,
+      scheduledDate: m.scheduledDate,
+      scheduledTime: m.scheduledTime,
+      venue: m.venue,
+      instructions: m.instructions,
+      status: m.status,
+      createdAt: m.createdAt,
+      groups: (m.groups || []).map(g => ({
+        id: g.id,
+        groupName: g.groupName,
+        meetingLink: g.meetingLink,
+        scheduledDate: g.scheduledDate,
+        scheduledTime: g.scheduledTime,
+        maxParticipants: g.maxParticipants,
+        students: (g.assignments || []).map(a => ({
+          studentId: a.studentId,
+          studentName: a.student?.fullName || null,
+          status: a.status,
+        })),
+      })),
+      assignments: (m.assignments || []).map(a => ({
+        id: a.id,
+        studentId: a.studentId,
+        studentName: a.student?.fullName || null,
+        personalLink: a.personalLink,
+        scheduledStart: a.scheduledStart,
+        scheduledEnd: a.scheduledEnd,
+        groupId: a.meetingGroupId,
+        status: a.status,
+      })),
+    }));
+  }
+
+  async getRoundMeeting(userId: string, meetingId: string) {
+    const company = await this.companyRepo.findOne({ where: { userId } });
+    if (!company) throw new NotFoundException('Company profile not found');
+
+    const meeting = await this.roundMeetingRepo.findOne({
+      where: { id: meetingId },
+      relations: ['job', 'groups', 'groups.assignments', 'groups.assignments.student', 'assignments', 'assignments.student'],
+    });
+    if (!meeting) throw new NotFoundException('Meeting not found');
+    if (meeting.job.companyId !== company.id) throw new ForbiddenException('Not authorized');
+
+    return meeting;
+  }
+
+  async updateRoundMeeting(userId: string, meetingId: string, dto: UpdateRoundMeetingDto) {
+    const company = await this.companyRepo.findOne({ where: { userId } });
+    if (!company) throw new NotFoundException('Company profile not found');
+
+    const meeting = await this.roundMeetingRepo.findOne({
+      where: { id: meetingId },
+      relations: ['job'],
+    });
+    if (!meeting) throw new NotFoundException('Meeting not found');
+    if (meeting.job.companyId !== company.id) throw new ForbiddenException('Not authorized');
+
+    if (dto.meetingLink !== undefined) meeting.meetingLink = dto.meetingLink;
+    if (dto.scheduledDate !== undefined) meeting.scheduledDate = dto.scheduledDate;
+    if (dto.scheduledTime !== undefined) meeting.scheduledTime = dto.scheduledTime;
+    if (dto.venue !== undefined) meeting.venue = dto.venue;
+    if (dto.instructions !== undefined) meeting.instructions = dto.instructions;
+    if (dto.status !== undefined) meeting.status = dto.status as MeetingStatus;
+
+    await this.roundMeetingRepo.save(meeting);
+    return meeting;
+  }
+
+  async deleteRoundMeeting(userId: string, meetingId: string) {
+    const company = await this.companyRepo.findOne({ where: { userId } });
+    if (!company) throw new NotFoundException('Company profile not found');
+
+    const meeting = await this.roundMeetingRepo.findOne({
+      where: { id: meetingId },
+      relations: ['job'],
+    });
+    if (!meeting) throw new NotFoundException('Meeting not found');
+    if (meeting.job.companyId !== company.id) throw new ForbiddenException('Not authorized');
+
+    await this.roundMeetingRepo.remove(meeting);
+    return { message: 'Meeting deleted successfully' };
   }
 }

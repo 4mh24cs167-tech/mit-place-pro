@@ -400,6 +400,68 @@ export class EmailService {
   }
 
   // ═══════════════════════════════════════════════════
+  // 7. Meeting Scheduled Email
+  // ═══════════════════════════════════════════════════
+  async sendMeetingScheduledEmail(data: {
+    email: string; studentName: string; jobTitle: string;
+    companyName: string; roundNumber: number; meetingType: string;
+    meetingLink: string | null; scheduledDate: string | null;
+    scheduledTime: string | null; instructions: string | null;
+    groupName: string | null; loginUrl: string;
+  }): Promise<boolean> {
+    const typeLabels: Record<string, string> = {
+      virtual: '📹 Virtual Meeting',
+      group_discussion: '👥 Group Discussion',
+      one_on_one: '🎯 One-on-One Interview',
+    };
+    const typeLabel = typeLabels[data.meetingType] || 'Meeting';
+
+    const body = `
+      <p style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0 0 16px;">Hi ${data.studentName},</p>
+      <p style="font-size:14px;color:#4a4a68;line-height:1.7;margin:0 0 24px;">
+        A <strong>${typeLabel}</strong> has been scheduled for <strong>${data.jobTitle}</strong> at <strong>${data.companyName}</strong> — Round ${data.roundNumber}.
+      </p>
+
+      <div style="background:#f0f4ff;border:1px solid #c7d2fe;border-radius:12px;padding:20px;margin:0 0 24px;">
+        <p style="margin:0 0 4px;font-size:11px;color:#4338ca;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Meeting Type</p>
+        <p style="margin:0 0 16px;font-size:16px;font-weight:700;color:#1a1a2e;">${typeLabel}</p>
+
+        ${data.groupName ? `
+          <p style="margin:0 0 4px;font-size:11px;color:#4338ca;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Your Group</p>
+          <p style="margin:0 0 16px;font-size:14px;font-weight:600;color:#1a1a2e;">👥 ${data.groupName}</p>
+        ` : ''}
+
+        ${data.scheduledDate ? `
+          <p style="margin:0 0 4px;font-size:11px;color:#4338ca;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Date & Time</p>
+          <p style="margin:0 0 16px;font-size:14px;color:#1a1a2e;">📅 ${data.scheduledDate}${data.scheduledTime ? ' at ' + data.scheduledTime : ''}</p>
+        ` : ''}
+
+        ${data.meetingLink ? `
+          <p style="margin:0 0 4px;font-size:11px;color:#4338ca;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Meeting Link</p>
+          <p style="margin:0 0 16px;"><a href="${data.meetingLink}" style="font-size:14px;color:#4f46e5;font-weight:600;text-decoration:underline;">🔗 Join Meeting</a></p>
+        ` : ''}
+      </div>
+
+      ${data.instructions ? `
+        <div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;margin:0 0 24px;">
+          <p style="margin:0 0 4px;font-size:11px;color:#92400e;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Instructions</p>
+          <p style="margin:0;font-size:13px;color:#78350f;line-height:1.6;">${data.instructions}</p>
+        </div>
+      ` : ''}
+
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${data.loginUrl}" style="display:inline-block;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;font-size:14px;">View Dashboard →</a>
+      </div>
+    `;
+
+    return this.sendEmail({
+      to: data.email,
+      subject: `${typeLabel} Scheduled — ${data.jobTitle} at ${data.companyName} (Round ${data.roundNumber})`,
+      html: this.wrapHtml(`${typeLabel} — Round ${data.roundNumber}`, 'linear-gradient(135deg,#6366f1,#8b5cf6)', body),
+    });
+  }
+
+  // ═══════════════════════════════════════════════════
   // 6. SMTP Diagnostics & Connections Verification
   // ═══════════════════════════════════════════════════
   async getSmtpStatus() {

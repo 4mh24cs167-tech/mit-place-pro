@@ -11,6 +11,7 @@ import { Cv } from '../entities/cv.entity';
 import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
+import { MeetingAssignment } from '../entities/round-meeting.entity';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
       Drive,
       DriveRegistration,
       DriveSlot,
+      MeetingAssignment,
     ]),
     UploadModule,
   ],

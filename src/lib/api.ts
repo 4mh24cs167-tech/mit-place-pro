@@ -289,6 +289,7 @@ export const studentApi = {
   getDriveAllocations: () => apiFetch('/api/v1/student/drives'),
   getNotifications: () => apiFetch('/api/v1/student/notifications'),
   markNotificationRead: (id: string) => apiFetch(`/api/v1/student/notifications/${id}/read`, { method: 'PATCH' }),
+  getMeetings: () => apiFetch('/api/v1/student/meetings'),
 };
 
 // ─── Company ─────────────────────────────────────
@@ -313,6 +314,17 @@ export const companyApi = {
     apiFetch(`/api/v1/company/jobs/${jobId}/submit-round-results`, { method: 'POST', body: { round, selectedStudentIds } }),
   getStudentProfile: (studentId: string) =>
     apiFetch(`/api/v1/company/students/${studentId}`),
+  // Meetings
+  createRoundMeeting: (data: Record<string, unknown>) =>
+    apiFetch('/api/v1/company/meetings', { method: 'POST', body: data }),
+  getRoundMeetings: (jobId: string) =>
+    apiFetch(`/api/v1/company/jobs/${jobId}/meetings`),
+  getRoundMeeting: (meetingId: string) =>
+    apiFetch(`/api/v1/company/meetings/${meetingId}`),
+  updateRoundMeeting: (meetingId: string, data: Record<string, unknown>) =>
+    apiFetch(`/api/v1/company/meetings/${meetingId}`, { method: 'PATCH', body: data }),
+  deleteRoundMeeting: (meetingId: string) =>
+    apiFetch(`/api/v1/company/meetings/${meetingId}`, { method: 'DELETE' }),
 };
 
 export { ApiError, getToken, removeToken, getStoredUser };
