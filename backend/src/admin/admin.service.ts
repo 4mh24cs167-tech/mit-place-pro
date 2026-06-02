@@ -154,10 +154,10 @@ export class AdminService {
   }
 
   async updateStudent(id: string, dto: UpdateStudentDto, actorId: string) {
-    const student = await this.studentRepo.findOne({ where: { id } });
+    const student = await this.studentRepo.findOne({ where: { id }, relations: ['user'] });
     if (!student) throw new NotFoundException('Student not found');
 
-    const oldValue = { ...student };
+    const oldValue = { ...student, email: student.user?.email };
 
     if (dto.fullName) student.fullName = dto.fullName;
     if (dto.department) student.department = dto.department;
@@ -166,6 +166,20 @@ export class AdminService {
 
     if (dto.isActive !== undefined) {
       await this.userRepo.update(student.userId, { isActive: dto.isActive });
+    }
+
+    // Handle email change (this is the login ID)
+    if (dto.email && dto.email !== student.user?.email) {
+      const normalizedEmail = dto.email.trim().toLowerCase();
+
+      // Check if the new email is already taken by another user
+      const existingUser = await this.userRepo.findOne({ where: { email: normalizedEmail } });
+      if (existingUser && existingUser.id !== student.userId) {
+        throw new ConflictException(`Email "${normalizedEmail}" is already in use by another account`);
+      }
+
+      // Update the user's email (login ID) — password stays the same
+      await this.userRepo.update(student.userId, { email: normalizedEmail });
     }
 
     await this.studentRepo.save(student);
@@ -179,7 +193,12 @@ export class AdminService {
       newValue: dto as unknown as Record<string, unknown>,
     });
 
-    return student;
+    // Return updated student with fresh email
+    const updated = await this.studentRepo.findOne({ where: { id }, relations: ['user', 'batch'] });
+    return {
+      ...updated,
+      email: updated?.user?.email,
+    };
   }
 
   async deleteStudent(id: string, actorId: string) {

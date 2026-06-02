@@ -7,12 +7,14 @@ import { useAuth } from "@/lib/auth-context";
 import {
   Search, Download, Upload, Loader2, AlertCircle, CheckCircle2, X,
   FileSpreadsheet, UserPlus, GraduationCap, Hash, Building2,
-  ChevronDown, ChevronRight, Users, Trash2, BookOpen, ChevronLeft
+  ChevronDown, ChevronRight, Users, Trash2, BookOpen, ChevronLeft,
+  Mail, Pencil, Check
 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 interface StudentRecord {
   id: string; usn: string; fullName: string; department: string;
+  email?: string | null;
   batchName?: string | null;
   cgpa: number | null; tenthPercent: number | null;
   twelfthPercent: number | null; backlogs: number; semester: number;
@@ -67,6 +69,12 @@ export default function AdminStudentsPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Edit email state
+  const [editingEmailId, setEditingEmailId] = useState<string | null>(null);
+  const [editEmailValue, setEditEmailValue] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [emailToast, setEmailToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
   // Single add student modal state
   const [showAddStudent, setShowAddStudent] = useState(false);
@@ -307,10 +315,55 @@ export default function AdminStudentsPage() {
   const passwordPreview = uploadDept ? `${uploadDept}${uploadBatch}` : "DEPT+BATCH";
   const addPasswordPreview = addForm.department ? `${addForm.department}${addForm.batch || new Date().getFullYear()}` : "DEPT+BATCH";
 
+  // Handle email update
+  const handleSaveEmail = async (studentId: string) => {
+    if (!editEmailValue.trim()) return;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editEmailValue.trim())) {
+      setEmailToast({ type: "error", msg: "Please enter a valid email address" });
+      setTimeout(() => setEmailToast(null), 3000);
+      return;
+    }
+    setSavingEmail(true);
+    try {
+      await adminApi.updateStudent(studentId, { email: editEmailValue.trim().toLowerCase() });
+      // Update local state for both search results and batch students
+      const newEmail = editEmailValue.trim().toLowerCase();
+      setSearchResults(prev => prev.map(s => s.id === studentId ? { ...s, email: newEmail } : s));
+      setBatchStudents(prev => {
+        const updated = { ...prev };
+        for (const key of Object.keys(updated)) {
+          updated[key] = updated[key].map(s => s.id === studentId ? { ...s, email: newEmail } : s);
+        }
+        return updated;
+      });
+      setEditingEmailId(null);
+      setEmailToast({ type: "success", msg: `Email updated to ${newEmail}` });
+      setTimeout(() => setEmailToast(null), 3000);
+    } catch (err) {
+      setEmailToast({ type: "error", msg: err instanceof Error ? err.message : "Failed to update email" });
+      setTimeout(() => setEmailToast(null), 4000);
+    } finally {
+      setSavingEmail(false);
+    }
+  };
+
   return (
     <div className="page-enter">
       <Header userName={user?.email || "Admin"} userRole="Admin"
         greeting="Students" subtitle={`${totalCount} students registered`} />
+
+      {/* Email toast notification */}
+      {emailToast && (
+        <div className={cn(
+          "fixed top-4 right-4 z-[100] flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-sm font-medium animate-in slide-in-from-top-2",
+          emailToast.type === "success" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"
+        )}>
+          {emailToast.type === "success" ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+          {emailToast.msg}
+          <button onClick={() => setEmailToast(null)} className="ml-2 p-0.5 rounded hover:bg-black/5"><X className="w-3 h-3" /></button>
+        </div>
+      )}
 
       <div className="px-4 sm:px-6 md:px-8 pb-10 space-y-4 sm:space-y-6">
         {/* Action Bar */}
@@ -830,6 +883,49 @@ export default function AdminStudentsPage() {
                         </div>
                         <span className="text-[9px] font-medium text-muted-foreground">{completionPct}%</span>
                       </div>
+
+                      {/* Email — editable */}
+                      <div className="mt-2 pt-2 border-t border-border/30">
+                        {editingEmailId === student.id ? (
+                          <div className="flex items-center gap-1">
+                            <Mail className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                            <input
+                              type="email"
+                              value={editEmailValue}
+                              onChange={(e) => setEditEmailValue(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEmail(student.id); if (e.key === 'Escape') setEditingEmailId(null); }}
+                              autoFocus
+                              className="flex-1 text-[10px] px-1.5 py-1 rounded border border-indigo-300 outline-none bg-indigo-50/50 focus:border-indigo-500 min-w-0"
+                              placeholder="new@email.com"
+                            />
+                            <button
+                              onClick={() => handleSaveEmail(student.id)}
+                              disabled={savingEmail}
+                              className="w-6 h-6 rounded-md flex items-center justify-center bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                            >
+                              {savingEmail ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                            </button>
+                            <button
+                              onClick={() => setEditingEmailId(null)}
+                              className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 group/email">
+                            <Mail className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                            <span className="text-[10px] text-muted-foreground truncate flex-1">{student.email || 'No email'}</span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setEditingEmailId(student.id); setEditEmailValue(student.email || ''); }}
+                              className="w-5 h-5 rounded flex items-center justify-center opacity-0 group-hover/email:opacity-100 hover:bg-indigo-50 text-muted-foreground hover:text-indigo-600 transition-all"
+                              title="Change login email"
+                            >
+                              <Pencil className="w-2.5 h-2.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -989,6 +1085,49 @@ export default function AdminStudentsPage() {
                                                 <div className={cn("h-full rounded-full", completionPct === 100 ? "bg-emerald-500" : "bg-amber-500")} style={{ width: `${completionPct}%` }} />
                                               </div>
                                               <span className="text-[9px] font-medium text-muted-foreground">{completionPct}%</span>
+                                            </div>
+
+                                            {/* Email — editable */}
+                                            <div className="mt-2 pt-2 border-t border-border/30">
+                                              {editingEmailId === student.id ? (
+                                                <div className="flex items-center gap-1">
+                                                  <Mail className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                                                  <input
+                                                    type="email"
+                                                    value={editEmailValue}
+                                                    onChange={(e) => setEditEmailValue(e.target.value)}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter') handleSaveEmail(student.id); if (e.key === 'Escape') setEditingEmailId(null); }}
+                                                    autoFocus
+                                                    className="flex-1 text-[10px] px-1.5 py-1 rounded border border-indigo-300 outline-none bg-indigo-50/50 focus:border-indigo-500 min-w-0"
+                                                    placeholder="new@email.com"
+                                                  />
+                                                  <button
+                                                    onClick={() => handleSaveEmail(student.id)}
+                                                    disabled={savingEmail}
+                                                    className="w-6 h-6 rounded-md flex items-center justify-center bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                                                  >
+                                                    {savingEmail ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                                                  </button>
+                                                  <button
+                                                    onClick={() => setEditingEmailId(null)}
+                                                    className="w-6 h-6 rounded-md flex items-center justify-center hover:bg-muted text-muted-foreground"
+                                                  >
+                                                    <X className="w-3 h-3" />
+                                                  </button>
+                                                </div>
+                                              ) : (
+                                                <div className="flex items-center gap-1 group/email">
+                                                  <Mail className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                                                  <span className="text-[10px] text-muted-foreground truncate flex-1">{student.email || 'No email'}</span>
+                                                  <button
+                                                    onClick={(e) => { e.stopPropagation(); setEditingEmailId(student.id); setEditEmailValue(student.email || ''); }}
+                                                    className="w-5 h-5 rounded flex items-center justify-center opacity-0 group-hover/email:opacity-100 hover:bg-indigo-50 text-muted-foreground hover:text-indigo-600 transition-all"
+                                                    title="Change login email"
+                                                  >
+                                                    <Pencil className="w-2.5 h-2.5" />
+                                                  </button>
+                                                </div>
+                                              )}
                                             </div>
                                           </div>
                                         );

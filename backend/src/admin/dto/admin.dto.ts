@@ -101,6 +101,11 @@ export class UpdateStudentDto {
 
   @IsOptional()
   @IsString()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
   department?: string;
 
   @IsOptional()
