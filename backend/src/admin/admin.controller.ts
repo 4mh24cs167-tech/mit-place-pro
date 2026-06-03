@@ -268,7 +268,8 @@ export class AdminController {
     @Body() body: {
       title: string;
       type: 'single' | 'multiple';
-      jobId: string;
+      jobId?: string;
+      jobIds?: string[];
       description?: string;
       driveDate?: string;
       departments?: string[];

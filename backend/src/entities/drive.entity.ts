@@ -25,12 +25,12 @@ export class Drive {
   @Column({ type: 'varchar', length: 20, default: 'open' })
   status: DriveStatus;
 
-  @Column({ type: 'uuid', name: 'job_id' })
-  jobId: string;
+  @Column({ type: 'uuid', name: 'job_id', nullable: true })
+  jobId: string | null;
 
-  @ManyToOne(() => Job, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Job, { onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'job_id' })
-  job: Job;
+  job: Job | null;
 
   @Column({ type: 'text', nullable: true })
   description: string | null;
@@ -40,6 +40,9 @@ export class Drive {
 
   @Column({ type: 'jsonb', nullable: true, default: '[]' })
   departments: string[];
+
+  @Column({ type: 'jsonb', nullable: true, default: '[]', name: 'job_ids' })
+  jobIds: string[];
 
   @OneToMany(() => DriveRegistration, (reg) => reg.drive, { cascade: true })
   registrations: DriveRegistration[];

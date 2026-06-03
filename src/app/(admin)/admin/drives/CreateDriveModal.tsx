@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { adminApi } from "@/lib/api";
 import {
-  Plus, X, Loader2, Briefcase, Building2, AlertTriangle, ChevronRight,
+  Plus, X, Loader2, Briefcase, Building2, AlertTriangle, ChevronRight, CheckSquare, Square,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 
@@ -29,7 +29,7 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
 
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loadingJobs, setLoadingJobs] = useState(false);
-  const [selectedJobId, setSelectedJobId] = useState("");
+  const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
 
   const [driveDate, setDriveDate] = useState("");
   const [description, setDescription] = useState("");
@@ -62,7 +62,7 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
   // Fetch jobs when a company is selected
   const fetchJobsForCompany = useCallback(async (companyId: string) => {
     setLoadingJobs(true);
-    setSelectedJobId("");
+    setSelectedJobIds([]);
     try {
       const res = await adminApi.listJobs();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -80,7 +80,7 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
       fetchJobsForCompany(selectedCompanyId);
     } else {
       setJobs([]);
-      setSelectedJobId("");
+      setSelectedJobIds([]);
     }
   }, [selectedCompanyId, fetchJobsForCompany]);
 
@@ -90,16 +90,24 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
     );
   };
 
+  const toggleJobSelect = (jobId: string) => {
+    setSelectedJobIds((prev) =>
+      prev.includes(jobId) ? prev.filter((id) => id !== jobId) : [...prev, jobId]
+    );
+  };
+
   const handleCreate = async () => {
-    if (!selectedJobId) { showToast("error", "Please select a job listing"); return; }
+    if (selectedJobIds.length === 0) { showToast("error", "Please select at least one job role"); return; }
     setIsCreating(true);
     try {
       const company = companies.find((c) => c.id === selectedCompanyId);
-      const job = jobs.find((j) => j.id === selectedJobId);
+      const selectedJobs = jobs.filter((j) => selectedJobIds.includes(j.id));
+      const jobTitles = selectedJobs.map((j) => j.title).join(", ");
       await adminApi.createDrive({
-        title: title || `${company?.name || "Company"} - ${job?.title || "Drive"}`,
+        title: title || `${company?.name || "Company"} - ${jobTitles}`,
         type: driveType,
-        jobId: selectedJobId,
+        jobIds: selectedJobIds,
+        jobId: selectedJobIds[0],
         description: description || undefined,
         driveDate: driveDate || undefined,
         departments: selectedDepts.length > 0 ? selectedDepts : undefined,
@@ -229,25 +237,35 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
                 <p className="text-muted-foreground text-sm py-3 text-center">No jobs posted by {selectedCompany?.name}. The company needs to post a job first.</p>
               ) : (
                 <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
-                  {jobs.map((job) => (
-                    <button
-                      key={job.id}
-                      onClick={() => setSelectedJobId(job.id)}
-                      className={cn(
-                        "w-full text-left px-4 py-3 rounded-xl border transition-all text-sm",
-                        selectedJobId === job.id
-                          ? "bg-violet-600 border-violet-600 text-white"
-                          : "bg-white border-border text-foreground hover:border-violet-300"
-                      )}
-                    >
-                      <p className="font-medium">{job.title}</p>
-                      {job.allowedDepartments && job.allowedDepartments.length > 0 && (
-                        <p className={cn("text-xs mt-0.5", selectedJobId === job.id ? "text-violet-200" : "text-muted-foreground")}>
-                          Depts: {job.allowedDepartments.join(", ")}
-                        </p>
-                      )}
-                    </button>
-                  ))}
+                  {jobs.map((job) => {
+                    const isSelected = selectedJobIds.includes(job.id);
+                    return (
+                      <button
+                        key={job.id}
+                        onClick={() => toggleJobSelect(job.id)}
+                        className={cn(
+                          "w-full text-left px-4 py-3 rounded-xl border transition-all text-sm flex items-center justify-between",
+                          isSelected
+                            ? "bg-violet-600 border-violet-600 text-white"
+                            : "bg-white border-border text-foreground hover:border-violet-300"
+                        )}
+                      >
+                        <div>
+                          <p className="font-medium">{job.title}</p>
+                          {job.allowedDepartments && job.allowedDepartments.length > 0 && (
+                            <p className={cn("text-xs mt-0.5", isSelected ? "text-violet-200" : "text-muted-foreground")}>
+                              Depts: {job.allowedDepartments.join(", ")}
+                            </p>
+                          )}
+                        </div>
+                        {isSelected ? (
+                          <CheckSquare className="w-4 h-4 text-white flex-shrink-0" />
+                        ) : (
+                          <Square className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -301,7 +319,7 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
         <div className="flex flex-col gap-2 p-5 border-t border-border">
           <button
             onClick={handleCreate}
-            disabled={isCreating || !selectedJobId || driveType === "multiple"}
+            disabled={isCreating || selectedJobIds.length === 0 || driveType === "multiple"}
             className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold shadow-lg shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}

@@ -373,6 +373,16 @@ export class StudentService {
 
     if (matchingDrives.length === 0) return [];
 
+    // Collect all jobIds from d.jobIds across matching drives
+    const allJobIds = [...new Set(matchingDrives.flatMap((d) => d.jobIds || (d.jobId ? [d.jobId] : [])))];
+    
+    // Fetch all these jobs in one query
+    let allJobsMap = new Map<string, Job>();
+    if (allJobIds.length > 0) {
+      const jobs = await this.jobRepo.find({ where: { id: In(allJobIds) }, relations: ['company'] });
+      allJobsMap = new Map(jobs.map((j) => [j.id, j]));
+    }
+
     // Check which drives the student already registered for
     const driveIds = matchingDrives.map((d) => d.id);
     const existingRegs = await this.driveRegRepo.find({
@@ -383,6 +393,27 @@ export class StudentService {
     return matchingDrives.map((drive) => {
       const registered = registeredDriveIds.has(drive.id);
       const reg = existingRegs.find((r) => r.driveId === drive.id);
+
+      // Resolve multiple jobs
+      const jobIds = drive.jobIds && drive.jobIds.length > 0 ? drive.jobIds : (drive.jobId ? [drive.jobId] : []);
+      const matchedJobs = jobIds.map((id) => allJobsMap.get(id)).filter(Boolean) as Job[];
+      
+      const companyName = matchedJobs[0]?.company?.name || drive.job?.company?.name || 'Unknown';
+      const jobTitles = matchedJobs.length > 0 
+        ? matchedJobs.map((j) => j.title).join(', ') 
+        : (drive.job?.title || 'Unknown');
+
+      // CTC Range
+      let ctcRange: string | null = null;
+      if (matchedJobs.length > 0) {
+        const ctcs = matchedJobs.map(j => j.ctcMaxLpa).filter((c): c is number => c !== null && c !== undefined);
+        const minCtc = Math.min(...matchedJobs.map(j => j.ctcMinLpa || 0));
+        const maxCtc = ctcs.length > 0 ? Math.max(...ctcs) : 0;
+        ctcRange = `${minCtc} - ${maxCtc} LPA`;
+      } else if (drive.job) {
+        ctcRange = `${drive.job.ctcMinLpa || 0} - ${drive.job.ctcMaxLpa || 0} LPA`;
+      }
+
       return {
         id: drive.id,
         title: drive.title,
@@ -391,9 +422,9 @@ export class StudentService {
         driveDate: drive.driveDate,
         departments: drive.departments,
         description: drive.description,
-        company: drive.job?.company?.name || 'Unknown',
-        jobTitle: drive.job?.title || 'Unknown',
-        ctcRange: drive.job ? `${drive.job.ctcMinLpa || 0} - ${drive.job.ctcMaxLpa || 0} LPA` : null,
+        company: companyName,
+        jobTitle: jobTitles,
+        ctcRange,
         alreadyRegistered: registered,
         registrationStatus: reg?.status || null,
         createdAt: drive.createdAt,
@@ -419,13 +450,25 @@ export class StudentService {
     });
     if (existing) throw new ConflictException('You have already registered for this drive');
 
+    // Resolve multiple jobs
+    const jobIds = drive.jobIds && drive.jobIds.length > 0 ? drive.jobIds : (drive.jobId ? [drive.jobId] : []);
+    const jobs = jobIds.length > 0 ? await this.jobRepo.find({ where: { id: In(jobIds) }, relations: ['company'] }) : [];
+
     // Check eligibility
-    if (drive.departments && drive.departments.length > 0 && !drive.departments.includes(student.department)) {
+    const eligibleDepts = drive.departments && drive.departments.length > 0 
+      ? drive.departments 
+      : [...new Set(jobs.flatMap(j => j.allowedDepartments || []))];
+
+    if (eligibleDepts.length > 0 && !eligibleDepts.includes(student.department)) {
       throw new BadRequestException('Your department is not eligible for this drive');
     }
 
-    if (drive.job?.minCgpa && (student.cgpa ?? 0) < Number(drive.job.minCgpa)) {
-      throw new BadRequestException('You do not meet the minimum CGPA requirement for this drive');
+    const minCgpas = jobs.map(j => j.minCgpa).filter(c => c != null && c > 0);
+    if (minCgpas.length > 0) {
+      const minCgpa = Math.min(...minCgpas);
+      if ((student.cgpa ?? 0) < minCgpa) {
+        throw new BadRequestException(`You do not meet the minimum CGPA requirement of ${minCgpa} for this drive`);
+      }
     }
 
     // Create pending registration
@@ -435,10 +478,12 @@ export class StudentService {
       status: 'pending' as const,
     });
 
+    const companyName = jobs[0]?.company?.name || drive.job?.company?.name || 'A company';
+
     return {
       id: registration.id,
       driveTitle: drive.title,
-      company: drive.job?.company?.name,
+      company: companyName,
       status: 'pending',
       message: 'You have registered for this drive. Your registration is pending admin approval.',
     };
@@ -465,6 +510,16 @@ export class StudentService {
       order: { createdAt: 'DESC' },
     });
 
+    // Collect all jobIds from d.jobIds across matches
+    const allJobIds = [...new Set(drives.flatMap((d) => d.jobIds || (d.jobId ? [d.jobId] : [])))];
+    
+    // Fetch all these jobs in one query
+    let allJobsMap = new Map<string, Job>();
+    if (allJobIds.length > 0) {
+      const jobs = await this.jobRepo.find({ where: { id: In(allJobIds) }, relations: ['company'] });
+      allJobsMap = new Map(jobs.map((j) => [j.id, j]));
+    }
+
     const regMap = new Map(registrations.map((r) => [r.driveId, r]));
 
     return drives.map((drive) => {
@@ -474,13 +529,22 @@ export class StudentService {
         (slot) => slot.departments.includes(student.department),
       );
 
+      // Resolve multiple jobs
+      const jobIds = drive.jobIds && drive.jobIds.length > 0 ? drive.jobIds : (drive.jobId ? [drive.jobId] : []);
+      const matchedJobs = jobIds.map((id) => allJobsMap.get(id)).filter(Boolean) as Job[];
+      
+      const companyName = matchedJobs[0]?.company?.name || drive.job?.company?.name || 'Unknown';
+      const jobTitles = matchedJobs.length > 0 
+        ? matchedJobs.map((j) => j.title).join(', ') 
+        : (drive.job?.title || 'Unknown');
+
       return {
         driveId: drive.id,
         title: drive.title,
         status: drive.status,
         driveDate: drive.driveDate,
-        company: drive.job?.company?.name || 'Unknown',
-        jobTitle: drive.job?.title || 'Unknown',
+        company: companyName,
+        jobTitle: jobTitles,
         registrationStatus: reg?.status || 'pending',
         rejectionReason: reg?.rejectionReason || null,
         slots: reg?.status === 'approved' ? mySlots.map((s) => ({

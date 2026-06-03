@@ -385,6 +385,16 @@ export class CompanyService {
       order: { createdAt: 'DESC' },
     });
 
+    // Collect all jobIds from d.jobIds across all matching drives
+    const allJobIds = [...new Set(drives.flatMap((d) => d.jobIds || (d.jobId ? [d.jobId] : [])))];
+    
+    // Fetch all these jobs in one query
+    let allJobsMap = new Map<string, Job>();
+    if (allJobIds.length > 0) {
+      const jobsList = await this.jobRepo.find({ where: { id: In(allJobIds) } });
+      allJobsMap = new Map(jobsList.map((j) => [j.id, j]));
+    }
+
     // Get approved registration counts for each drive
     const driveIds = drives.map((d) => d.id);
     const approvedCounts: Record<string, number> = {};
@@ -400,23 +410,32 @@ export class CompanyService {
       counts.forEach((c) => { approvedCounts[c.driveId] = parseInt(c.count, 10); });
     }
 
-    return drives.map((drive) => ({
-      id: drive.id,
-      title: drive.title,
-      status: drive.status,
-      driveDate: drive.driveDate,
-      departments: drive.departments,
-      jobTitle: drive.job?.title,
-      approvedStudents: approvedCounts[drive.id] || 0,
-      slots: (drive.slots || []).map((s) => ({
-        id: s.id,
-        timeSlot: s.timeSlot,
-        classroom: s.classroom,
-        departments: s.departments,
-        studentCount: s.studentCount,
-      })),
-      createdAt: drive.createdAt,
-    }));
+    return drives.map((drive) => {
+      const driveJobIds = drive.jobIds && drive.jobIds.length > 0 ? drive.jobIds : (drive.jobId ? [drive.jobId] : []);
+      const matchedJobs = driveJobIds.map((id) => allJobsMap.get(id)).filter(Boolean) as Job[];
+      
+      const jobTitles = matchedJobs.length > 0 
+        ? matchedJobs.map((j) => j.title).join(', ') 
+        : (drive.job?.title || 'Unknown');
+
+      return {
+        id: drive.id,
+        title: drive.title,
+        status: drive.status,
+        driveDate: drive.driveDate,
+        departments: drive.departments,
+        jobTitle: jobTitles,
+        approvedStudents: approvedCounts[drive.id] || 0,
+        slots: (drive.slots || []).map((s) => ({
+          id: s.id,
+          timeSlot: s.timeSlot,
+          classroom: s.classroom,
+          departments: s.departments,
+          studentCount: s.studentCount,
+        })),
+        createdAt: drive.createdAt,
+      };
+    });
   }
 
   // ─── Bulk Round Results ─────────────────────────

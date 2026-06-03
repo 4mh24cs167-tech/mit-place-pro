@@ -31,22 +31,33 @@ export class DriveService {
   async createDrive(data: {
     title: string;
     type: 'single' | 'multiple';
-    jobId: string;
+    jobId?: string;
+    jobIds?: string[];
     description?: string;
     driveDate?: string;
     departments?: string[];
   }, actorId: string) {
-    const job = await this.jobRepo.findOne({ where: { id: data.jobId }, relations: ['company'] });
-    if (!job) throw new NotFoundException('Job not found');
+    const jobIds = data.jobIds && data.jobIds.length > 0 ? data.jobIds : (data.jobId ? [data.jobId] : []);
+    if (jobIds.length === 0) throw new BadRequestException('No job specified');
+
+    // Fetch all jobs
+    const jobs = await this.jobRepo.find({ where: { id: In(jobIds) }, relations: ['company'] });
+    if (jobs.length === 0) throw new NotFoundException('Jobs not found');
+
+    const primaryJob = jobs[0];
+    const departments = data.departments && data.departments.length > 0 
+      ? data.departments 
+      : [...new Set(jobs.flatMap(j => j.allowedDepartments || []))];
 
     const drive = await this.driveRepo.save({
-      title: data.title || `${job.company?.name} - ${job.title}`,
+      title: data.title || `${primaryJob.company?.name || 'Company'} - ${jobs.map(j => j.title).join(', ')}`,
       type: data.type,
-      jobId: data.jobId,
+      jobId: primaryJob.id,
+      jobIds: jobIds,
       status: 'open',
       description: data.description || null,
       driveDate: data.driveDate || null,
-      departments: data.departments || job.allowedDepartments || [],
+      departments,
     });
 
     // Find eligible students and NOTIFY them (opt-in workflow, no auto-registration)
@@ -56,8 +67,11 @@ export class DriveService {
     if (drive.departments && drive.departments.length > 0) {
       studentQuery.andWhere('s.department IN (:...depts)', { depts: drive.departments });
     }
-    if (job.minCgpa) {
-      studentQuery.andWhere('s.cgpa >= :minCgpa', { minCgpa: job.minCgpa });
+
+    const minCgpas = jobs.map(j => j.minCgpa).filter(c => c != null && c > 0);
+    if (minCgpas.length > 0) {
+      const minCgpa = Math.min(...minCgpas);
+      studentQuery.andWhere('s.cgpa >= :minCgpa', { minCgpa });
     }
 
     const eligibleStudents = await studentQuery.getMany();
@@ -69,8 +83,8 @@ export class DriveService {
         userId: s.userId,
         type: 'drive_invite',
         title: `New Drive: ${drive.title}`,
-        body: `${job.company?.name || 'A company'} is hiring for "${job.title}". Drive date: ${driveDate}. Open your drives page to register if interested.`,
-        metadata: { driveId: drive.id, jobId: job.id, companyName: job.company?.name },
+        body: `${primaryJob.company?.name || 'A company'} is hiring for "${jobs.map(j => j.title).join(', ')}". Drive date: ${driveDate}. Open your drives page to register if interested.`,
+        metadata: { driveId: drive.id, jobId: primaryJob.id, companyName: primaryJob.company?.name },
       }));
       await this.notificationRepo.save(notifications);
     }
@@ -97,7 +111,7 @@ export class DriveService {
         this.emailService.sendDriveAnnouncementEmail({
           emails,
           driveName: drive.title,
-          companyName: job.company?.name || 'A company',
+          companyName: primaryJob.company?.name || 'A company',
           driveDate: driveDate2,
           description: drive.description || undefined,
           eligibleDepartments: drive.departments,
@@ -125,6 +139,16 @@ export class DriveService {
       .loadRelationCountAndMap('d.slotsCount', 'd.slots')
       .orderBy('d.createdAt', 'DESC')
       .getMany();
+
+    // Collect all jobIds from d.jobIds across all drives
+    const allJobIds = [...new Set(results.flatMap((d) => d.jobIds || (d.jobId ? [d.jobId] : [])))];
+    
+    // Fetch all these jobs in one query
+    let allJobsMap = new Map<string, Job>();
+    if (allJobIds.length > 0) {
+      const jobs = await this.jobRepo.find({ where: { id: In(allJobIds) }, relations: ['company'] });
+      allJobsMap = new Map(jobs.map((j) => [j.id, j]));
+    }
 
     // Batch-load registration status counts in a single query
     const driveIds = results.map((d) => d.id);
@@ -159,6 +183,16 @@ export class DriveService {
       const totalRegs = (d as any).totalRegistrations || 0;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const slotsCount = (d as any).slotsCount || 0;
+
+      // Resolve multiple jobs
+      const jobIds = d.jobIds && d.jobIds.length > 0 ? d.jobIds : (d.jobId ? [d.jobId] : []);
+      const matchedJobs = jobIds.map((id) => allJobsMap.get(id)).filter(Boolean) as Job[];
+      
+      const companyName = matchedJobs[0]?.company?.name || d.job?.company?.name || 'Unknown';
+      const jobTitles = matchedJobs.length > 0 
+        ? matchedJobs.map((j) => j.title).join(', ') 
+        : (d.job?.title || 'Unknown');
+
       return {
         id: d.id,
         title: d.title,
@@ -166,9 +200,10 @@ export class DriveService {
         status: d.status,
         driveDate: d.driveDate,
         departments: d.departments,
-        company: d.job?.company?.name || 'Unknown',
-        jobTitle: d.job?.title || 'Unknown',
-        jobId: d.jobId,
+        company: companyName,
+        jobTitle: jobTitles,
+        jobId: d.jobId || jobIds[0] || null,
+        jobIds: jobIds,
         totalRegistrations: totalRegs,
         approved: counts.approved,
         rejected: counts.rejected,
@@ -186,6 +221,16 @@ export class DriveService {
       relations: ['job', 'job.company', 'slots'],
     });
     if (!drive) throw new NotFoundException('Drive not found');
+
+    const jobIds = drive.jobIds && drive.jobIds.length > 0 ? drive.jobIds : (drive.jobId ? [drive.jobId] : []);
+    const matchedJobs = jobIds.length > 0 
+      ? await this.jobRepo.find({ where: { id: In(jobIds) }, relations: ['company'] }) 
+      : [];
+
+    const companyName = matchedJobs[0]?.company?.name || drive.job?.company?.name || 'Unknown';
+    const jobTitles = matchedJobs.length > 0 
+      ? matchedJobs.map((j) => j.title).join(', ') 
+      : (drive.job?.title || 'Unknown');
 
     const registrations = await this.regRepo.find({
       where: { driveId },
@@ -230,9 +275,11 @@ export class DriveService {
       driveDate: drive.driveDate,
       departments: drive.departments,
       description: drive.description,
-      company: drive.job?.company?.name,
-      jobTitle: drive.job?.title,
-      jobId: drive.jobId,
+      company: companyName,
+      jobTitle: jobTitles,
+      jobId: drive.jobId || jobIds[0] || null,
+      jobIds: jobIds,
+      jobs: matchedJobs.map(j => ({ id: j.id, title: j.title })),
       registrations: enrichedRegs,
       slots: drive.slots || [],
       createdAt: drive.createdAt,
@@ -403,15 +450,21 @@ export class DriveService {
     try {
       const drive = await this.driveRepo.findOne({
         where: { id: driveId },
-        relations: ['job'],
       });
-      if (!drive || !drive.jobId) return;
+      if (!drive) return;
 
-      // 1. Automatically publish associated job if it is still a draft
-      if (drive.job && drive.job.status === 'draft') {
-        drive.job.status = 'open';
-        await this.jobRepo.save(drive.job);
-        this.logger.log(`Auto-published job ${drive.jobId} associated with drive ${driveId}`);
+      const jobIds = drive.jobIds && drive.jobIds.length > 0 ? drive.jobIds : (drive.jobId ? [drive.jobId] : []);
+      if (jobIds.length === 0) return;
+
+      // 1. Automatically publish all associated jobs if they are still drafts
+      const jobs = await this.jobRepo.find({ where: { id: In(jobIds) } });
+      const draftJobs = jobs.filter(j => j.status === 'draft');
+      if (draftJobs.length > 0) {
+        for (const job of draftJobs) {
+          job.status = 'open';
+          await this.jobRepo.save(job);
+          this.logger.log(`Auto-published job ${job.id} associated with drive ${driveId}`);
+        }
       }
 
       // 2. Fetch all approved registrations for this drive
@@ -421,29 +474,31 @@ export class DriveService {
 
       if (approvedRegs.length === 0) return;
 
-      // 3. Sync to official applications table
+      // 3. Sync to official applications table for EVERY job in the drive!
       for (const reg of approvedRegs) {
-        const existingApp = await this.applicationRepo.findOne({
-          where: { studentId: reg.studentId, jobId: drive.jobId },
-        });
-
-        if (!existingApp) {
-          await this.applicationRepo.save({
-            studentId: reg.studentId,
-            jobId: drive.jobId,
-            adminApproved: true,
-            adminApprovedAt: new Date(),
-            currentRound: 1,
-            finalResult: 'pending',
-            matchScore: 75.00,
+        for (const jobId of jobIds) {
+          const existingApp = await this.applicationRepo.findOne({
+            where: { studentId: reg.studentId, jobId },
           });
-        } else if (existingApp.adminApproved !== true) {
-          existingApp.adminApproved = true;
-          existingApp.adminApprovedAt = new Date();
-          await this.applicationRepo.save(existingApp);
+
+          if (!existingApp) {
+            await this.applicationRepo.save({
+              studentId: reg.studentId,
+              jobId,
+              adminApproved: true,
+              adminApprovedAt: new Date(),
+              currentRound: 1,
+              finalResult: 'pending',
+              matchScore: 75.00,
+            });
+          } else if (existingApp.adminApproved !== true) {
+            existingApp.adminApproved = true;
+            existingApp.adminApprovedAt = new Date();
+            await this.applicationRepo.save(existingApp);
+          }
         }
       }
-      this.logger.log(`Synced ${approvedRegs.length} approved drive registrations to job applications for drive ${driveId}`);
+      this.logger.log(`Synced ${approvedRegs.length} approved drive registrations to job applications for drive ${driveId} across ${jobIds.length} jobs`);
     } catch (err) {
       this.logger.error(`Error syncing drive registrations to applications for drive ${driveId}:`, err);
     }

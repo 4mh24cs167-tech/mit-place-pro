@@ -257,7 +257,7 @@ export const adminApi = {
   listDrives: () => apiFetch('/api/v1/admin/drives'),
   getDrive: (id: string) => apiFetch(`/api/v1/admin/drives/${id}`),
   createDrive: (data: {
-    title: string; type: 'single' | 'multiple'; jobId: string;
+    title: string; type: 'single' | 'multiple'; jobId?: string; jobIds?: string[];
     description?: string; driveDate?: string; departments?: string[];
   }) => apiFetch('/api/v1/admin/drives', { method: 'POST', body: data }),
   rejectDriveStudents: (driveId: string, studentIds: string[], reason?: string) =>
