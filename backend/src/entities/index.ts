@@ -14,3 +14,4 @@ export { Notification } from './notification.entity';
 export { AuditLog } from './audit-log.entity';
 export { Drive, DriveRegistration, DriveSlot } from './drive.entity';
 export { RoundMeeting, MeetingGroup, MeetingAssignment } from './round-meeting.entity';
+export { EmailLog } from './email-log.entity';

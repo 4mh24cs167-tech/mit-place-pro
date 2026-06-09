@@ -25,6 +25,7 @@ import {
   DriveSlot,
 } from './entities';
 import { RoundMeeting, MeetingGroup, MeetingAssignment } from './entities';
+import { EmailLog } from './entities';
 
 const entities = [
   User,
@@ -47,6 +48,7 @@ const entities = [
   RoundMeeting,
   MeetingGroup,
   MeetingAssignment,
+  EmailLog,
 ];
 
 @Module({

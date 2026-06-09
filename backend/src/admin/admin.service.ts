@@ -75,39 +75,48 @@ export class AdminService {
       .where("app.finalResult = 'selected'")
       .getRawOne();
 
-    // Drive response stats
-    const driveStatsRaw: Array<{ status: string; count: string }> = await this.driveRegRepo
-      .createQueryBuilder('reg')
-      .select('reg.status', 'status')
-      .addSelect('COUNT(*)', 'count')
-      .groupBy('reg.status')
-      .getRawMany();
+    // Drive response stats (graceful degradation if table/column missing)
+    let driveResponseStats = { pending: 0, approved: 0, rejected: 0, declined: 0 };
+    try {
+      const driveStatsRaw: Array<{ status: string; count: string }> = await this.driveRegRepo
+        .createQueryBuilder('reg')
+        .select('reg.status', 'status')
+        .addSelect('COUNT(*)', 'count')
+        .groupBy('reg.status')
+        .getRawMany();
 
-    const driveResponseStats = { pending: 0, approved: 0, rejected: 0, declined: 0 };
-    driveStatsRaw.forEach((s) => {
-      if (s.status in driveResponseStats) {
-        driveResponseStats[s.status as keyof typeof driveResponseStats] = Number(s.count);
-      }
-    });
+      driveStatsRaw.forEach((s) => {
+        if (s.status in driveResponseStats) {
+          driveResponseStats[s.status as keyof typeof driveResponseStats] = Number(s.count);
+        }
+      });
+    } catch (err) {
+      this.logger.warn(`Drive response stats query failed: ${(err as Error).message}`);
+    }
 
-    // Email log stats
-    const emailStatsRaw: Array<{ emailType: string; total: string; sent: string; failed: string; totalRecipients: string }> = await this.emailLogRepo
-      .createQueryBuilder('log')
-      .select('log.email_type', 'emailType')
-      .addSelect('COUNT(*)', 'total')
-      .addSelect(`SUM(CASE WHEN log.success = true THEN 1 ELSE 0 END)`, 'sent')
-      .addSelect(`SUM(CASE WHEN log.success = false THEN 1 ELSE 0 END)`, 'failed')
-      .addSelect('SUM(log.recipient_count)', 'totalRecipients')
-      .groupBy('log.email_type')
-      .getRawMany();
+    // Email log stats (graceful degradation if table missing)
+    let emailStats: Array<{ emailType: string; total: number; sent: number; failed: number; totalRecipients: number }> = [];
+    try {
+      const emailStatsRaw: Array<{ emailType: string; total: string; sent: string; failed: string; totalRecipients: string }> = await this.emailLogRepo
+        .createQueryBuilder('log')
+        .select('log.email_type', 'emailType')
+        .addSelect('COUNT(*)', 'total')
+        .addSelect(`SUM(CASE WHEN log.success = true THEN 1 ELSE 0 END)`, 'sent')
+        .addSelect(`SUM(CASE WHEN log.success = false THEN 1 ELSE 0 END)`, 'failed')
+        .addSelect('SUM(log.recipient_count)', 'totalRecipients')
+        .groupBy('log.email_type')
+        .getRawMany();
 
-    const emailStats = emailStatsRaw.map((e) => ({
-      emailType: e.emailType,
-      total: Number(e.total),
-      sent: Number(e.sent),
-      failed: Number(e.failed),
-      totalRecipients: Number(e.totalRecipients),
-    }));
+      emailStats = emailStatsRaw.map((e) => ({
+        emailType: e.emailType,
+        total: Number(e.total),
+        sent: Number(e.sent),
+        failed: Number(e.failed),
+        totalRecipients: Number(e.totalRecipients),
+      }));
+    } catch (err) {
+      this.logger.warn(`Email log stats query failed: ${(err as Error).message}`);
+    }
 
     return {
       totalStudents,
