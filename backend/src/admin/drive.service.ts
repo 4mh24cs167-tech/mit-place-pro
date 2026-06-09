@@ -263,6 +263,9 @@ export class DriveService {
           cgpa: student.cgpa,
           email: student.user?.email,
           semester: student.semester,
+          phone: student.phone || null,
+          resumeLink: student.resumeLink || null,
+          driveLink: student.driveLink || null,
         } : null,
       };
     });

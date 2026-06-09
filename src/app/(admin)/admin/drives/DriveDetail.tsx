@@ -6,7 +6,7 @@ import { adminApi } from "@/lib/api";
 import {
   ArrowLeft, Loader2, AlertCircle, X, Users, Clock,
   CheckCircle2, XCircle, UserX, UserCheck, ChevronDown,
-  Building2, MapPin, Plus, Trash2, Search, Calendar,
+  Building2, MapPin, Plus, Trash2, Search, Calendar, Download,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import SlotAllocator from "./SlotAllocator";
@@ -23,6 +23,9 @@ interface Registration {
     cgpa: number;
     email: string;
     semester: number;
+    phone?: string | null;
+    resumeLink?: string | null;
+    driveLink?: string | null;
   } | null;
 }
 
@@ -186,6 +189,26 @@ export default function DriveDetail({ driveId, onBack, showToast, toast, setToas
   const totalEligible = drive?.totalEligible || 0;
   const notResponded = Math.max(0, totalEligible - (drive?.registrations.length || 0));
 
+  const handleExport = () => {
+    if (!drive || drive.registrations.length === 0) { showToast("error", "No registrations to export"); return; }
+    const headers = ["Name", "USN", "Department", "Batch", "Semester", "CGPA", "Email", "Phone", "Status", "Rejection Reason", "Resume Link", "Drive Link"];
+    const rows = drive.registrations.map((r) => [
+      r.student?.fullName || "", r.student?.usn || "", r.student?.department || "",
+      (r.student as Record<string, unknown>)?.batchName as string || "",
+      String(r.student?.semester ?? ""), String(r.student?.cgpa ?? ""),
+      r.student?.email || "", r.student?.phone || "",
+      r.status, r.rejectionReason || "",
+      r.student?.resumeLink || "", r.student?.driveLink || "",
+    ]);
+    const csv = [headers.join(","), ...rows.map((r) => r.map((v) => `"${v}"`).join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `drive_${drive.title.replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    showToast("success", `Exported ${drive.registrations.length} registrations to CSV`);
+  };
+
   return (
     <div className="page-enter">
       <Header userName={userEmail} userRole="Admin"
@@ -317,6 +340,9 @@ export default function DriveDetail({ driveId, onBack, showToast, toast, setToas
                       <option value="all">All Depts</option>
                       {departments.map((d) => <option key={d} value={d}>{d}</option>)}
                     </select>
+                    <button onClick={handleExport} className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl text-sm font-medium shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all whitespace-nowrap">
+                      <Download className="w-4 h-4" /> Export List
+                    </button>
                   </div>
                 </div>
 
