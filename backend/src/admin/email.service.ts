@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import * as nodemailer from 'nodemailer';
+import { EmailLog, EmailType } from '../entities/email-log.entity';
 
 interface CompanyCredentials {
   companyName: string;
@@ -17,10 +20,28 @@ export class EmailService {
   private readonly logoUrl: string;
   private readonly fromName = 'MITM PlacePro';
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @InjectRepository(EmailLog) private readonly emailLogRepo: Repository<EmailLog>,
+  ) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'https://mitm-placepro.vercel.app');
     this.logoUrl = `${frontendUrl}/mitm-logo.png`;
     this.initTransporter();
+  }
+
+  private async logEmail(emailType: EmailType, subject: string, recipients: string[], success: boolean, errorMessage?: string): Promise<void> {
+    try {
+      await this.emailLogRepo.save({
+        emailType,
+        subject,
+        recipients,
+        recipientCount: recipients.length,
+        success,
+        errorMessage: errorMessage || null,
+      });
+    } catch (err) {
+      this.logger.warn(`Failed to log email: ${(err as Error).message}`);
+    }
   }
 
   private async initTransporter() {
@@ -89,13 +110,15 @@ export class EmailService {
   }
 
   // ─── Central Dispatcher with Brevo HTTP API Bypass & NodeMailer SMTP fallback ───
-  private async sendEmail(options: { to: string | string[]; subject: string; html: string }): Promise<boolean> {
+  private async sendEmail(options: { to: string | string[]; subject: string; html: string }, emailType: EmailType = 'other'): Promise<boolean> {
     const smtpUser = this.configService.get<string>('SMTP_USER', '');
     const smtpPass = this.configService.get<string>('SMTP_PASS', '');
     const smtpFrom = this.configService.get<string>('SMTP_FROM', smtpUser);
 
     if (!smtpUser || !smtpPass) {
       this.logger.warn(`⚠️ No SMTP credentials configured. Email logged: [Subject: "${options.subject}"]`);
+      const noCredRecipients = Array.isArray(options.to) ? options.to : [options.to];
+      await this.logEmail(emailType, options.subject, noCredRecipients, false, 'No SMTP credentials configured');
       return false;
     }
 
@@ -127,6 +150,7 @@ export class EmailService {
         if (response.ok) {
           const resData = await response.json().catch(() => ({}));
           this.logger.log(`✅ Email sent successfully via Brevo HTTP API! Message ID: ${resData.messageId || 'N/A'}`);
+          await this.logEmail(emailType, options.subject, recipients, true);
           return true;
         } else {
           const errText = await response.text();
@@ -166,9 +190,11 @@ export class EmailService {
 
       await this.transporter.sendMail(mailOptions);
       this.logger.log(`✅ Email sent successfully via SMTP fallback!`);
+      await this.logEmail(emailType, options.subject, recipients, true);
       return true;
     } catch (smtpErr) {
       this.logger.error(`❌ SMTP fallback failed completely: ${(smtpErr as Error).message}`);
+      await this.logEmail(emailType, options.subject, recipients, false, (smtpErr as Error).message);
       return false;
     }
   }
@@ -220,7 +246,7 @@ export class EmailService {
       to: credentials.email,
       subject: `🎓 Welcome to MITM PlacePro — Your Company Login Credentials`,
       html: this.wrapHtml('Welcome to MITM PlacePro', 'linear-gradient(135deg,#6366f1,#8b5cf6)', body),
-    });
+    }, 'company_credentials');
   }
 
   // ═══════════════════════════════════════════════════
@@ -254,7 +280,7 @@ export class EmailService {
       to: email,
       subject: '🔐 Your Password Reset OTP — MITM PlacePro',
       html: this.wrapHtml('Password Reset', 'linear-gradient(135deg,#6366f1,#8b5cf6)', body),
-    });
+    }, 'otp_reset');
   }
 
   // ═══════════════════════════════════════════════════
@@ -298,7 +324,7 @@ export class EmailService {
         ? `🎉 Congratulations! You're placed at ${data.companyName} — MITM PlacePro`
         : `✅ Round ${data.roundNumber} Cleared — ${data.jobTitle} at ${data.companyName}`,
       html: this.wrapHtml(title, headerBg, body),
-    });
+    }, 'round_selected');
   }
 
   // ═══════════════════════════════════════════════════
@@ -328,7 +354,7 @@ export class EmailService {
       to: data.email,
       subject: `Round ${data.roundNumber} Result — ${data.jobTitle} at ${data.companyName}`,
       html: this.wrapHtml(`Round ${data.roundNumber} Update`, 'linear-gradient(135deg,#6366f1,#8b5cf6)', body),
-    });
+    }, 'round_rejected');
   }
 
   // ═══════════════════════════════════════════════════
@@ -391,7 +417,7 @@ export class EmailService {
         to: batch,
         subject: `🚀 New Drive: ${data.companyName} — ${data.driveName}`,
         html: htmlContent,
-      });
+      }, 'drive_announcement');
       if (success) {
         sentCount += batch.length;
       }

@@ -30,6 +30,12 @@ export class AdminController {
     return { success: true, data };
   }
 
+  @Get('email-logs')
+  async getEmailLogs(@Query('limit') limit?: number) {
+    const data = await this.adminService.getEmailLogs(limit || 50);
+    return { success: true, data };
+  }
+
   // ─── Students ───────────────────────────────────
   // IMPORTANT: Template route MUST come BEFORE :id route
   @Get('students/template')

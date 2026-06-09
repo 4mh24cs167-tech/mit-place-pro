@@ -18,6 +18,11 @@ import {
   GraduationCap,
   RefreshCw,
   Loader2,
+  Mail,
+  Ban,
+  Clock,
+  XCircle,
+  Send,
 } from "lucide-react";
 
 interface DashboardStats {
@@ -28,6 +33,8 @@ interface DashboardStats {
   placementRate: number;
   pendingApprovals: number;
   departmentStats?: Array<{ department: string; placed: number; total: number }>;
+  driveResponseStats?: { pending: number; approved: number; rejected: number; declined: number };
+  emailStats?: Array<{ emailType: string; total: number; sent: number; failed: number; totalRecipients: number }>;
 }
 
 interface ActivityItem {
@@ -37,10 +44,31 @@ interface ActivityItem {
   createdAt: string;
 }
 
+interface EmailLogItem {
+  id: string;
+  emailType: string;
+  subject: string;
+  recipients: string[];
+  recipientCount: number;
+  success: boolean;
+  errorMessage: string | null;
+  createdAt: string;
+}
+
+const emailTypeLabels: Record<string, { label: string; color: string; icon: React.ElementType }> = {
+  company_credentials: { label: "Company Credentials", color: "text-purple-600", icon: Building2 },
+  otp_reset: { label: "Password Reset", color: "text-amber-600", icon: RefreshCw },
+  round_selected: { label: "Round Selected", color: "text-emerald-600", icon: CheckCircle2 },
+  round_rejected: { label: "Round Rejected", color: "text-red-600", icon: XCircle },
+  drive_announcement: { label: "Drive Announcement", color: "text-indigo-600", icon: Send },
+  other: { label: "Other", color: "text-slate-600", icon: Mail },
+};
+
 export default function AdminDashboardPage() {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [emailLogs, setEmailLogs] = useState<EmailLogItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,13 +79,15 @@ export default function AdminDashboardPage() {
     setError(null);
 
     try {
-      const [dashRes, actRes] = await Promise.all([
+      const [dashRes, actRes, emailRes] = await Promise.all([
         adminApi.getDashboard(),
         adminApi.getActivity(8),
+        adminApi.getEmailLogs(20),
       ]);
 
       if (dashRes.data) setStats(dashRes.data as DashboardStats);
       if (actRes.data) setActivity(actRes.data as ActivityItem[]);
+      if (emailRes.data) setEmailLogs(emailRes.data as EmailLogItem[]);
     } catch (err) {
       setError("Failed to load dashboard data");
     } finally {
@@ -316,6 +346,180 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* Drive Response Stats & Email Audit */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mt-5">
+          {/* Drive Response Stats */}
+          <div className="i-card p-6">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Drive Responses</h2>
+                <p className="text-sm text-muted-foreground">Student drive acceptance/decline tracking</p>
+              </div>
+            </div>
+            {isLoading ? (
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-10 bg-muted animate-pulse rounded-lg" />
+                ))}
+              </div>
+            ) : stats?.driveResponseStats ? (
+              <div className="space-y-3">
+                {[
+                  { key: "approved" as const, label: "Accepted", icon: CheckCircle2, color: "text-emerald-600", bg: "bg-emerald-50", barColor: "bg-emerald-500" },
+                  { key: "declined" as const, label: "Declined", icon: Ban, color: "text-slate-600", bg: "bg-slate-50", barColor: "bg-slate-400" },
+                  { key: "pending" as const, label: "Not Responded", icon: Clock, color: "text-amber-600", bg: "bg-amber-50", barColor: "bg-amber-400" },
+                  { key: "rejected" as const, label: "Rejected by Admin", icon: XCircle, color: "text-red-600", bg: "bg-red-50", barColor: "bg-red-400" },
+                ].map((item) => {
+                  const count = stats.driveResponseStats?.[item.key] ?? 0;
+                  const total = Object.values(stats.driveResponseStats || {}).reduce((a, b) => a + b, 0);
+                  const pct = total > 0 ? (count / total) * 100 : 0;
+                  return (
+                    <div key={item.key} className="flex items-center gap-3">
+                      <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0", item.bg)}>
+                        <item.icon className={cn("w-4 h-4", item.color)} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-medium text-foreground">{item.label}</span>
+                          <span className="text-xs font-bold text-foreground">{count}</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div className={cn("h-full rounded-full transition-all duration-700", item.barColor)} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Users className="w-8 h-8 text-muted-foreground mb-2" />
+                <p className="text-sm font-medium text-foreground">No drive data</p>
+                <p className="text-xs text-muted-foreground mt-1">Drive response stats will appear when drives are created</p>
+              </div>
+            )}
+          </div>
+
+          {/* Email Audit Log */}
+          <div className="i-card p-6">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Email Audit</h2>
+                <p className="text-sm text-muted-foreground">Emails sent by type and status</p>
+              </div>
+              <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center", "bg-indigo-50")}>
+                <Mail className="w-4 h-4 text-indigo-600" />
+              </div>
+            </div>
+            {isLoading ? (
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-10 bg-muted animate-pulse rounded-lg" />
+                ))}
+              </div>
+            ) : stats?.emailStats && stats.emailStats.length > 0 ? (
+              <div className="space-y-2.5">
+                {stats.emailStats.map((es) => {
+                  const cfg = emailTypeLabels[es.emailType] || emailTypeLabels.other;
+                  const TypeIcon = cfg.icon;
+                  return (
+                    <div key={es.emailType} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors">
+                      <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                        <TypeIcon className={cn("w-4 h-4", cfg.color)} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-foreground truncate">{cfg.label}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {es.totalRecipients} recipients
+                        </p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm font-bold text-foreground">{es.sent}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {es.failed > 0 ? <span className="text-red-500">{es.failed} failed</span> : "all sent"}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="pt-2 border-t border-border">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground font-medium">Total Emails</span>
+                    <span className="font-bold text-foreground">
+                      {stats.emailStats.reduce((a, b) => a + b.total, 0)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <Mail className="w-8 h-8 text-muted-foreground mb-2" />
+                <p className="text-sm font-medium text-foreground">No emails sent yet</p>
+                <p className="text-xs text-muted-foreground mt-1">Email audit data will appear as emails are sent</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Email Log */}
+        {emailLogs.length > 0 && (
+          <div className="i-card p-6 mt-5">
+            <div className="flex items-start justify-between mb-5">
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Recent Email Activity</h2>
+                <p className="text-sm text-muted-foreground">Latest {emailLogs.length} emails sent from the system</p>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Type</th>
+                    <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Subject</th>
+                    <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Recipients</th>
+                    <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                    <th className="text-left py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {emailLogs.map((log) => {
+                    const cfg = emailTypeLabels[log.emailType] || emailTypeLabels.other;
+                    return (
+                      <tr key={log.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                        <td className="py-2.5 px-3">
+                          <span className={cn("text-xs font-semibold", cfg.color)}>{cfg.label}</span>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span className="text-xs text-foreground truncate block max-w-[250px]">{log.subject}</span>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span className="text-xs text-muted-foreground">{log.recipientCount}</span>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          {log.success ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                              <CheckCircle2 className="w-3 h-3" /> Sent
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
+                              <XCircle className="w-3 h-3" /> Failed
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(log.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

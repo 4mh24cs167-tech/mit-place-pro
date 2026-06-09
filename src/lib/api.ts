@@ -160,7 +160,8 @@ export const authApi = {
 // ─── Admin ───────────────────────────────────────
 export const adminApi = {
   getDashboard: () => apiFetch('/api/v1/admin/dashboard'),
-  getActivity: (limit = 10) => apiFetch(`/api/v1/admin/activity?limit=${limit}`),
+  getActivity: (limit?: number) => apiFetch(`/api/v1/admin/activity?limit=${limit || 10}`),
+  getEmailLogs: (limit?: number) => apiFetch(`/api/v1/admin/email-logs?limit=${limit || 50}`),
   getSmtpStatus: () => apiFetch('/api/v1/admin/smtp/status'),
   sendSmtpTest: (email: string) => apiFetch('/api/v1/admin/smtp/test', { method: 'POST', body: { email } }),
 
@@ -286,6 +287,7 @@ export const studentApi = {
   getInterviews: () => apiFetch('/api/v1/student/interviews'),
   getAvailableDrives: () => apiFetch('/api/v1/student/drives/available'),
   registerForDrive: (driveId: string) => apiFetch(`/api/v1/student/drives/${driveId}/register`, { method: 'POST' }),
+  declineDrive: (driveId: string) => apiFetch(`/api/v1/student/drives/${driveId}/decline`, { method: 'POST' }),
   getDriveAllocations: () => apiFetch('/api/v1/student/drives'),
   getNotifications: () => apiFetch('/api/v1/student/notifications'),
   markNotificationRead: (id: string) => apiFetch(`/api/v1/student/notifications/${id}/read`, { method: 'PATCH' }),

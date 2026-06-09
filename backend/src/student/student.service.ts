@@ -489,6 +489,39 @@ export class StudentService {
     };
   }
 
+  // ─── Decline a Drive (student opts out) ─────────
+  async declineDrive(userId: string, driveId: string) {
+    const student = await this.studentRepo.findOne({ where: { userId } });
+    if (!student) throw new NotFoundException('Student profile not found');
+
+    const drive = await this.driveRepo.findOne({ where: { id: driveId } });
+    if (!drive) throw new NotFoundException('Drive not found');
+
+    const registration = await this.driveRegRepo.findOne({
+      where: { driveId, studentId: student.id },
+    });
+
+    if (!registration) {
+      // Student wasn't registered — create a declined entry
+      await this.driveRegRepo.save({
+        driveId,
+        studentId: student.id,
+        status: 'declined' as const,
+      });
+      return { message: 'You have declined this drive.' };
+    }
+
+    if (registration.status === 'declined') {
+      throw new ConflictException('You have already declined this drive');
+    }
+
+    // Update existing registration to declined
+    registration.status = 'declined' as const;
+    await this.driveRegRepo.save(registration);
+
+    return { message: 'You have declined this drive.' };
+  }
+
   // ─── My Drive Registrations (all statuses) ─────
   async getMyDriveAllocations(userId: string) {
     const student = await this.studentRepo.findOne({ where: { userId } });

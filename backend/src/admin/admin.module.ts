@@ -16,6 +16,7 @@ import { Notification } from '../entities/notification.entity';
 import { AuditLog } from '../entities/audit-log.entity';
 import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
+import { EmailLog } from '../entities/email-log.entity';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
       Drive,
       DriveRegistration,
       DriveSlot,
+      EmailLog,
     ]),
   ],
   controllers: [AdminController],

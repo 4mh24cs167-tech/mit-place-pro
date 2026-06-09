@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import {
   Megaphone, Building2, Briefcase, CalendarDays, Loader2,
   CheckCircle2, AlertCircle, Clock, XCircle, ChevronRight,
-  IndianRupee, GraduationCap, Send,
+  IndianRupee, GraduationCap, Send, Ban,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 
@@ -31,6 +31,7 @@ const regStatusConfig: Record<string, { label: string; color: string; bg: string
   pending: { label: "Pending Approval", color: "text-amber-700", bg: "bg-amber-50 border-amber-200", icon: Clock },
   approved: { label: "Approved", color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200", icon: CheckCircle2 },
   rejected: { label: "Rejected", color: "text-red-700", bg: "bg-red-50 border-red-200", icon: XCircle },
+  declined: { label: "Declined", color: "text-slate-700", bg: "bg-slate-50 border-slate-300", icon: Ban },
 };
 
 export default function StudentDrivesPage() {
@@ -39,6 +40,7 @@ export default function StudentDrivesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [registering, setRegistering] = useState<string | null>(null);
+  const [declining, setDeclining] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const fetchDrives = useCallback(async () => {
@@ -81,6 +83,22 @@ export default function StudentDrivesPage() {
       });
     } finally {
       setRegistering(null);
+    }
+  };
+
+  const handleDecline = async (driveId: string) => {
+    try {
+      setDeclining(driveId);
+      await studentApi.declineDrive(driveId);
+      setToast({ message: "Drive declined successfully.", type: "success" });
+      await fetchDrives();
+    } catch (err) {
+      setToast({
+        message: err instanceof Error ? err.message : "Failed to decline",
+        type: "error",
+      });
+    } finally {
+      setDeclining(null);
     }
   };
 
@@ -226,31 +244,54 @@ export default function StudentDrivesPage() {
                           )}
                         </div>
 
-                        {/* Attend Button */}
-                        <button
-                          onClick={() => handleRegister(drive.id)}
-                          disabled={registering === drive.id}
-                          className={cn(
-                            "w-full mt-2 py-2.5 px-4 rounded-xl text-sm font-semibold",
-                            "bg-gradient-to-r from-indigo-600 to-violet-600 text-white",
-                            "hover:from-indigo-700 hover:to-violet-700",
-                            "active:scale-[0.98] transition-all duration-150",
-                            "disabled:opacity-60 disabled:cursor-not-allowed",
-                            "flex items-center justify-center gap-2 shadow-sm"
-                          )}
-                        >
-                          {registering === drive.id ? (
-                            <>
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={() => handleRegister(drive.id)}
+                            disabled={registering === drive.id || declining === drive.id}
+                            className={cn(
+                              "flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold",
+                              "bg-gradient-to-r from-indigo-600 to-violet-600 text-white",
+                              "hover:from-indigo-700 hover:to-violet-700",
+                              "active:scale-[0.98] transition-all duration-150",
+                              "disabled:opacity-60 disabled:cursor-not-allowed",
+                              "flex items-center justify-center gap-2 shadow-sm"
+                            )}
+                          >
+                            {registering === drive.id ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Registering...
+                              </>
+                            ) : (
+                              <>
+                                <Send className="w-4 h-4" />
+                                Attend Drive
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleDecline(drive.id)}
+                            disabled={declining === drive.id || registering === drive.id}
+                            className={cn(
+                              "py-2.5 px-4 rounded-xl text-sm font-semibold",
+                              "bg-slate-100 text-slate-700 border border-slate-200",
+                              "hover:bg-slate-200 hover:border-slate-300",
+                              "active:scale-[0.98] transition-all duration-150",
+                              "disabled:opacity-60 disabled:cursor-not-allowed",
+                              "flex items-center justify-center gap-2"
+                            )}
+                          >
+                            {declining === drive.id ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
-                              Registering...
-                            </>
-                          ) : (
-                            <>
-                              <Send className="w-4 h-4" />
-                              Attend Drive
-                            </>
-                          )}
-                        </button>
+                            ) : (
+                              <>
+                                <Ban className="w-4 h-4" />
+                                Decline
+                              </>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}

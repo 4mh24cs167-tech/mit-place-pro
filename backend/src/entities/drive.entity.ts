@@ -57,7 +57,7 @@ export class Drive {
   updatedAt: Date;
 }
 
-export type RegistrationStatus = 'pending' | 'approved' | 'rejected';
+export type RegistrationStatus = 'pending' | 'approved' | 'rejected' | 'declined';
 
 @Entity('drive_registrations')
 @Index('idx_drive_reg_drive_id', ['driveId'])

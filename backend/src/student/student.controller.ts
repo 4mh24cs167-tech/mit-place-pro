@@ -99,6 +99,15 @@ export class StudentController {
     return { success: true, data };
   }
 
+  @Post('drives/:driveId/decline')
+  async declineDrive(
+    @CurrentUser('id') userId: string,
+    @Param('driveId') driveId: string,
+  ) {
+    const data = await this.studentService.declineDrive(userId, driveId);
+    return { success: true, data };
+  }
+
   @Get('drives')
   async getMyDriveAllocations(@CurrentUser('id') userId: string) {
     const data = await this.studentService.getMyDriveAllocations(userId);

@@ -13,6 +13,8 @@ import { Application } from '../entities/application.entity';
 import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { AuditLog } from '../entities/audit-log.entity';
+import { DriveRegistration } from '../entities/drive.entity';
+import { EmailLog } from '../entities/email-log.entity';
 import { EmailService } from './email.service';
 import { CreateStudentDto, CreateCompanyDto, BulkApproveDto, UpdateStudentDto, PaginationDto } from './dto/admin.dto';
 
@@ -31,6 +33,8 @@ export class AdminService {
     @InjectRepository(Notification) private readonly notificationRepo: Repository<Notification>,
     @InjectRepository(AuditLog) private readonly auditRepo: Repository<AuditLog>,
     @InjectRepository(InterviewSlot) private readonly slotRepo: Repository<InterviewSlot>,
+    @InjectRepository(DriveRegistration) private readonly driveRegRepo: Repository<DriveRegistration>,
+    @InjectRepository(EmailLog) private readonly emailLogRepo: Repository<EmailLog>,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
   ) {}
@@ -71,6 +75,40 @@ export class AdminService {
       .where("app.finalResult = 'selected'")
       .getRawOne();
 
+    // Drive response stats
+    const driveStatsRaw: Array<{ status: string; count: string }> = await this.driveRegRepo
+      .createQueryBuilder('reg')
+      .select('reg.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('reg.status')
+      .getRawMany();
+
+    const driveResponseStats = { pending: 0, approved: 0, rejected: 0, declined: 0 };
+    driveStatsRaw.forEach((s) => {
+      if (s.status in driveResponseStats) {
+        driveResponseStats[s.status as keyof typeof driveResponseStats] = Number(s.count);
+      }
+    });
+
+    // Email log stats
+    const emailStatsRaw: Array<{ emailType: string; total: string; sent: string; failed: string; totalRecipients: string }> = await this.emailLogRepo
+      .createQueryBuilder('log')
+      .select('log.email_type', 'emailType')
+      .addSelect('COUNT(*)', 'total')
+      .addSelect(`SUM(CASE WHEN log.success = true THEN 1 ELSE 0 END)`, 'sent')
+      .addSelect(`SUM(CASE WHEN log.success = false THEN 1 ELSE 0 END)`, 'failed')
+      .addSelect('SUM(log.recipient_count)', 'totalRecipients')
+      .groupBy('log.email_type')
+      .getRawMany();
+
+    const emailStats = emailStatsRaw.map((e) => ({
+      emailType: e.emailType,
+      total: Number(e.total),
+      sent: Number(e.sent),
+      failed: Number(e.failed),
+      totalRecipients: Number(e.totalRecipients),
+    }));
+
     return {
       totalStudents,
       totalCompanies,
@@ -83,7 +121,16 @@ export class AdminService {
       placementRate: totalStudents > 0 ? Math.round((placedStudents / totalStudents) * 100) : 0,
       departmentStats,
       avgCtc: avgCtcResult?.avgCtc ? Number(avgCtcResult.avgCtc) : 0,
+      driveResponseStats,
+      emailStats,
     };
+  }
+
+  async getEmailLogs(limit = 50) {
+    return this.emailLogRepo.find({
+      order: { createdAt: 'DESC' },
+      take: limit,
+    });
   }
 
   // ─── Student Management ─────────────────────────
