@@ -267,6 +267,21 @@ export class DriveService {
       };
     });
 
+    // Count total eligible students (matching drive departments)
+    let totalEligible = 0;
+    try {
+      if (drive.departments && drive.departments.length > 0) {
+        totalEligible = await this.studentRepo
+          .createQueryBuilder('s')
+          .where('s.department IN (:...depts)', { depts: drive.departments })
+          .getCount();
+      } else {
+        totalEligible = await this.studentRepo.count();
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to count eligible students: ${(err as Error).message}`);
+    }
+
     return {
       id: drive.id,
       title: drive.title,
@@ -282,6 +297,7 @@ export class DriveService {
       jobs: matchedJobs.map(j => ({ id: j.id, title: j.title })),
       registrations: enrichedRegs,
       slots: drive.slots || [],
+      totalEligible,
       createdAt: drive.createdAt,
     };
   }

@@ -14,7 +14,7 @@ import SlotAllocator from "./SlotAllocator";
 interface Registration {
   id: string;
   studentId: string;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "declined";
   rejectionReason: string | null;
   student: {
     fullName: string;
@@ -47,6 +47,7 @@ interface DriveDetailData {
   jobId: string;
   registrations: Registration[];
   slots: DriveSlot[];
+  totalEligible?: number;
   createdAt: string;
 }
 
@@ -77,7 +78,7 @@ export default function DriveDetail({ driveId, onBack, showToast, toast, setToas
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "approved" | "rejected">("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "pending" | "approved" | "rejected" | "declined">("all");
   const [filterDept, setFilterDept] = useState<string>("all");
   const [searchQ, setSearchQ] = useState("");
   const [showSlotAllocator, setShowSlotAllocator] = useState(false);
@@ -181,6 +182,9 @@ export default function DriveDetail({ driveId, onBack, showToast, toast, setToas
   const pending = drive?.registrations.filter((r) => r.status === "pending").length || 0;
   const approved = drive?.registrations.filter((r) => r.status === "approved").length || 0;
   const rejected = drive?.registrations.filter((r) => r.status === "rejected").length || 0;
+  const declined = drive?.registrations.filter((r) => r.status === "declined").length || 0;
+  const totalEligible = drive?.totalEligible || 0;
+  const notResponded = Math.max(0, totalEligible - (drive?.registrations.length || 0));
 
   return (
     <div className="page-enter">
@@ -263,12 +267,14 @@ export default function DriveDetail({ driveId, onBack, showToast, toast, setToas
               </div>
 
               {/* Quick Stats */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mt-5">
                 {[
                   { label: "Total", value: drive.registrations.length, color: "text-foreground" },
                   { label: "Pending", value: pending, color: "text-amber-600" },
                   { label: "Approved", value: approved, color: "text-emerald-600" },
                   { label: "Rejected", value: rejected, color: "text-red-600" },
+                  { label: "Declined", value: declined, color: "text-orange-600" },
+                  { label: "Not Responded", value: notResponded, color: "text-slate-500" },
                 ].map((s) => (
                   <div key={s.label} className="bg-muted/40 rounded-xl p-3 text-center">
                     <p className={cn("text-xl font-bold", s.color)}>{s.value}</p>
@@ -304,6 +310,7 @@ export default function DriveDetail({ driveId, onBack, showToast, toast, setToas
                       <option value="pending">Pending</option>
                       <option value="approved">Approved</option>
                       <option value="rejected">Rejected</option>
+                      <option value="declined">Declined</option>
                     </select>
                     <select value={filterDept} onChange={(e) => setFilterDept(e.target.value)}
                       className="px-3 py-2 bg-white border border-border rounded-xl text-foreground text-sm focus:outline-none min-w-[100px]">
@@ -371,6 +378,7 @@ export default function DriveDetail({ driveId, onBack, showToast, toast, setToas
                           <span className={cn("px-2.5 py-1 rounded-lg text-[10px] font-semibold flex-shrink-0",
                             reg.status === "approved" ? "bg-emerald-50 text-emerald-600" :
                             reg.status === "rejected" ? "bg-red-50 text-red-600" :
+                            reg.status === "declined" ? "bg-orange-50 text-orange-600" :
                             "bg-amber-50 text-amber-600"
                           )}>
                             {reg.status.charAt(0).toUpperCase() + reg.status.slice(1)}
