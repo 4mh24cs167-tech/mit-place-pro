@@ -79,18 +79,24 @@ export default function AdminDashboardPage() {
     setError(null);
 
     try {
-      const [dashRes, actRes, emailRes] = await Promise.all([
+      const [dashRes, actRes, emailRes] = await Promise.allSettled([
         adminApi.getDashboard(),
         adminApi.getActivity(8),
         adminApi.getEmailLogs(20),
       ]);
 
-      if (dashRes.data) setStats(dashRes.data as DashboardStats);
-      if (actRes.data) setActivity(actRes.data as ActivityItem[]);
-      if (emailRes.data) setEmailLogs(emailRes.data as EmailLogItem[]);
+      if (dashRes.status === 'fulfilled' && dashRes.value.data) setStats(dashRes.value.data as DashboardStats);
+      if (actRes.status === 'fulfilled' && actRes.value.data) setActivity(actRes.value.data as ActivityItem[]);
+      if (emailRes.status === 'fulfilled' && emailRes.value.data) setEmailLogs(emailRes.value.data as EmailLogItem[]);
+
+      // Only show error if the main dashboard call failed
+      if (dashRes.status === 'rejected') {
+        setError("Failed to load dashboard data");
+      }
     } catch (err) {
       setError("Failed to load dashboard data");
     } finally {
+
       setIsLoading(false);
       setIsRefreshing(false);
     }
