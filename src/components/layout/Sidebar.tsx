@@ -39,8 +39,6 @@ const navConfigs = {
     { label: "Depts", href: "/admin/departments", icon: BookOpen },
     { label: "Companies", href: "/admin/companies", icon: Building2 },
     { label: "Drives", href: "/admin/drives", icon: Briefcase },
-    { label: "Applications", href: "/admin/applications", icon: FileCheck2 },
-    { label: "Slots", href: "/admin/slots", icon: CalendarClock },
     { label: "Posters", href: "/admin/posters", icon: ImageIcon },
     { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { label: "Diagnostics", href: "/admin/diagnostics", icon: Server },
