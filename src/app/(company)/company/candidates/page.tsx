@@ -190,11 +190,12 @@ export default function CompanyCandidatesPage() {
 
   const handleExport = () => {
     if (filtered.length === 0) { showToast("error", "No candidates to export"); return; }
-    const headers = ["Name", "USN", "Batch", "Department", "Semester", "CGPA", "ATS Score", "Match Score", "Round", "Status"];
+    const headers = ["Name", "USN", "Batch", "Department", "Semester", "CGPA", "ATS Score", "Match Score", "Round", "Status", "Resume Link", "Drive Link"];
     const rows = filtered.map((c) => [
       c.studentName || "", c.usn || "", c.batchName || "", c.department || "",
       String(c.semester ?? ""), String(c.cgpa ?? ""), String(c.atsScore ?? ""), String(c.matchScore),
       String(c.currentRound), c.finalResult || "pending",
+      c.resumeLink || "", c.driveLink || "",
     ]);
     const csv = [headers.join(","), ...rows.map((r) => r.map((v) => `"${v}"`).join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
