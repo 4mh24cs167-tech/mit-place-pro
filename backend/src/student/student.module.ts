@@ -12,6 +12,8 @@ import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
 import { MeetingAssignment } from '../entities/round-meeting.entity';
+import { StudentDriveFeedback, CompanyStudentFeedback } from '../entities/feedback.entity';
+import { AdminModule } from '../admin/admin.module';
 
 @Module({
   imports: [
@@ -27,8 +29,11 @@ import { MeetingAssignment } from '../entities/round-meeting.entity';
       DriveRegistration,
       DriveSlot,
       MeetingAssignment,
+      StudentDriveFeedback,
+      CompanyStudentFeedback,
     ]),
     UploadModule,
+    AdminModule,
   ],
   controllers: [StudentController],
   providers: [StudentService],

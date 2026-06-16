@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
 import {
   Home,
   LogOut,
@@ -24,6 +25,7 @@ import {
   Layers,
   Megaphone,
   Server,
+  MessageSquare,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -40,6 +42,7 @@ const navConfigs = {
     { label: "Companies", href: "/admin/companies", icon: Building2 },
     { label: "Drives", href: "/admin/drives", icon: Briefcase },
     { label: "Posters", href: "/admin/posters", icon: ImageIcon },
+    { label: "Feedback", href: "/admin/feedback", icon: MessageSquare },
     { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { label: "Diagnostics", href: "/admin/diagnostics", icon: Server },
   ],
@@ -57,6 +60,7 @@ const navConfigs = {
     { label: "Profile", href: "/student/profile", icon: UserCircle },
     { label: "CVs", href: "/student/cv", icon: FileText },
     { label: "Jobs", href: "/student/jobs", icon: Eye },
+    { label: "Feedback", href: "/student/feedback", icon: MessageSquare },
     { label: "Allocations", href: "/student/allocations", icon: CalendarClock },
   ],
   principal: [
@@ -69,6 +73,8 @@ const navConfigs = {
 
 export default function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAuth();
   const navItems = navConfigs[role];
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -92,7 +98,7 @@ export default function Sidebar({ role }: SidebarProps) {
       {/* ── Mobile Bottom Navigation Bar (< md) ── */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 backdrop-blur-xl border-t border-border shadow-[0_-2px_16px_rgba(0,0,0,0.06)]">
         <div className="flex items-center justify-around px-1 py-1.5 max-w-md mx-auto">
-          {navItems.slice(0, 5).map((item) => {
+          {navItems.slice(0, 4).map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
             return (
@@ -111,15 +117,13 @@ export default function Sidebar({ role }: SidebarProps) {
               </Link>
             );
           })}
-          {navItems.length > 5 && (
-            <button
-              onClick={() => setMobileOpen(true)}
-              className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-muted-foreground min-w-[52px]"
-            >
-              <Menu className="w-5 h-5" />
-              <span className="text-[9px] font-medium leading-none">More</span>
-            </button>
-          )}
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-muted-foreground min-w-[52px]"
+          >
+            <Menu className="w-5 h-5" />
+            <span className="text-[9px] font-medium leading-none">More</span>
+          </button>
         </div>
       </nav>
 
@@ -154,13 +158,13 @@ export default function Sidebar({ role }: SidebarProps) {
                   </Link>
                 );
               })}
-              <Link
-                href="/login"
+              <button
+                onClick={() => { logout(); router.push("/login"); }}
                 className="flex flex-col items-center gap-1.5 p-3 rounded-xl text-red-500 hover:bg-red-50 transition-all"
               >
                 <LogOut className="w-5 h-5" />
                 <span className="text-[10px] font-medium">Logout</span>
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -198,13 +202,13 @@ export default function Sidebar({ role }: SidebarProps) {
         <div className="w-6 h-px bg-border my-2" />
 
         {/* Logout */}
-        <Link
-          href="/login"
+        <button
+          onClick={() => { logout(); router.push("/login"); }}
           title="Logout"
           className="w-10 h-10 flex items-center justify-center rounded-xl text-muted-foreground hover:bg-red-50 hover:text-red-500 transition-all"
         >
           <LogOut className="w-[18px] h-[18px]" />
-        </Link>
+        </button>
       </aside>
     </>
   );

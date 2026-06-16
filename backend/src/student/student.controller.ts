@@ -5,6 +5,7 @@ import { UploadService } from '../upload/upload.service';
 import { Auth, CurrentUser } from '../auth/auth.decorators';
 import { UserRole } from '../entities/user.entity';
 import { UpdateProfileDto, ApplyJobDto } from './dto/student.dto';
+import { FeedbackService } from '../admin/feedback.service';
 
 @Controller('api/v1/student')
 @Auth(UserRole.STUDENT)
@@ -12,6 +13,7 @@ export class StudentController {
   constructor(
     private readonly studentService: StudentService,
     private readonly uploadService: UploadService,
+    private readonly feedbackService: FeedbackService,
   ) {}
 
   // ─── Profile ────────────────────────────────────
@@ -135,5 +137,28 @@ export class StudentController {
   ) {
     const data = await this.studentService.markNotificationRead(userId, id);
     return { success: true, ...data };
+  }
+
+  // ─── Feedback ───────────────────────────────────
+  @Post('drives/:driveId/feedback')
+  async submitDriveFeedback(
+    @CurrentUser('id') userId: string,
+    @Param('driveId') driveId: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    const data = await this.feedbackService.submitStudentFeedbackByUserId(userId, driveId, body as any);
+    return { success: true, ...data };
+  }
+
+  @Get('feedback')
+  async getMyFeedback(@CurrentUser('id') userId: string) {
+    const data = await this.feedbackService.getMyFeedbackByUserId(userId);
+    return { success: true, data };
+  }
+
+  @Get('feedback/pending')
+  async getPendingFeedback(@CurrentUser('id') userId: string) {
+    const data = await this.feedbackService.getPendingFeedbackByUserId(userId);
+    return { success: true, data };
   }
 }

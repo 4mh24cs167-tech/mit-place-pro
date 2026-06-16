@@ -37,6 +37,13 @@ export class CompanyService {
     private readonly configService: ConfigService,
   ) {}
 
+  // ─── Helper ──────────────────────────────────────
+  async getCompanyByUserId(userId: string) {
+    const company = await this.companyRepo.findOne({ where: { userId } });
+    if (!company) throw new NotFoundException('Company profile not found');
+    return company;
+  }
+
   // ─── Company Profile ────────────────────────────
   async getProfile(userId: string) {
     const company = await this.companyRepo.findOne({ where: { userId }, relations: ['user'] });

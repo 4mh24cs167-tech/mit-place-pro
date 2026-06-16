@@ -4,6 +4,7 @@ import type { Response } from 'express';
 import { AdminService } from './admin.service';
 import { BulkUploadService } from './bulk-upload.service';
 import { DriveService } from './drive.service';
+import { FeedbackService } from './feedback.service';
 import { Auth, CurrentUser } from '../auth/auth.decorators';
 import { UserRole } from '../entities/user.entity';
 import { CreateCompanyDto, CreateStudentDto, BulkApproveDto, UpdateStudentDto, PaginationDto } from './dto/admin.dto';
@@ -15,6 +16,7 @@ export class AdminController {
     private readonly adminService: AdminService,
     private readonly bulkUploadService: BulkUploadService,
     private readonly driveService: DriveService,
+    private readonly feedbackService: FeedbackService,
   ) {}
 
   // ─── Dashboard ──────────────────────────────────
@@ -359,5 +361,24 @@ export class AdminController {
   async sendSmtpTestEmail(@Body('email') email: string) {
     const result = await this.adminService.sendSmtpTestEmail(email);
     return result;
+  }
+
+  // ─── Feedback ───────────────────────────────────
+  @Get('drives/:driveId/feedback/students')
+  async getDriveStudentFeedback(@Param('driveId') driveId: string) {
+    const data = await this.feedbackService.getStudentFeedbackForDrive(driveId);
+    return { success: true, data };
+  }
+
+  @Get('drives/:driveId/feedback/company')
+  async getDriveCompanyFeedback(@Param('driveId') driveId: string) {
+    const data = await this.feedbackService.getCompanyFeedbackForDrive(driveId);
+    return { success: true, data };
+  }
+
+  @Get('drives/:driveId/feedback/summary')
+  async getDriveFeedbackSummary(@Param('driveId') driveId: string) {
+    const data = await this.feedbackService.getDriveFeedbackSummary(driveId);
+    return { success: true, data };
   }
 }

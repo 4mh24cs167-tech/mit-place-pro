@@ -17,6 +17,8 @@ import { AuditLog } from '../entities/audit-log.entity';
 import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
 import { EmailLog } from '../entities/email-log.entity';
+import { StudentDriveFeedback, CompanyStudentFeedback } from '../entities/feedback.entity';
+import { FeedbackService } from './feedback.service';
 
 @Module({
   imports: [
@@ -35,10 +37,12 @@ import { EmailLog } from '../entities/email-log.entity';
       DriveRegistration,
       DriveSlot,
       EmailLog,
+      StudentDriveFeedback,
+      CompanyStudentFeedback,
     ]),
   ],
   controllers: [AdminController],
-  providers: [AdminService, BulkUploadService, DriveService, EmailService],
-  exports: [EmailService],
+  providers: [AdminService, BulkUploadService, DriveService, EmailService, FeedbackService],
+  exports: [EmailService, FeedbackService],
 })
 export class AdminModule {}

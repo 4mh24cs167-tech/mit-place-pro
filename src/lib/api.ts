@@ -270,6 +270,10 @@ export const adminApi = {
   updateDriveStatus: (driveId: string, status: string) =>
     apiFetch(`/api/v1/admin/drives/${driveId}/status`, { method: 'PATCH', body: { status } }),
   deleteDrive: (id: string) => apiFetch(`/api/v1/admin/drives/${id}`, { method: 'DELETE' }),
+  // Feedback
+  getDriveStudentFeedback: (driveId: string) => apiFetch(`/api/v1/admin/drives/${driveId}/feedback/students`),
+  getDriveCompanyFeedback: (driveId: string) => apiFetch(`/api/v1/admin/drives/${driveId}/feedback/company`),
+  getDriveFeedbackSummary: (driveId: string) => apiFetch(`/api/v1/admin/drives/${driveId}/feedback/summary`),
 };
 
 // ─── Student ─────────────────────────────────────
@@ -292,6 +296,10 @@ export const studentApi = {
   getNotifications: () => apiFetch('/api/v1/student/notifications'),
   markNotificationRead: (id: string) => apiFetch(`/api/v1/student/notifications/${id}/read`, { method: 'PATCH' }),
   getMeetings: () => apiFetch('/api/v1/student/meetings'),
+  // Feedback
+  submitDriveFeedback: (driveId: string, data: Record<string, unknown>) => apiFetch(`/api/v1/student/drives/${driveId}/feedback`, { method: 'POST', body: data }),
+  getMyFeedback: () => apiFetch('/api/v1/student/feedback'),
+  getPendingFeedback: () => apiFetch('/api/v1/student/feedback/pending'),
 };
 
 // ─── Company ─────────────────────────────────────
@@ -327,6 +335,10 @@ export const companyApi = {
     apiFetch(`/api/v1/company/meetings/${meetingId}`, { method: 'PATCH', body: data }),
   deleteRoundMeeting: (meetingId: string) =>
     apiFetch(`/api/v1/company/meetings/${meetingId}`, { method: 'DELETE' }),
+  // Feedback
+  submitStudentFeedback: (driveId: string, studentId: string, data: Record<string, unknown>) =>
+    apiFetch(`/api/v1/company/drives/${driveId}/students/${studentId}/feedback`, { method: 'POST', body: data }),
+  getDriveFeedback: (driveId: string) => apiFetch(`/api/v1/company/drives/${driveId}/feedback`),
 };
 
 export { ApiError, getToken, removeToken, getStoredUser };

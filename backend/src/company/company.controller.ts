@@ -3,11 +3,15 @@ import { CompanyService } from './company.service';
 import { Auth, CurrentUser } from '../auth/auth.decorators';
 import { UserRole } from '../entities/user.entity';
 import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto, UpdateCompanyProfileDto, SubmitRoundResultsDto, UpdateJobRoundsDto, CreateRoundMeetingDto, UpdateRoundMeetingDto } from './dto/company.dto';
+import { FeedbackService } from '../admin/feedback.service';
 
 @Controller('api/v1/company')
 @Auth(UserRole.COMPANY)
 export class CompanyController {
-  constructor(private readonly companyService: CompanyService) {}
+  constructor(
+    private readonly companyService: CompanyService,
+    private readonly feedbackService: FeedbackService,
+  ) {}
 
   // ─── Dashboard ──────────────────────────────────
   @Get('dashboard')
@@ -195,6 +199,29 @@ export class CompanyController {
     @Param('meetingId') meetingId: string,
   ) {
     const data = await this.companyService.deleteRoundMeeting(userId, meetingId);
+    return { success: true, data };
+  }
+
+  // ─── Feedback ───────────────────────────────────
+  @Post('drives/:driveId/students/:studentId/feedback')
+  async submitStudentFeedback(
+    @CurrentUser('id') userId: string,
+    @Param('driveId') driveId: string,
+    @Param('studentId') studentId: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    const company = await this.companyService.getCompanyByUserId(userId);
+    const data = await this.feedbackService.submitCompanyFeedback(company.id, driveId, studentId, body as any);
+    return { success: true, ...data };
+  }
+
+  @Get('drives/:driveId/feedback')
+  async getMyDriveFeedback(
+    @CurrentUser('id') userId: string,
+    @Param('driveId') driveId: string,
+  ) {
+    const company = await this.companyService.getCompanyByUserId(userId);
+    const data = await this.feedbackService.getCompanyFeedbackByCompany(company.id, driveId);
     return { success: true, data };
   }
 }

@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import {
   Megaphone, Building2, Briefcase, CalendarDays, Loader2,
   CheckCircle2, AlertCircle, Clock, XCircle, ChevronRight,
-  IndianRupee, GraduationCap, Send, Ban,
+  IndianRupee, GraduationCap, Send, Ban, AlertTriangle, MessageSquare, X,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 
@@ -42,6 +42,8 @@ export default function StudentDrivesPage() {
   const [registering, setRegistering] = useState<string | null>(null);
   const [declining, setDeclining] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [pendingFeedback, setPendingFeedback] = useState<{ driveId: string; driveTitle: string }[]>([]);
+  const [showFeedbackGate, setShowFeedbackGate] = useState(false);
 
   const fetchDrives = useCallback(async () => {
     try {
@@ -70,11 +72,22 @@ export default function StudentDrivesPage() {
   }, [toast]);
 
   const handleRegister = async (driveId: string) => {
+    // Check pending feedback first
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const pfRes = await studentApi.getPendingFeedback() as any;
+      const pf = pfRes?.data || [];
+      setPendingFeedback(pf);
+      if (pf.length > 0) {
+        setShowFeedbackGate(true);
+        return;
+      }
+    } catch { /* continue with registration if check fails */ }
+
     try {
       setRegistering(driveId);
       await studentApi.registerForDrive(driveId);
       setToast({ message: "Registration submitted! Awaiting admin approval.", type: "success" });
-      // Refresh to update status
       await fetchDrives();
     } catch (err) {
       setToast({
@@ -344,6 +357,40 @@ export default function StudentDrivesPage() {
           </div>
         )}
       </div>
+
+      {/* ── Feedback Gate Modal ── */}
+      {showFeedbackGate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl border border-amber-200 shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-5 border-b border-amber-100">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+                <h2 className="text-lg font-bold text-foreground">Feedback Required</h2>
+              </div>
+              <button onClick={() => setShowFeedbackGate(false)} className="p-2 hover:bg-accent rounded-xl transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Please submit feedback for the following drives before registering for new ones:
+              </p>
+              <div className="space-y-2">
+                {pendingFeedback.map((pf) => (
+                  <div key={pf.driveId} className="flex items-center gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100">
+                    <MessageSquare className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                    <span className="text-sm font-medium text-amber-800">{pf.driveTitle}</span>
+                  </div>
+                ))}
+              </div>
+              <a href="/student/feedback"
+                className="flex items-center justify-center gap-2 w-full px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl text-sm font-medium shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 transition-all">
+                <MessageSquare className="w-4 h-4" /> Go to Feedback Page
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
