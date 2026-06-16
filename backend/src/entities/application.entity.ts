@@ -46,7 +46,7 @@ export class Application {
   @Column({ type: 'timestamptz', nullable: true, name: 'admin_approved_at' })
   adminApprovedAt: Date | null;
 
-  @Column({ type: 'smallint', default: 0, name: 'current_round' })
+  @Column({ type: 'smallint', default: 1, name: 'current_round' })
   currentRound: number;
 
   @Column({ type: 'enum', enum: ['pending', 'selected', 'rejected'], default: 'pending', name: 'final_result' })

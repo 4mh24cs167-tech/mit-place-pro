@@ -148,7 +148,13 @@ export default function CompanyCandidatesPage() {
   };
 
   const roundCandidates = useMemo(() =>
-    candidates.filter(c => c.currentRound === activeRound && c.finalResult === "pending"),
+    candidates.filter(c => {
+      if (c.finalResult !== "pending") return false;
+      // Round 1: include newly approved (currentRound=0) and round 1 candidates
+      if (activeRound === 1) return c.currentRound <= 1;
+      // Later rounds: exact match only
+      return c.currentRound === activeRound;
+    }),
     [candidates, activeRound]
   );
 
