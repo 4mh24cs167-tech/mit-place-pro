@@ -66,13 +66,12 @@ export class StudentDriveFeedback {
   updatedAt: Date;
 }
 
-// ─── Company → Student Feedback ──────────────────
-@Entity('company_student_feedback')
-@Unique(['driveId', 'studentId', 'companyId'])
-@Index('idx_csf_drive_id', ['driveId'])
-@Index('idx_csf_student_id', ['studentId'])
-@Index('idx_csf_company_id', ['companyId'])
-export class CompanyStudentFeedback {
+// ─── Company → Drive Overall Feedback ────────────
+@Entity('company_drive_feedback')
+@Unique(['driveId', 'companyId'])
+@Index('idx_cdf_drive_id', ['driveId'])
+@Index('idx_cdf_company_id', ['companyId'])
+export class CompanyDriveFeedback {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -83,13 +82,6 @@ export class CompanyStudentFeedback {
   @JoinColumn({ name: 'drive_id' })
   drive: Drive;
 
-  @Column({ type: 'uuid', name: 'student_id' })
-  studentId: string;
-
-  @ManyToOne(() => Student, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'student_id' })
-  student: Student;
-
   @Column({ type: 'uuid', name: 'company_id' })
   companyId: string;
 
@@ -97,29 +89,35 @@ export class CompanyStudentFeedback {
   @JoinColumn({ name: 'company_id' })
   company: Company;
 
-  @Column({ type: 'smallint', name: 'technical_rating' })
-  technicalRating: number;
+  @Column({ type: 'smallint', name: 'overall_rating' })
+  overallRating: number;
+
+  @Column({ type: 'smallint', name: 'student_quality_rating' })
+  studentQualityRating: number;
+
+  @Column({ type: 'smallint', name: 'organization_rating' })
+  organizationRating: number;
+
+  @Column({ type: 'smallint', name: 'infrastructure_rating' })
+  infrastructureRating: number;
 
   @Column({ type: 'smallint', name: 'communication_rating' })
   communicationRating: number;
 
-  @Column({ type: 'smallint', name: 'attitude_rating' })
-  attitudeRating: number;
-
-  @Column({ type: 'smallint', name: 'overall_rating' })
-  overallRating: number;
-
-  @Column({ type: 'text', nullable: true })
-  strengths: string | null;
+  @Column({ type: 'text', nullable: true, name: 'what_went_well' })
+  whatWentWell: string | null;
 
   @Column({ type: 'text', nullable: true, name: 'areas_of_improvement' })
   areasOfImprovement: string | null;
 
   @Column({ type: 'text', nullable: true })
-  remarks: string | null;
+  suggestions: string | null;
 
-  @Column({ type: 'varchar', length: 10, name: 'recommend_for_hire' })
-  recommendForHire: string;
+  @Column({ type: 'boolean', default: true, name: 'would_return' })
+  wouldReturn: boolean;
+
+  @Column({ type: 'text', nullable: true })
+  comments: string | null;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
@@ -127,3 +125,4 @@ export class CompanyStudentFeedback {
   @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
 }
+

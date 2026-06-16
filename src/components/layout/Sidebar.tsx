@@ -52,6 +52,7 @@ const navConfigs = {
     { label: "Candidates", href: "/company/candidates", icon: Users },
     { label: "Rounds", href: "/company/rounds", icon: ClipboardList },
     { label: "Offers", href: "/company/offers", icon: Award },
+    { label: "Feedback", href: "/company/feedback", icon: MessageSquare },
   ],
   student: [
     { label: "Dashboard", href: "/student/dashboard", icon: Home },

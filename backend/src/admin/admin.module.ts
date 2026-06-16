@@ -17,7 +17,7 @@ import { AuditLog } from '../entities/audit-log.entity';
 import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
 import { EmailLog } from '../entities/email-log.entity';
-import { StudentDriveFeedback, CompanyStudentFeedback } from '../entities/feedback.entity';
+import { StudentDriveFeedback, CompanyDriveFeedback } from '../entities/feedback.entity';
 import { FeedbackService } from './feedback.service';
 
 @Module({
@@ -38,7 +38,7 @@ import { FeedbackService } from './feedback.service';
       DriveSlot,
       EmailLog,
       StudentDriveFeedback,
-      CompanyStudentFeedback,
+      CompanyDriveFeedback,
     ]),
   ],
   controllers: [AdminController],

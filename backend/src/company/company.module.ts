@@ -12,7 +12,7 @@ import { Notification } from '../entities/notification.entity';
 import { Student } from '../entities/student.entity';
 import { Drive, DriveSlot, DriveRegistration } from '../entities/drive.entity';
 import { RoundMeeting, MeetingGroup, MeetingAssignment } from '../entities/round-meeting.entity';
-import { StudentDriveFeedback, CompanyStudentFeedback } from '../entities/feedback.entity';
+import { StudentDriveFeedback, CompanyDriveFeedback } from '../entities/feedback.entity';
 
 @Module({
   imports: [
@@ -31,7 +31,7 @@ import { StudentDriveFeedback, CompanyStudentFeedback } from '../entities/feedba
       MeetingGroup,
       MeetingAssignment,
       StudentDriveFeedback,
-      CompanyStudentFeedback,
+      CompanyDriveFeedback,
     ]),
     AdminModule,
   ],

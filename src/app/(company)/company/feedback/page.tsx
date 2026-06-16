@@ -2,12 +2,13 @@
 
 import Header from "@/components/layout/Header";
 import { cn } from "@/lib/utils";
-import { studentApi } from "@/lib/api";
+import { companyApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import {
   Star, Loader2, AlertCircle, MessageSquare, CheckCircle2,
-  ChevronDown, ChevronUp, ThumbsUp, ThumbsDown, Send, X,
-  Calendar, Building2, AlertTriangle,
+  ChevronDown, ChevronUp, Send, X, Calendar, Building2,
+  AlertTriangle, ThumbsUp, ThumbsDown, School, Users,
+  Wifi, Award,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 
@@ -22,14 +23,14 @@ interface SubmittedFeedback {
   id: string;
   driveId: string;
   overallRating: number;
-  processRating: number;
+  studentQualityRating: number;
+  organizationRating: number;
+  infrastructureRating: number;
   communicationRating: number;
-  difficultyLevel: string;
-  roundsFaced: string;
-  interviewExperience: string;
-  questionsAsked: string | null;
-  tips: string | null;
-  wouldRecommend: boolean;
+  whatWentWell: string | null;
+  areasOfImprovement: string | null;
+  suggestions: string | null;
+  wouldReturn: boolean;
   comments: string | null;
   createdAt: string;
   drive: { id: string; title: string; driveDate: string | null } | null;
@@ -37,11 +38,22 @@ interface SubmittedFeedback {
 
 const STAR_LABELS = ["", "Poor", "Fair", "Good", "Very Good", "Excellent"];
 
-function StarRating({ value, onChange, label }: { value: number; onChange: (v: number) => void; label: string }) {
+const RATING_FIELDS = [
+  { key: "overallRating", label: "Overall Experience", icon: Star },
+  { key: "studentQualityRating", label: "Student Quality", icon: Users },
+  { key: "organizationRating", label: "Drive Organization", icon: Award },
+  { key: "infrastructureRating", label: "College Infrastructure", icon: School },
+  { key: "communicationRating", label: "Communication & Coordination", icon: Wifi },
+] as const;
+
+function StarRating({ value, onChange, label, icon: Icon }: { value: number; onChange: (v: number) => void; label: string; icon: React.ElementType }) {
   const [hover, setHover] = useState(0);
   return (
     <div className="space-y-1.5">
-      <label className="text-sm font-medium text-foreground">{label} <span className="text-red-500">*</span></label>
+      <label className="text-sm font-medium text-foreground flex items-center gap-2">
+        <Icon className="w-4 h-4 text-muted-foreground" />
+        {label} <span className="text-red-500">*</span>
+      </label>
       <div className="flex items-center gap-1.5">
         {[1, 2, 3, 4, 5].map((s) => (
           <button key={s} type="button" onMouseEnter={() => setHover(s)} onMouseLeave={() => setHover(0)}
@@ -55,7 +67,7 @@ function StarRating({ value, onChange, label }: { value: number; onChange: (v: n
   );
 }
 
-export default function StudentFeedbackPage() {
+export default function CompanyFeedbackPage() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState<PendingDrive[]>([]);
@@ -68,9 +80,10 @@ export default function StudentFeedbackPage() {
   const [formDrive, setFormDrive] = useState<PendingDrive | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
-    overallRating: 0, processRating: 0, communicationRating: 0,
-    difficultyLevel: "", roundsFaced: "", interviewExperience: "",
-    questionsAsked: "", tips: "", wouldRecommend: true, comments: "",
+    overallRating: 0, studentQualityRating: 0, organizationRating: 0,
+    infrastructureRating: 0, communicationRating: 0,
+    whatWentWell: "", areasOfImprovement: "", suggestions: "",
+    wouldReturn: true, comments: "",
   });
 
   const showToast = (type: "success" | "error", msg: string) => {
@@ -82,8 +95,8 @@ export default function StudentFeedbackPage() {
     setLoading(true);
     try {
       const [pendingRes, submittedRes] = await Promise.allSettled([
-        studentApi.getPendingFeedback(),
-        studentApi.getMyFeedback(),
+        companyApi.getPendingFeedback(),
+        companyApi.getMyFeedback(),
       ]);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (pendingRes.status === "fulfilled") setPending((pendingRes.value as any)?.data || []);
@@ -96,21 +109,24 @@ export default function StudentFeedbackPage() {
 
   const openForm = (drive: PendingDrive) => {
     setFormDrive(drive);
-    setForm({ overallRating: 0, processRating: 0, communicationRating: 0, difficultyLevel: "", roundsFaced: "", interviewExperience: "", questionsAsked: "", tips: "", wouldRecommend: true, comments: "" });
+    setForm({
+      overallRating: 0, studentQualityRating: 0, organizationRating: 0,
+      infrastructureRating: 0, communicationRating: 0,
+      whatWentWell: "", areasOfImprovement: "", suggestions: "",
+      wouldReturn: true, comments: "",
+    });
     setShowForm(true);
   };
 
   const handleSubmit = async () => {
     if (!formDrive) return;
-    if (!form.overallRating || !form.processRating || !form.communicationRating) { showToast("error", "Please rate all required fields"); return; }
-    if (!form.difficultyLevel) { showToast("error", "Please select difficulty level"); return; }
-    if (!form.roundsFaced.trim()) { showToast("error", "Please describe the rounds you faced"); return; }
-    if (!form.interviewExperience.trim()) { showToast("error", "Please describe your interview experience"); return; }
+    const missingRating = RATING_FIELDS.find(f => !form[f.key]);
+    if (missingRating) { showToast("error", `Please rate: ${missingRating.label}`); return; }
 
     setSubmitting(true);
     try {
-      await studentApi.submitDriveFeedback(formDrive.driveId, form);
-      showToast("success", "Feedback submitted successfully! Thank you.");
+      await companyApi.submitDriveFeedback(formDrive.driveId, form);
+      showToast("success", "Thank you for your feedback!");
       setShowForm(false);
       fetchData();
     } catch (err) {
@@ -120,13 +136,13 @@ export default function StudentFeedbackPage() {
 
   return (
     <div className="page-enter">
-      <Header userName={user?.email || ""} userRole="Student" />
+      <Header userName={user?.email?.split("@")[0] || "HR"} userRole="Company" />
 
       <div className="px-4 sm:px-6 md:px-8 pb-24 sm:pb-10">
         {/* Page Title */}
         <div className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Drive Feedback</h1>
-          <p className="text-sm text-muted-foreground mt-1">Share your experience to help future students</p>
+          <p className="text-sm text-muted-foreground mt-1">Share your experience to help us improve our placement process</p>
         </div>
 
         {loading ? (
@@ -142,7 +158,7 @@ export default function StudentFeedbackPage() {
                   <AlertTriangle className="w-5 h-5 text-amber-600" />
                   <h2 className="text-base sm:text-lg font-semibold text-amber-800">Pending Feedback ({pending.length})</h2>
                 </div>
-                <p className="text-xs sm:text-sm text-amber-700 mb-4">Please submit feedback for the following drives before registering for new ones.</p>
+                <p className="text-xs sm:text-sm text-amber-700 mb-4">We&apos;d love to hear about your experience with these drives.</p>
                 <div className="space-y-2">
                   {pending.map((d) => (
                     <div key={d.driveId} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white/80 rounded-xl border border-amber-100">
@@ -172,6 +188,7 @@ export default function StudentFeedbackPage() {
                 <div className="text-center py-16 i-card">
                   <MessageSquare className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-40" />
                   <p className="text-muted-foreground">No feedback submitted yet</p>
+                  {pending.length === 0 && <p className="text-xs text-muted-foreground mt-1">Feedback will be available after drives are completed</p>}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -180,8 +197,8 @@ export default function StudentFeedbackPage() {
                       <button onClick={() => setExpandedId(expandedId === fb.id ? null : fb.id)}
                         className="w-full flex items-center justify-between p-4 hover:bg-accent/30 transition-colors">
                         <div className="flex items-center gap-3 text-left min-w-0">
-                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center flex-shrink-0">
-                            <MessageSquare className="w-5 h-5 text-indigo-600" />
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center flex-shrink-0">
+                            <MessageSquare className="w-5 h-5 text-violet-600" />
                           </div>
                           <div className="min-w-0">
                             <p className="font-medium text-foreground text-sm truncate">{fb.drive?.title || "Drive"}</p>
@@ -195,38 +212,27 @@ export default function StudentFeedbackPage() {
                             ))}
                           </div>
                           <span className="sm:hidden text-xs font-bold text-amber-600">{fb.overallRating}/5</span>
+                          {fb.wouldReturn
+                            ? <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 font-medium">Would Return</span>
+                            : <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-50 text-red-600 font-medium">Won&apos;t Return</span>
+                          }
                           {expandedId === fb.id ? <ChevronUp className="w-5 h-5 text-muted-foreground" /> : <ChevronDown className="w-5 h-5 text-muted-foreground" />}
                         </div>
                       </button>
                       {expandedId === fb.id && (
                         <div className="px-4 pb-4 border-t border-border pt-4 space-y-3">
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            <div className="p-2.5 bg-accent/30 rounded-xl text-center">
-                              <p className="text-[10px] text-muted-foreground">Overall</p>
-                              <p className="text-base font-bold text-foreground">{fb.overallRating}/5</p>
-                            </div>
-                            <div className="p-2.5 bg-accent/30 rounded-xl text-center">
-                              <p className="text-[10px] text-muted-foreground">Process</p>
-                              <p className="text-base font-bold text-foreground">{fb.processRating}/5</p>
-                            </div>
-                            <div className="p-2.5 bg-accent/30 rounded-xl text-center">
-                              <p className="text-[10px] text-muted-foreground">Communication</p>
-                              <p className="text-base font-bold text-foreground">{fb.communicationRating}/5</p>
-                            </div>
-                            <div className="p-2.5 bg-accent/30 rounded-xl text-center">
-                              <p className="text-[10px] text-muted-foreground">Difficulty</p>
-                              <p className={cn("text-base font-bold capitalize", fb.difficultyLevel === "easy" ? "text-emerald-600" : fb.difficultyLevel === "moderate" ? "text-amber-600" : "text-red-600")}>{fb.difficultyLevel}</p>
-                            </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                            {RATING_FIELDS.map(({ key, label }) => (
+                              <div key={key} className="p-2.5 bg-accent/30 rounded-xl text-center">
+                                <p className="text-[10px] text-muted-foreground">{label.replace("College ", "")}</p>
+                                <p className="text-base font-bold text-foreground">{fb[key]}/5</p>
+                              </div>
+                            ))}
                           </div>
-                          <div><p className="text-xs font-medium text-muted-foreground mb-0.5">Rounds Faced</p><p className="text-sm text-foreground">{fb.roundsFaced}</p></div>
-                          <div><p className="text-xs font-medium text-muted-foreground mb-0.5">Interview Experience</p><p className="text-sm text-foreground whitespace-pre-wrap">{fb.interviewExperience}</p></div>
-                          {fb.questionsAsked && <div><p className="text-xs font-medium text-muted-foreground mb-0.5">Questions Asked</p><p className="text-sm text-foreground whitespace-pre-wrap">{fb.questionsAsked}</p></div>}
-                          {fb.tips && <div><p className="text-xs font-medium text-muted-foreground mb-0.5">Tips</p><p className="text-sm text-foreground whitespace-pre-wrap">{fb.tips}</p></div>}
-                          <div className="flex items-center gap-2 pt-1">
-                            <span className="text-xs text-muted-foreground">Would recommend:</span>
-                            {fb.wouldRecommend ? <ThumbsUp className="w-4 h-4 text-emerald-500" /> : <ThumbsDown className="w-4 h-4 text-red-500" />}
-                            <span className="text-xs font-medium">{fb.wouldRecommend ? "Yes" : "No"}</span>
-                          </div>
+                          {fb.whatWentWell && <div><p className="text-xs font-medium text-muted-foreground mb-0.5">What Went Well</p><p className="text-sm text-foreground whitespace-pre-wrap">{fb.whatWentWell}</p></div>}
+                          {fb.areasOfImprovement && <div><p className="text-xs font-medium text-muted-foreground mb-0.5">Areas of Improvement</p><p className="text-sm text-foreground whitespace-pre-wrap">{fb.areasOfImprovement}</p></div>}
+                          {fb.suggestions && <div><p className="text-xs font-medium text-muted-foreground mb-0.5">Suggestions</p><p className="text-sm text-foreground whitespace-pre-wrap">{fb.suggestions}</p></div>}
+                          {fb.comments && <div><p className="text-xs font-medium text-muted-foreground mb-0.5">Additional Comments</p><p className="text-sm text-foreground whitespace-pre-wrap">{fb.comments}</p></div>}
                         </div>
                       )}
                     </div>
@@ -245,7 +251,7 @@ export default function StudentFeedbackPage() {
             <div className="flex items-center justify-between p-4 sm:p-5 border-b border-border sticky top-0 bg-white z-10 rounded-t-2xl">
               <div className="min-w-0">
                 <h2 className="text-base sm:text-lg font-bold text-foreground truncate">Feedback: {formDrive.driveTitle}</h2>
-                <p className="text-xs text-muted-foreground">Fields marked with * are required</p>
+                <p className="text-xs text-muted-foreground">Rate your overall experience with this drive</p>
               </div>
               <button onClick={() => setShowForm(false)} className="p-2 hover:bg-accent rounded-xl transition-colors flex-shrink-0 ml-2">
                 <X className="w-5 h-5" />
@@ -253,72 +259,48 @@ export default function StudentFeedbackPage() {
             </div>
             <div className="p-4 sm:p-5 space-y-5">
               {/* Ratings */}
-              <StarRating label="Overall Experience" value={form.overallRating} onChange={(v) => setForm(p => ({ ...p, overallRating: v }))} />
-              <StarRating label="Process & Organization" value={form.processRating} onChange={(v) => setForm(p => ({ ...p, processRating: v }))} />
-              <StarRating label="Communication" value={form.communicationRating} onChange={(v) => setForm(p => ({ ...p, communicationRating: v }))} />
+              {RATING_FIELDS.map(({ key, label, icon }) => (
+                <StarRating key={key} label={label} icon={icon} value={form[key]}
+                  onChange={(v) => setForm(p => ({ ...p, [key]: v }))} />
+              ))}
 
-              {/* Difficulty */}
+              {/* What went well */}
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Difficulty Level <span className="text-red-500">*</span></label>
-                <div className="flex gap-2 sm:gap-3">
-                  {(["easy", "moderate", "hard"] as const).map((d) => (
-                    <button key={d} type="button" onClick={() => setForm(p => ({ ...p, difficultyLevel: d }))}
-                      className={cn("flex-1 px-3 sm:px-5 py-2.5 rounded-xl text-sm font-medium border transition-all capitalize",
-                        form.difficultyLevel === d
-                          ? d === "easy" ? "bg-emerald-50 border-emerald-300 text-emerald-700" : d === "moderate" ? "bg-amber-50 border-amber-300 text-amber-700" : "bg-red-50 border-red-300 text-red-700"
-                          : "bg-white border-border text-muted-foreground hover:border-foreground/30"
-                      )}>
-                      {d}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Rounds */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Rounds Faced <span className="text-red-500">*</span></label>
-                <input type="text" placeholder="e.g., Aptitude, GD, Technical, HR"
-                  value={form.roundsFaced} onChange={(e) => setForm(p => ({ ...p, roundsFaced: e.target.value }))}
-                  className="w-full px-4 py-2.5 bg-white border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
-              </div>
-
-              {/* Experience */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Interview Experience <span className="text-red-500">*</span></label>
-                <textarea rows={4} placeholder="Describe your experience in detail..."
-                  value={form.interviewExperience} onChange={(e) => setForm(p => ({ ...p, interviewExperience: e.target.value }))}
+                <label className="text-sm font-medium text-foreground">What Went Well</label>
+                <textarea rows={3} placeholder="Tell us what you liked about the drive..."
+                  value={form.whatWentWell} onChange={(e) => setForm(p => ({ ...p, whatWentWell: e.target.value }))}
                   className="w-full px-4 py-2.5 bg-white border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none" />
               </div>
 
-              {/* Questions */}
+              {/* Areas of improvement */}
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Key Questions Asked</label>
-                <textarea rows={3} placeholder="List important questions you were asked..."
-                  value={form.questionsAsked} onChange={(e) => setForm(p => ({ ...p, questionsAsked: e.target.value }))}
+                <label className="text-sm font-medium text-foreground">Areas of Improvement</label>
+                <textarea rows={3} placeholder="What could we do better?"
+                  value={form.areasOfImprovement} onChange={(e) => setForm(p => ({ ...p, areasOfImprovement: e.target.value }))}
                   className="w-full px-4 py-2.5 bg-white border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none" />
               </div>
 
-              {/* Tips */}
+              {/* Suggestions */}
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Tips for Future Students</label>
-                <textarea rows={3} placeholder="Any advice for students preparing for this company?"
-                  value={form.tips} onChange={(e) => setForm(p => ({ ...p, tips: e.target.value }))}
+                <label className="text-sm font-medium text-foreground">Suggestions</label>
+                <textarea rows={3} placeholder="Any specific suggestions for future drives?"
+                  value={form.suggestions} onChange={(e) => setForm(p => ({ ...p, suggestions: e.target.value }))}
                   className="w-full px-4 py-2.5 bg-white border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none" />
               </div>
 
-              {/* Recommend */}
+              {/* Would Return */}
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">Would you recommend this company? <span className="text-red-500">*</span></label>
+                <label className="text-sm font-medium text-foreground">Would you like to return for future drives? <span className="text-red-500">*</span></label>
                 <div className="flex gap-3">
-                  <button type="button" onClick={() => setForm(p => ({ ...p, wouldRecommend: true }))}
+                  <button type="button" onClick={() => setForm(p => ({ ...p, wouldReturn: true }))}
                     className={cn("flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all",
-                      form.wouldRecommend ? "bg-emerald-50 border-emerald-300 text-emerald-700" : "bg-white border-border text-muted-foreground")}>
-                    <ThumbsUp className="w-4 h-4" /> Yes
+                      form.wouldReturn ? "bg-emerald-50 border-emerald-300 text-emerald-700" : "bg-white border-border text-muted-foreground")}>
+                    <ThumbsUp className="w-4 h-4" /> Yes, definitely!
                   </button>
-                  <button type="button" onClick={() => setForm(p => ({ ...p, wouldRecommend: false }))}
+                  <button type="button" onClick={() => setForm(p => ({ ...p, wouldReturn: false }))}
                     className={cn("flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border transition-all",
-                      !form.wouldRecommend ? "bg-red-50 border-red-300 text-red-700" : "bg-white border-border text-muted-foreground")}>
-                    <ThumbsDown className="w-4 h-4" /> No
+                      !form.wouldReturn ? "bg-red-50 border-red-300 text-red-700" : "bg-white border-border text-muted-foreground")}>
+                    <ThumbsDown className="w-4 h-4" /> Maybe not
                   </button>
                 </div>
               </div>

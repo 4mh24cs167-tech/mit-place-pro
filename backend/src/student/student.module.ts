@@ -12,7 +12,7 @@ import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
 import { MeetingAssignment } from '../entities/round-meeting.entity';
-import { StudentDriveFeedback, CompanyStudentFeedback } from '../entities/feedback.entity';
+import { StudentDriveFeedback, CompanyDriveFeedback } from '../entities/feedback.entity';
 import { AdminModule } from '../admin/admin.module';
 
 @Module({
@@ -30,7 +30,7 @@ import { AdminModule } from '../admin/admin.module';
       DriveSlot,
       MeetingAssignment,
       StudentDriveFeedback,
-      CompanyStudentFeedback,
+      CompanyDriveFeedback,
     ]),
     UploadModule,
     AdminModule,

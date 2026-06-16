@@ -9,7 +9,6 @@ import {
   CalendarDays, Clock, MapPin, ChevronDown, ChevronUp, ChevronRight,
   GraduationCap, Building2, CheckSquare, Square, AlertTriangle, Send,
   X, Phone, Mail, ExternalLink, Globe, Award, Code, Link2,
-  Star, MessageSquare,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
 
@@ -118,10 +117,7 @@ export default function CompanyCandidatesPage() {
   const [profileModalStudent, setProfileModalStudent] = useState<StudentProfileData | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
 
-  // ─── Feedback Modal State ─────────────────────
-  const [feedbackTarget, setFeedbackTarget] = useState<{ studentId: string; studentName: string; driveId: string } | null>(null);
-  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
-  const [fbForm, setFbForm] = useState({ technicalRating: 0, communicationRating: 0, attitudeRating: 0, overallRating: 0, strengths: "", areasOfImprovement: "", remarks: "", recommendForHire: "maybe" });
+
 
   const openStudentProfile = async (studentId: string) => {
     setProfileLoading(true);
@@ -283,7 +279,25 @@ export default function CompanyCandidatesPage() {
         (c.studentName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         (c.usn || "").toLowerCase().includes(searchQuery.toLowerCase());
       const matchStatus = statusFilter === "all" || c.finalResult === statusFilter;
-      return matchSearch && matchStatus;
+
+      // Round filter: only show candidates who are in the active round or beyond
+      // For round 1: show all pending candidates (currentRound 0 or 1)
+      // For round N>1: only show candidates who have reached that round (currentRound >= N) and are still pending
+      //   OR candidates already selected/rejected AT this round
+      let matchRound = true;
+      if (activeRound > 1) {
+        if (c.finalResult === "pending") {
+          matchRound = c.currentRound >= activeRound;
+        } else if (c.finalResult === "rejected") {
+          // Show rejected only if they were rejected at this round or later
+          matchRound = c.currentRound >= activeRound;
+        } else {
+          // selected students always visible
+          matchRound = true;
+        }
+      }
+
+      return matchSearch && matchStatus && matchRound;
     })
     .sort((a, b) => {
       if (sortBy === "ats") return (b.atsScore || 0) - (a.atsScore || 0);
@@ -639,7 +653,7 @@ export default function CompanyCandidatesPage() {
                                               <button onClick={(e) => { e.stopPropagation(); showToast("error", "No resume uploaded yet"); }} className="p-1 rounded hover:bg-muted" title="No Resume"><FileText className="w-3.5 h-3.5 text-muted-foreground/40" /></button>
                                             )}
                                           </div>
-                                          <button onClick={(e) => { e.stopPropagation(); setFeedbackTarget({ studentId: c.studentId, studentName: c.studentName || "Student", driveId: selectedJobId }); setFbForm({ technicalRating: 0, communicationRating: 0, attitudeRating: 0, overallRating: 0, strengths: "", areasOfImprovement: "", remarks: "", recommendForHire: "maybe" }); }} className="p-1 rounded hover:bg-amber-50 transition-colors" title="Give Feedback"><MessageSquare className="w-3.5 h-3.5 text-amber-500 hover:text-amber-700" /></button>
+
                                         </div>
                                       </div>
                                     </div>
@@ -916,51 +930,7 @@ export default function CompanyCandidatesPage() {
         </div>
       )}
 
-      {/* ── Company Feedback Modal ── */}
-      {feedbackTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl border border-border shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-5 border-b border-border sticky top-0 bg-white z-10">
-              <div>
-                <h2 className="text-lg font-bold text-foreground">Feedback: {feedbackTarget.studentName}</h2>
-                <p className="text-xs text-muted-foreground">Rate this student&apos;s performance</p>
-              </div>
-              <button onClick={() => setFeedbackTarget(null)} className="p-2 hover:bg-accent rounded-xl"><X className="w-5 h-5" /></button>
-            </div>
-            <div className="p-5 space-y-4">
-              {(["technicalRating", "communicationRating", "attitudeRating", "overallRating"] as const).map((key) => (
-                <div key={key} className="space-y-1">
-                  <label className="text-sm font-medium text-foreground capitalize">{key.replace("Rating", " Rating")} <span className="text-red-500">*</span></label>
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <button key={s} type="button" onClick={() => setFbForm(p => ({ ...p, [key]: s }))} className="transition-transform hover:scale-110">
-                        <Star className={cn("w-6 h-6 transition-colors", fbForm[key] >= s ? "text-amber-400 fill-amber-400" : "text-gray-300")} />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              <div>
-                <label className="text-sm font-medium text-foreground">Recommend for Hire</label>
-                <div className="flex gap-2 mt-1">
-                  {["yes", "maybe", "no"].map((v) => (
-                    <button key={v} onClick={() => setFbForm(p => ({ ...p, recommendForHire: v }))} className={cn("px-4 py-2 rounded-xl text-sm font-medium border capitalize transition-all", fbForm.recommendForHire === v ? v === "yes" ? "bg-emerald-50 border-emerald-300 text-emerald-700" : v === "no" ? "bg-red-50 border-red-300 text-red-700" : "bg-amber-50 border-amber-300 text-amber-700" : "bg-white border-border text-muted-foreground")}>{v}</button>
-                  ))}
-                </div>
-              </div>
-              <div><label className="text-sm font-medium">Strengths</label><textarea rows={2} value={fbForm.strengths} onChange={(e) => setFbForm(p => ({ ...p, strengths: e.target.value }))} placeholder="Key strengths observed..." className="w-full mt-1 px-3 py-2 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none" /></div>
-              <div><label className="text-sm font-medium">Areas of Improvement</label><textarea rows={2} value={fbForm.areasOfImprovement} onChange={(e) => setFbForm(p => ({ ...p, areasOfImprovement: e.target.value }))} placeholder="Suggestions for improvement..." className="w-full mt-1 px-3 py-2 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none" /></div>
-              <div><label className="text-sm font-medium">Remarks</label><textarea rows={2} value={fbForm.remarks} onChange={(e) => setFbForm(p => ({ ...p, remarks: e.target.value }))} placeholder="Additional remarks..." className="w-full mt-1 px-3 py-2 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none" /></div>
-            </div>
-            <div className="flex justify-end gap-3 p-5 border-t border-border sticky bottom-0 bg-white">
-              <button onClick={() => setFeedbackTarget(null)} className="px-4 py-2 text-sm border border-border rounded-xl">Cancel</button>
-              <button disabled={feedbackSubmitting || !fbForm.technicalRating || !fbForm.communicationRating || !fbForm.attitudeRating || !fbForm.overallRating} onClick={async () => { setFeedbackSubmitting(true); try { await companyApi.submitStudentFeedback(feedbackTarget.driveId, feedbackTarget.studentId, fbForm); showToast("success", "Feedback submitted!"); setFeedbackTarget(null); } catch (err) { showToast("error", err instanceof Error ? err.message : "Failed"); } finally { setFeedbackSubmitting(false); } }} className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-xl text-sm font-medium shadow-lg disabled:opacity-50">
-                {feedbackSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} Submit
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Toast */}
       {toast && (

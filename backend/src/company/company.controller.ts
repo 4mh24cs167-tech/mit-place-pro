@@ -203,25 +203,28 @@ export class CompanyController {
   }
 
   // ─── Feedback ───────────────────────────────────
-  @Post('drives/:driveId/students/:studentId/feedback')
-  async submitStudentFeedback(
+  @Post('drives/:driveId/feedback')
+  async submitDriveFeedback(
     @CurrentUser('id') userId: string,
     @Param('driveId') driveId: string,
-    @Param('studentId') studentId: string,
     @Body() body: Record<string, unknown>,
   ) {
     const company = await this.companyService.getCompanyByUserId(userId);
-    const data = await this.feedbackService.submitCompanyFeedback(company.id, driveId, studentId, body as any);
+    const data = await this.feedbackService.submitCompanyFeedback(company.id, driveId, body as any);
     return { success: true, ...data };
   }
 
-  @Get('drives/:driveId/feedback')
-  async getMyDriveFeedback(
-    @CurrentUser('id') userId: string,
-    @Param('driveId') driveId: string,
-  ) {
+  @Get('feedback')
+  async getMyFeedback(@CurrentUser('id') userId: string) {
     const company = await this.companyService.getCompanyByUserId(userId);
-    const data = await this.feedbackService.getCompanyFeedbackByCompany(company.id, driveId);
+    const data = await this.feedbackService.getCompanyFeedbackByCompany(company.id);
+    return { success: true, data };
+  }
+
+  @Get('feedback/pending')
+  async getPendingFeedback(@CurrentUser('id') userId: string) {
+    const company = await this.companyService.getCompanyByUserId(userId);
+    const data = await this.feedbackService.getCompanyPendingFeedback(company.id);
     return { success: true, data };
   }
 }

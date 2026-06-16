@@ -336,9 +336,10 @@ export const companyApi = {
   deleteRoundMeeting: (meetingId: string) =>
     apiFetch(`/api/v1/company/meetings/${meetingId}`, { method: 'DELETE' }),
   // Feedback
-  submitStudentFeedback: (driveId: string, studentId: string, data: Record<string, unknown>) =>
-    apiFetch(`/api/v1/company/drives/${driveId}/students/${studentId}/feedback`, { method: 'POST', body: data }),
-  getDriveFeedback: (driveId: string) => apiFetch(`/api/v1/company/drives/${driveId}/feedback`),
+  submitDriveFeedback: (driveId: string, data: Record<string, unknown>) =>
+    apiFetch(`/api/v1/company/drives/${driveId}/feedback`, { method: 'POST', body: data }),
+  getMyFeedback: () => apiFetch('/api/v1/company/feedback'),
+  getPendingFeedback: () => apiFetch('/api/v1/company/feedback/pending'),
 };
 
 export { ApiError, getToken, removeToken, getStoredUser };

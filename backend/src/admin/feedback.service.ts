@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException, ConflictException } from '@nestj
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, Not } from 'typeorm';
 import { StudentDriveFeedback } from '../entities/feedback.entity';
-import { CompanyStudentFeedback } from '../entities/feedback.entity';
+import { CompanyDriveFeedback } from '../entities/feedback.entity';
 import { Drive } from '../entities/drive.entity';
 import { DriveRegistration } from '../entities/drive.entity';
 import { Student } from '../entities/student.entity';
@@ -13,7 +13,7 @@ export class FeedbackService {
 
   constructor(
     @InjectRepository(StudentDriveFeedback) private readonly studentFeedbackRepo: Repository<StudentDriveFeedback>,
-    @InjectRepository(CompanyStudentFeedback) private readonly companyFeedbackRepo: Repository<CompanyStudentFeedback>,
+    @InjectRepository(CompanyDriveFeedback) private readonly companyFeedbackRepo: Repository<CompanyDriveFeedback>,
     @InjectRepository(Drive) private readonly driveRepo: Repository<Drive>,
     @InjectRepository(DriveRegistration) private readonly regRepo: Repository<DriveRegistration>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
@@ -84,30 +84,31 @@ export class FeedbackService {
       .map(d => ({ driveId: d.id, driveTitle: d.title, driveDate: d.driveDate, status: d.status }));
   }
 
-  // ─── Company submits feedback on student ───────
-  async submitCompanyFeedback(companyId: string, driveId: string, studentId: string, data: Partial<CompanyStudentFeedback>) {
+  // ─── Company submits overall drive feedback ─────
+  async submitCompanyFeedback(companyId: string, driveId: string, data: Partial<CompanyDriveFeedback>) {
     const drive = await this.driveRepo.findOne({ where: { id: driveId } });
     if (!drive) throw new NotFoundException('Drive not found');
 
-    const existing = await this.companyFeedbackRepo.findOne({ where: { driveId, studentId, companyId } });
-    if (existing) throw new ConflictException('Feedback already submitted for this student');
+    const existing = await this.companyFeedbackRepo.findOne({ where: { driveId, companyId } });
+    if (existing) throw new ConflictException('Feedback already submitted for this drive');
 
     const feedback = this.companyFeedbackRepo.create({
       driveId,
-      studentId,
       companyId,
-      technicalRating: data.technicalRating,
-      communicationRating: data.communicationRating,
-      attitudeRating: data.attitudeRating,
       overallRating: data.overallRating,
-      strengths: data.strengths || null,
+      studentQualityRating: data.studentQualityRating,
+      organizationRating: data.organizationRating,
+      infrastructureRating: data.infrastructureRating,
+      communicationRating: data.communicationRating,
+      whatWentWell: data.whatWentWell || null,
       areasOfImprovement: data.areasOfImprovement || null,
-      remarks: data.remarks || null,
-      recommendForHire: data.recommendForHire || 'maybe',
+      suggestions: data.suggestions || null,
+      wouldReturn: data.wouldReturn ?? true,
+      comments: data.comments || null,
     });
 
     await this.companyFeedbackRepo.save(feedback);
-    this.logger.log(`Company ${companyId} submitted feedback for student ${studentId} in drive ${driveId}`);
+    this.logger.log(`Company ${companyId} submitted feedback for drive ${driveId}`);
     return { message: 'Feedback submitted successfully', id: feedback.id };
   }
 
@@ -118,7 +119,6 @@ export class FeedbackService {
       order: { createdAt: 'DESC' },
     });
 
-    // Enrich with student names
     const studentIds = feedback.map(f => f.studentId);
     const students = studentIds.length > 0
       ? await this.studentRepo.find({ where: { id: In(studentIds) }, select: ['id', 'fullName', 'usn', 'department'] })
@@ -131,23 +131,13 @@ export class FeedbackService {
     }));
   }
 
-  // ─── Admin: company feedback for drive ─────────
+  // ─── Admin: company drive feedback ─────────────
   async getCompanyFeedbackForDrive(driveId: string) {
-    const feedback = await this.companyFeedbackRepo.find({
+    return this.companyFeedbackRepo.find({
       where: { driveId },
+      relations: ['company'],
       order: { createdAt: 'DESC' },
     });
-
-    const studentIds = feedback.map(f => f.studentId);
-    const students = studentIds.length > 0
-      ? await this.studentRepo.find({ where: { id: In(studentIds) }, select: ['id', 'fullName', 'usn', 'department'] })
-      : [];
-    const studentMap = new Map(students.map(s => [s.id, s]));
-
-    return feedback.map(f => ({
-      ...f,
-      student: studentMap.get(f.studentId) || null,
-    }));
   }
 
   // ─── Admin: feedback summary/stats ─────────────
@@ -169,14 +159,14 @@ export class FeedbackService {
     const recommendCount = studentFeedback.filter(f => f.wouldRecommend).length;
     const recommendPercent = totalStudentFeedbacks > 0 ? Math.round((recommendCount / totalStudentFeedbacks) * 100) : 0;
 
-    // Company averages
-    const avgTechnical = totalCompanyFeedbacks > 0 ? companyFeedback.reduce((s, f) => s + f.technicalRating, 0) / totalCompanyFeedbacks : 0;
-    const avgCompComm = totalCompanyFeedbacks > 0 ? companyFeedback.reduce((s, f) => s + f.communicationRating, 0) / totalCompanyFeedbacks : 0;
-    const avgAttitude = totalCompanyFeedbacks > 0 ? companyFeedback.reduce((s, f) => s + f.attitudeRating, 0) / totalCompanyFeedbacks : 0;
+    // Company averages (overall drive feedback)
     const avgCompOverall = totalCompanyFeedbacks > 0 ? companyFeedback.reduce((s, f) => s + f.overallRating, 0) / totalCompanyFeedbacks : 0;
+    const avgStudentQuality = totalCompanyFeedbacks > 0 ? companyFeedback.reduce((s, f) => s + f.studentQualityRating, 0) / totalCompanyFeedbacks : 0;
+    const avgOrganization = totalCompanyFeedbacks > 0 ? companyFeedback.reduce((s, f) => s + f.organizationRating, 0) / totalCompanyFeedbacks : 0;
+    const avgInfra = totalCompanyFeedbacks > 0 ? companyFeedback.reduce((s, f) => s + f.infrastructureRating, 0) / totalCompanyFeedbacks : 0;
 
-    const hireBreakdown = { yes: 0, no: 0, maybe: 0 };
-    companyFeedback.forEach(f => { if (f.recommendForHire in hireBreakdown) hireBreakdown[f.recommendForHire as keyof typeof hireBreakdown]++; });
+    const returnCount = companyFeedback.filter(f => f.wouldReturn).length;
+    const wouldReturnPercent = totalCompanyFeedbacks > 0 ? Math.round((returnCount / totalCompanyFeedbacks) * 100) : 0;
 
     return {
       studentFeedback: {
@@ -189,11 +179,11 @@ export class FeedbackService {
       },
       companyFeedback: {
         total: totalCompanyFeedbacks,
-        avgTechnicalRating: +avgTechnical.toFixed(1),
-        avgCommunicationRating: +avgCompComm.toFixed(1),
-        avgAttitudeRating: +avgAttitude.toFixed(1),
         avgOverallRating: +avgCompOverall.toFixed(1),
-        hireBreakdown,
+        avgStudentQualityRating: +avgStudentQuality.toFixed(1),
+        avgOrganizationRating: +avgOrganization.toFixed(1),
+        avgInfrastructureRating: +avgInfra.toFixed(1),
+        wouldReturnPercent,
       },
     };
   }
@@ -217,27 +207,45 @@ export class FeedbackService {
     }));
   }
 
-  // ─── Company: own feedback for a drive ─────────
-  async getCompanyFeedbackByCompany(companyId: string, driveId?: string) {
-    const where: Record<string, unknown> = { companyId };
-    if (driveId) where.driveId = driveId;
-
-    const feedback = await this.companyFeedbackRepo.find({
-      where,
+  // ─── Company: own feedback for drives ──────────
+  async getCompanyFeedbackByCompany(companyId: string) {
+    return this.companyFeedbackRepo.find({
+      where: { companyId },
+      relations: ['drive'],
       order: { createdAt: 'DESC' },
     });
-
-    const studentIds = feedback.map(f => f.studentId);
-    const students = studentIds.length > 0
-      ? await this.studentRepo.find({ where: { id: In(studentIds) }, select: ['id', 'fullName', 'usn', 'department'] })
-      : [];
-    const studentMap = new Map(students.map(s => [s.id, s]));
-
-    return feedback.map(f => ({
-      ...f,
-      student: studentMap.get(f.studentId) || null,
-    }));
   }
+
+  // ─── Company: pending drives needing feedback ──
+  async getCompanyPendingFeedback(companyId: string) {
+    // Drives are linked to companies through Jobs (Drive.jobId -> Job.companyId)
+    const drives = await this.driveRepo
+      .createQueryBuilder('d')
+      .innerJoin('jobs', 'j', 'j.id = d.job_id')
+      .where('j.company_id = :companyId', { companyId })
+      .andWhere('d.status IN (:...statuses)', { statuses: ['completed', 'scheduled'] })
+      .select(['d.id', 'd.title', 'd.drive_date', 'd.status'])
+      .getRawMany();
+
+    if (drives.length === 0) return [];
+
+    const driveIds = drives.map((d: Record<string, string>) => d.d_id);
+    const submitted = await this.companyFeedbackRepo.find({
+      where: { companyId, driveId: In(driveIds) },
+      select: ['driveId'],
+    });
+    const submittedIds = new Set(submitted.map(f => f.driveId));
+
+    return drives
+      .filter((d: Record<string, string>) => !submittedIds.has(d.d_id))
+      .map((d: Record<string, string>) => ({
+        driveId: d.d_id,
+        driveTitle: d.d_title,
+        driveDate: d.d_drive_date,
+        status: d.d_status,
+      }));
+  }
+
   // ─── userId wrappers for student controller ─────
   private async resolveStudent(userId: string) {
     const student = await this.studentRepo.findOne({ where: { userId } });
