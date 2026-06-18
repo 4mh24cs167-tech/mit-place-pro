@@ -56,6 +56,7 @@ const navConfigs = {
   ],
   student: [
     { label: "Dashboard", href: "/student/dashboard", icon: Home },
+    { label: "Drives", href: "/student/drives", icon: Megaphone },
     { label: "Applications", href: "/student/applications", icon: Briefcase },
     { label: "Profile", href: "/student/profile", icon: UserCircle },
     { label: "CVs", href: "/student/cv", icon: FileText },
