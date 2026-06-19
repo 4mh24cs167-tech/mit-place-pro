@@ -274,6 +274,23 @@ export const adminApi = {
   getDriveStudentFeedback: (driveId: string) => apiFetch(`/api/v1/admin/drives/${driveId}/feedback/students`),
   getDriveCompanyFeedback: (driveId: string) => apiFetch(`/api/v1/admin/drives/${driveId}/feedback/company`),
   getDriveFeedbackSummary: (driveId: string) => apiFetch(`/api/v1/admin/drives/${driveId}/feedback/summary`),
+  // Assessments
+  listAssessments: (params?: { type?: string; status?: string; department?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.type) q.set('type', params.type);
+    if (params?.status) q.set('status', params.status);
+    if (params?.department) q.set('department', params.department);
+    return apiFetch(`/api/v1/admin/assessments${q.toString() ? '?' + q.toString() : ''}`);
+  },
+  getAssessment: (id: string) => apiFetch(`/api/v1/admin/assessments/${id}`),
+  createAssessment: (data: Record<string, unknown>) => apiFetch('/api/v1/admin/assessments', { method: 'POST', body: data }),
+  updateAssessment: (id: string, data: Record<string, unknown>) => apiFetch(`/api/v1/admin/assessments/${id}`, { method: 'PATCH', body: data }),
+  deleteAssessment: (id: string) => apiFetch(`/api/v1/admin/assessments/${id}`, { method: 'DELETE' }),
+  addAssessmentLink: (id: string, data: Record<string, unknown>) => apiFetch(`/api/v1/admin/assessments/${id}/links`, { method: 'POST', body: data }),
+  removeAssessmentLink: (linkId: string) => apiFetch(`/api/v1/admin/assessments/links/${linkId}`, { method: 'DELETE' }),
+  bulkGradeAssessment: (id: string, grades: { usn: string; score: number; remarks?: string }[]) =>
+    apiFetch(`/api/v1/admin/assessments/${id}/bulk-grade`, { method: 'POST', body: { grades } }),
+  getAssessmentStats: (id: string) => apiFetch(`/api/v1/admin/assessments/${id}/stats`),
 };
 
 // ─── Student ─────────────────────────────────────
@@ -300,6 +317,8 @@ export const studentApi = {
   submitDriveFeedback: (driveId: string, data: Record<string, unknown>) => apiFetch(`/api/v1/student/drives/${driveId}/feedback`, { method: 'POST', body: data }),
   getMyFeedback: () => apiFetch('/api/v1/student/feedback'),
   getPendingFeedback: () => apiFetch('/api/v1/student/feedback/pending'),
+  // Assessments
+  getMyAssessments: () => apiFetch('/api/v1/student/assessments'),
 };
 
 // ─── Company ─────────────────────────────────────

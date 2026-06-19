@@ -5,6 +5,7 @@ import { AdminService } from './admin.service';
 import { BulkUploadService } from './bulk-upload.service';
 import { DriveService } from './drive.service';
 import { FeedbackService } from './feedback.service';
+import { AssessmentService } from './assessment.service';
 import { Auth, CurrentUser } from '../auth/auth.decorators';
 import { UserRole } from '../entities/user.entity';
 import { CreateCompanyDto, CreateStudentDto, BulkApproveDto, UpdateStudentDto, PaginationDto } from './dto/admin.dto';
@@ -17,6 +18,7 @@ export class AdminController {
     private readonly bulkUploadService: BulkUploadService,
     private readonly driveService: DriveService,
     private readonly feedbackService: FeedbackService,
+    private readonly assessmentService: AssessmentService,
   ) {}
 
   // ─── Dashboard ──────────────────────────────────
@@ -379,6 +381,77 @@ export class AdminController {
   @Get('drives/:driveId/feedback/summary')
   async getDriveFeedbackSummary(@Param('driveId') driveId: string) {
     const data = await this.feedbackService.getDriveFeedbackSummary(driveId);
+    return { success: true, data };
+  }
+
+  // ─── Assessments ─────────────────────────────────
+  @Post('assessments')
+  async createAssessment(
+    @CurrentUser('id') userId: string,
+    @Body() body: { title: string; description?: string; type?: string; departments?: string[]; batchIds?: string[]; status?: string; deadline?: string; maxScore?: number; links?: { title: string; url: string; platform?: string; instructions?: string }[] },
+  ) {
+    const data = await this.assessmentService.createAssessment(userId, body);
+    return { success: true, data };
+  }
+
+  @Get('assessments')
+  async listAssessments(
+    @Query('type') type?: string,
+    @Query('status') status?: string,
+    @Query('department') department?: string,
+  ) {
+    const data = await this.assessmentService.listAssessments({ type, status, department });
+    return { success: true, data };
+  }
+
+  @Get('assessments/:id')
+  async getAssessment(@Param('id') id: string) {
+    const data = await this.assessmentService.getAssessment(id);
+    return { success: true, data };
+  }
+
+  @Patch('assessments/:id')
+  async updateAssessment(
+    @Param('id') id: string,
+    @Body() body: { title?: string; description?: string; type?: string; departments?: string[]; batchIds?: string[]; status?: string; deadline?: string; maxScore?: number },
+  ) {
+    const data = await this.assessmentService.updateAssessment(id, body);
+    return { success: true, data };
+  }
+
+  @Delete('assessments/:id')
+  async deleteAssessment(@Param('id') id: string) {
+    const data = await this.assessmentService.deleteAssessment(id);
+    return { success: true, data };
+  }
+
+  @Post('assessments/:id/links')
+  async addAssessmentLink(
+    @Param('id') id: string,
+    @Body() body: { title: string; url: string; platform?: string; instructions?: string },
+  ) {
+    const data = await this.assessmentService.addLink(id, body);
+    return { success: true, data };
+  }
+
+  @Delete('assessments/links/:linkId')
+  async removeAssessmentLink(@Param('linkId') linkId: string) {
+    const data = await this.assessmentService.removeLink(linkId);
+    return { success: true, data };
+  }
+
+  @Post('assessments/:id/bulk-grade')
+  async bulkGradeAssessment(
+    @Param('id') id: string,
+    @Body() body: { grades: { usn: string; score: number; remarks?: string }[] },
+  ) {
+    const data = await this.assessmentService.bulkGrade(id, body.grades);
+    return { success: true, data };
+  }
+
+  @Get('assessments/:id/stats')
+  async getAssessmentStats(@Param('id') id: string) {
+    const data = await this.assessmentService.getAssessmentStats(id);
     return { success: true, data };
   }
 }

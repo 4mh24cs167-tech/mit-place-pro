@@ -6,6 +6,7 @@ import { Auth, CurrentUser } from '../auth/auth.decorators';
 import { UserRole } from '../entities/user.entity';
 import { UpdateProfileDto, ApplyJobDto } from './dto/student.dto';
 import { FeedbackService } from '../admin/feedback.service';
+import { AssessmentService } from '../admin/assessment.service';
 
 @Controller('api/v1/student')
 @Auth(UserRole.STUDENT)
@@ -14,6 +15,7 @@ export class StudentController {
     private readonly studentService: StudentService,
     private readonly uploadService: UploadService,
     private readonly feedbackService: FeedbackService,
+    private readonly assessmentService: AssessmentService,
   ) {}
 
   // ─── Profile ────────────────────────────────────
@@ -159,6 +161,13 @@ export class StudentController {
   @Get('feedback/pending')
   async getPendingFeedback(@CurrentUser('id') userId: string) {
     const data = await this.feedbackService.getPendingFeedbackByUserId(userId);
+    return { success: true, data };
+  }
+
+  // ─── Assessments ───────────────────────────────
+  @Get('assessments')
+  async getMyAssessments(@CurrentUser('id') userId: string) {
+    const data = await this.assessmentService.getStudentAssessments(userId);
     return { success: true, data };
   }
 }

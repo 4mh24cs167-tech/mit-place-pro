@@ -26,6 +26,7 @@ import {
   Megaphone,
   Server,
   MessageSquare,
+  ClipboardCheck,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -43,6 +44,7 @@ const navConfigs = {
     { label: "Drives", href: "/admin/drives", icon: Briefcase },
     { label: "Posters", href: "/admin/posters", icon: ImageIcon },
     { label: "Feedback", href: "/admin/feedback", icon: MessageSquare },
+    { label: "Tests", href: "/admin/assessments", icon: ClipboardCheck },
     { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
     { label: "Diagnostics", href: "/admin/diagnostics", icon: Server },
   ],
@@ -62,6 +64,7 @@ const navConfigs = {
     { label: "CVs", href: "/student/cv", icon: FileText },
     { label: "Jobs", href: "/student/jobs", icon: Eye },
     { label: "Feedback", href: "/student/feedback", icon: MessageSquare },
+    { label: "Tests", href: "/student/assessments", icon: ClipboardCheck },
     { label: "Allocations", href: "/student/allocations", icon: CalendarClock },
   ],
   principal: [
