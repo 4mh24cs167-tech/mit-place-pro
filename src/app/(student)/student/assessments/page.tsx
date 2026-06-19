@@ -6,18 +6,24 @@ import { studentApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import {
   ClipboardCheck, Loader2, AlertCircle, ExternalLink,
-  Clock, Trophy, CheckCircle2, XCircle, Lock,
+  Clock, Trophy, CheckCircle2, XCircle, Lock, Calendar, MapPin,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+interface ScheduleInfo {
+  batchLabel: string; scheduleDate: string;
+  startTime: string | null; endTime: string | null; venue: string | null;
+}
+
 interface AssessmentItem {
   id: string; assessmentId: string; title: string; description: string | null;
-  type: string; status: string; score: number | null; maxScore: number | null;
+  types: string[]; status: string; score: number | null; maxScore: number | null;
   remarks: string | null; deadline: string | null; isExpired: boolean;
   links: { id: string; title: string; url: string; platform: string; instructions: string | null }[];
   gradedAt: string | null; attemptedAt: string | null;
+  schedule: ScheduleInfo | null;
 }
 
 const TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -82,14 +88,18 @@ export default function StudentAssessmentsPage() {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {active.map(a => {
-                    const tc = TYPE_COLORS[a.type] || TYPE_COLORS.custom;
                     const dl = a.deadline ? getDaysLeft(a.deadline) : null;
                     return (
                       <div key={a.id} className="i-card p-4 border-l-4 border-l-amber-400 hover:shadow-md transition-all">
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div>
                             <h3 className="font-semibold text-foreground">{a.title}</h3>
-                            <span className={cn("inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold border capitalize mt-1", tc.bg, tc.text, tc.border)}>{a.type}</span>
+                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                              {(a.types || []).map(t => {
+                                const tc = TYPE_COLORS[t] || TYPE_COLORS.custom;
+                                return <span key={t} className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold border capitalize", tc.bg, tc.text, tc.border)}>{t}</span>;
+                              })}
+                            </div>
                           </div>
                           {dl && (
                             <span className={cn("px-2 py-1 rounded-lg text-[10px] font-semibold flex-shrink-0 flex items-center gap-1",
@@ -98,6 +108,23 @@ export default function StudentAssessmentsPage() {
                             </span>
                           )}
                         </div>
+
+                        {/* Schedule / Batch Info */}
+                        {a.schedule && (
+                          <div className="mb-3 p-2.5 bg-blue-50/60 rounded-xl border border-blue-100">
+                            <p className="text-xs font-semibold text-blue-700 mb-1">{a.schedule.batchLabel}</p>
+                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-blue-600">
+                              <span className="flex items-center gap-0.5"><Calendar className="w-3 h-3" /> {new Date(a.schedule.scheduleDate).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</span>
+                              {a.schedule.startTime && (
+                                <span className="flex items-center gap-0.5"><Clock className="w-3 h-3" /> {a.schedule.startTime}{a.schedule.endTime ? ` – ${a.schedule.endTime}` : ""}</span>
+                              )}
+                              {a.schedule.venue && (
+                                <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {a.schedule.venue}</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         {a.description && <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{a.description}</p>}
                         {a.links.length > 0 && (
                           <div className="space-y-1.5">
@@ -128,19 +155,26 @@ export default function StudentAssessmentsPage() {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {graded.map(a => {
-                    const tc = TYPE_COLORS[a.type] || TYPE_COLORS.custom;
                     const scorePercent = a.score != null && a.maxScore ? Math.round((+a.score / +a.maxScore) * 100) : null;
                     return (
                       <div key={a.id} className="i-card p-4 border-l-4 border-l-emerald-500">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <h3 className="font-semibold text-foreground truncate">{a.title}</h3>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold border capitalize", tc.bg, tc.text, tc.border)}>{a.type}</span>
+                            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                              {(a.types || []).map(t => {
+                                const tc = TYPE_COLORS[t] || TYPE_COLORS.custom;
+                                return <span key={t} className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold border capitalize", tc.bg, tc.text, tc.border)}>{t}</span>;
+                              })}
                               <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 flex items-center gap-0.5">
                                 <CheckCircle2 className="w-3 h-3" /> Completed
                               </span>
                             </div>
+                            {a.schedule && (
+                              <p className="text-[10px] text-muted-foreground mt-1.5 flex items-center gap-1">
+                                <Calendar className="w-3 h-3" /> {a.schedule.batchLabel} — {new Date(a.schedule.scheduleDate).toLocaleDateString()}
+                              </p>
+                            )}
                             {a.remarks && <p className="text-xs text-muted-foreground mt-2 italic">&ldquo;{a.remarks}&rdquo;</p>}
                           </div>
                           {a.score != null && (
@@ -148,7 +182,8 @@ export default function StudentAssessmentsPage() {
                               <div className="relative w-14 h-14">
                                 <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
                                   <circle cx="28" cy="28" r="24" fill="none" stroke="#e5e7eb" strokeWidth="4" />
-                                  <circle cx="28" cy="28" r="24" fill="none" stroke={scorePercent && scorePercent >= 60 ? "#10b981" : scorePercent && scorePercent >= 40 ? "#f59e0b" : "#ef4444"}
+                                  <circle cx="28" cy="28" r="24" fill="none"
+                                    stroke={scorePercent && scorePercent >= 60 ? "#10b981" : scorePercent && scorePercent >= 40 ? "#f59e0b" : "#ef4444"}
                                     strokeWidth="4" strokeDasharray={`${(scorePercent || 0) * 1.508} 151`} strokeLinecap="round" />
                                 </svg>
                                 <div className="absolute inset-0 flex items-center justify-center">
@@ -173,24 +208,20 @@ export default function StudentAssessmentsPage() {
                   <XCircle className="w-4 h-4 text-red-400" /> Expired / Absent ({expired.length})
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {expired.map(a => {
-                    const tc = TYPE_COLORS[a.type] || TYPE_COLORS.custom;
-                    return (
-                      <div key={a.id} className="i-card p-4 border-l-4 border-l-red-300 opacity-70">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <h3 className="font-semibold text-foreground">{a.title}</h3>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold border capitalize", tc.bg, tc.text, tc.border)}>{a.type}</span>
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-600 flex items-center gap-0.5">
-                                {a.status === "absent" ? <><XCircle className="w-3 h-3" /> Absent</> : <><Lock className="w-3 h-3" /> Expired</>}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
+                  {expired.map(a => (
+                    <div key={a.id} className="i-card p-4 border-l-4 border-l-red-300 opacity-70">
+                      <h3 className="font-semibold text-foreground">{a.title}</h3>
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        {(a.types || []).map(t => {
+                          const tc = TYPE_COLORS[t] || TYPE_COLORS.custom;
+                          return <span key={t} className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold border capitalize", tc.bg, tc.text, tc.border)}>{t}</span>;
+                        })}
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-600 flex items-center gap-0.5">
+                          {a.status === "absent" ? <><XCircle className="w-3 h-3" /> Absent</> : <><Lock className="w-3 h-3" /> Expired</>}
+                        </span>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               </section>
             )}
@@ -198,7 +229,6 @@ export default function StudentAssessmentsPage() {
         )}
       </div>
 
-      {/* Toast */}
       {toast && (
         <div className={cn("fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-5 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2",
           toast.type === "success" ? "bg-emerald-600 text-white" : "bg-red-600 text-white")}>

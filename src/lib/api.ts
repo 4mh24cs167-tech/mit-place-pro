@@ -291,6 +291,8 @@ export const adminApi = {
   bulkGradeAssessment: (id: string, grades: { usn: string; score: number; remarks?: string }[]) =>
     apiFetch(`/api/v1/admin/assessments/${id}/bulk-grade`, { method: 'POST', body: { grades } }),
   getAssessmentStats: (id: string) => apiFetch(`/api/v1/admin/assessments/${id}/stats`),
+  addAssessmentSchedule: (id: string, data: Record<string, unknown>) => apiFetch(`/api/v1/admin/assessments/${id}/schedules`, { method: 'POST', body: data }),
+  removeAssessmentSchedule: (scheduleId: string) => apiFetch(`/api/v1/admin/assessments/schedules/${scheduleId}`, { method: 'DELETE' }),
 };
 
 // ─── Student ─────────────────────────────────────

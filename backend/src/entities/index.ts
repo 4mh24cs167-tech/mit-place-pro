@@ -16,4 +16,4 @@ export { Drive, DriveRegistration, DriveSlot } from './drive.entity';
 export { RoundMeeting, MeetingGroup, MeetingAssignment } from './round-meeting.entity';
 export { EmailLog } from './email-log.entity';
 export { StudentDriveFeedback, CompanyDriveFeedback } from './feedback.entity';
-export { Assessment, AssessmentLink, AssessmentSubmission } from './assessment.entity';
+export { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule } from './assessment.entity';

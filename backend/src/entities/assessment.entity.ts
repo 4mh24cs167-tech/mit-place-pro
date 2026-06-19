@@ -22,8 +22,9 @@ export class Assessment {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
-  @Column({ type: 'varchar', length: 30, default: 'aptitude' })
-  type: AssessmentType;
+  /** Multiple types: ["aptitude","technical"] */
+  @Column({ type: 'text', array: true, default: '{}' })
+  types: string[];
 
   /** Department codes targeted, e.g. ["CSE","ISE","AI&ML"] */
   @Column({ type: 'text', array: true, default: '{}' })
@@ -52,6 +53,9 @@ export class Assessment {
   @OneToMany(() => AssessmentLink, (l) => l.assessment, { cascade: true })
   links: AssessmentLink[];
 
+  @OneToMany(() => AssessmentSchedule, (s) => s.assessment, { cascade: true })
+  schedules: AssessmentSchedule[];
+
   @OneToMany(() => AssessmentSubmission, (s) => s.assessment, { cascade: true })
   submissions: AssessmentSubmission[];
 
@@ -60,6 +64,46 @@ export class Assessment {
 
   @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
+}
+
+// ─── Assessment Schedule (Batch/Time Slot) ───────
+@Entity('assessment_schedules')
+@Index('idx_asch_assessment_id', ['assessmentId'])
+export class AssessmentSchedule {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'uuid', name: 'assessment_id' })
+  assessmentId: string;
+
+  @ManyToOne(() => Assessment, (a) => a.schedules, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'assessment_id' })
+  assessment: Assessment;
+
+  /** e.g. "Batch A", "Batch 1" */
+  @Column({ type: 'varchar', length: 100, name: 'batch_label', default: 'Batch 1' })
+  batchLabel: string;
+
+  /** Departments in this batch, e.g. ["CSE","ISE"] */
+  @Column({ type: 'text', array: true, default: '{}' })
+  departments: string[];
+
+  @Column({ type: 'date', name: 'schedule_date' })
+  scheduleDate: string;
+
+  /** e.g. "10:00 AM" */
+  @Column({ type: 'varchar', length: 20, nullable: true, name: 'start_time' })
+  startTime: string | null;
+
+  /** e.g. "12:00 PM" */
+  @Column({ type: 'varchar', length: 20, nullable: true, name: 'end_time' })
+  endTime: string | null;
+
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  venue: string | null;
+
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  createdAt: Date;
 }
 
 // ─── Assessment Link ─────────────────────────────
@@ -120,6 +164,14 @@ export class AssessmentSubmission {
   @ManyToOne(() => Student, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'student_id' })
   student: Student;
+
+  /** Link to the student's assigned batch/schedule */
+  @Column({ type: 'uuid', nullable: true, name: 'schedule_id' })
+  scheduleId: string | null;
+
+  @ManyToOne(() => AssessmentSchedule, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'schedule_id' })
+  schedule: AssessmentSchedule | null;
 
   @Column({ type: 'varchar', length: 20, default: 'pending' })
   status: SubmissionStatus;

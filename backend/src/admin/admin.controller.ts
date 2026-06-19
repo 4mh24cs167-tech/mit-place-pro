@@ -454,4 +454,19 @@ export class AdminController {
     const data = await this.assessmentService.getAssessmentStats(id);
     return { success: true, data };
   }
+
+  @Post('assessments/:id/schedules')
+  async addAssessmentSchedule(
+    @Param('id') id: string,
+    @Body() body: { batchLabel: string; departments: string[]; scheduleDate: string; startTime?: string; endTime?: string; venue?: string },
+  ) {
+    const data = await this.assessmentService.addSchedule(id, body);
+    return { success: true, data };
+  }
+
+  @Delete('assessments/schedules/:scheduleId')
+  async removeAssessmentSchedule(@Param('scheduleId') scheduleId: string) {
+    const data = await this.assessmentService.removeSchedule(scheduleId);
+    return { success: true, data };
+  }
 }

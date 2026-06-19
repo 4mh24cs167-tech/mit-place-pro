@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { Assessment, AssessmentLink, AssessmentSubmission } from '../entities/assessment.entity';
+import { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule } from '../entities/assessment.entity';
 import { Student } from '../entities/student.entity';
 
 @Injectable()
@@ -12,20 +12,22 @@ export class AssessmentService {
     @InjectRepository(Assessment) private readonly assessmentRepo: Repository<Assessment>,
     @InjectRepository(AssessmentLink) private readonly linkRepo: Repository<AssessmentLink>,
     @InjectRepository(AssessmentSubmission) private readonly submissionRepo: Repository<AssessmentSubmission>,
+    @InjectRepository(AssessmentSchedule) private readonly scheduleRepo: Repository<AssessmentSchedule>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
   ) {}
 
   // ─── Create Assessment ────────────────────────────
   async createAssessment(createdBy: string, data: {
-    title: string; description?: string; type?: string;
+    title: string; description?: string; types?: string[];
     departments?: string[]; batchIds?: string[];
     status?: string; deadline?: string; maxScore?: number;
     links?: { title: string; url: string; platform?: string; instructions?: string }[];
+    schedules?: { batchLabel: string; departments: string[]; scheduleDate: string; startTime?: string; endTime?: string; venue?: string }[];
   }) {
     const assessment = await this.assessmentRepo.save({
       title: data.title,
       description: data.description || null,
-      type: (data.type || 'aptitude') as Assessment['type'],
+      types: data.types || ['aptitude'],
       departments: data.departments || [],
       batchIds: data.batchIds || [],
       status: (data.status || 'draft') as Assessment['status'],
@@ -47,63 +49,101 @@ export class AssessmentService {
       await this.linkRepo.save(linkEntities);
     }
 
+    // Save schedules (batch time slots)
+    if (data.schedules && data.schedules.length > 0) {
+      const scheduleEntities = data.schedules.map(s => ({
+        assessmentId: assessment.id,
+        batchLabel: s.batchLabel,
+        departments: s.departments,
+        scheduleDate: s.scheduleDate,
+        startTime: s.startTime || null,
+        endTime: s.endTime || null,
+        venue: s.venue || null,
+      }));
+      await this.scheduleRepo.save(scheduleEntities);
+    }
+
     // Auto-assign submissions if status is active
     if (data.status === 'active') {
-      await this.assignStudents(assessment.id, data.departments || [], data.batchIds || []);
+      await this.assignStudents(assessment.id);
     }
 
     return this.getAssessment(assessment.id);
   }
 
-  // ─── Assign students based on department/batch ────
-  private async assignStudents(assessmentId: string, departments: string[], batchIds: string[]) {
-    const qb = this.studentRepo.createQueryBuilder('s');
-
-    if (departments.length > 0) {
-      qb.andWhere('s.department IN (:...departments)', { departments });
-    }
-    if (batchIds.length > 0) {
-      qb.andWhere('s.batch_id IN (:...batchIds)', { batchIds });
-    }
-
-    const students = await qb.select(['s.id']).getMany();
-    if (students.length === 0) return 0;
-
-    // Check existing submissions
-    const existing = await this.submissionRepo.find({
-      where: { assessmentId, studentId: In(students.map(s => s.id)) },
-      select: ['studentId'],
+  // ─── Assign students based on schedules/departments ──
+  private async assignStudents(assessmentId: string) {
+    const assessment = await this.assessmentRepo.findOne({
+      where: { id: assessmentId },
+      relations: ['schedules'],
     });
-    const existingIds = new Set(existing.map(e => e.studentId));
+    if (!assessment) return 0;
 
-    const newSubmissions = students
-      .filter(s => !existingIds.has(s.id))
-      .map(s => ({ assessmentId, studentId: s.id, status: 'pending' as const }));
+    const schedules = assessment.schedules || [];
+    let totalAssigned = 0;
 
-    if (newSubmissions.length > 0) {
-      await this.submissionRepo.save(newSubmissions);
+    if (schedules.length > 0) {
+      // Assign by schedule batches — each schedule has its own departments
+      for (const schedule of schedules) {
+        if (schedule.departments.length === 0) continue;
+        const students = await this.studentRepo.createQueryBuilder('s')
+          .where('s.department IN (:...departments)', { departments: schedule.departments })
+          .select(['s.id'])
+          .getMany();
+
+        const existing = await this.submissionRepo.find({
+          where: { assessmentId, studentId: In(students.map(s => s.id)) },
+          select: ['studentId'],
+        });
+        const existingIds = new Set(existing.map(e => e.studentId));
+
+        const newSubs = students
+          .filter(s => !existingIds.has(s.id))
+          .map(s => ({ assessmentId, studentId: s.id, scheduleId: schedule.id, status: 'pending' as const }));
+
+        if (newSubs.length > 0) {
+          await this.submissionRepo.save(newSubs);
+          totalAssigned += newSubs.length;
+        }
+      }
+    } else if (assessment.departments.length > 0) {
+      // Fallback: assign by assessment-level departments (no schedule)
+      const students = await this.studentRepo.createQueryBuilder('s')
+        .where('s.department IN (:...departments)', { departments: assessment.departments })
+        .select(['s.id'])
+        .getMany();
+
+      const existing = await this.submissionRepo.find({
+        where: { assessmentId, studentId: In(students.map(s => s.id)) },
+        select: ['studentId'],
+      });
+      const existingIds = new Set(existing.map(e => e.studentId));
+
+      const newSubs = students
+        .filter(s => !existingIds.has(s.id))
+        .map(s => ({ assessmentId, studentId: s.id, status: 'pending' as const }));
+
+      if (newSubs.length > 0) {
+        await this.submissionRepo.save(newSubs);
+        totalAssigned = newSubs.length;
+      }
     }
 
-    this.logger.log(`Assigned ${newSubmissions.length} students to assessment ${assessmentId}`);
-    return newSubmissions.length;
+    this.logger.log(`Assigned ${totalAssigned} students to assessment ${assessmentId}`);
+    return totalAssigned;
   }
 
   // ─── List Assessments ─────────────────────────────
   async listAssessments(filters?: { type?: string; status?: string; department?: string }) {
     const qb = this.assessmentRepo.createQueryBuilder('a')
-      .loadRelationCountAndMap('a.totalSubmissions', 'a.submissions')
-      .loadRelationCountAndMap('a.completedCount', 'a.submissions', 'cs', (sq) =>
-        sq.where('cs.status = :st', { st: 'completed' }),
-      )
       .orderBy('a.createdAt', 'DESC');
 
-    if (filters?.type) qb.andWhere('a.type = :type', { type: filters.type });
+    if (filters?.type) qb.andWhere(':type = ANY(a.types)', { type: filters.type });
     if (filters?.status) qb.andWhere('a.status = :status', { status: filters.status });
     if (filters?.department) qb.andWhere(':dept = ANY(a.departments)', { dept: filters.department });
 
     const assessments = await qb.getMany();
 
-    // Get submission counts manually for accuracy
     const ids = assessments.map(a => a.id);
     if (ids.length === 0) return [];
 
@@ -121,11 +161,22 @@ export class AssessmentService {
       c.assessmentId, { total: +c.total, completed: +c.completed, absent: +c.absent },
     ]));
 
+    // Get schedule counts
+    const scheduleCounts = await this.scheduleRepo
+      .createQueryBuilder('sc')
+      .select('sc.assessment_id', 'assessmentId')
+      .addSelect('COUNT(*)', 'count')
+      .where('sc.assessment_id IN (:...ids)', { ids })
+      .groupBy('sc.assessment_id')
+      .getRawMany();
+    const scheduleMap = new Map(scheduleCounts.map((s: { assessmentId: string; count: string }) => [s.assessmentId, +s.count]));
+
     return assessments.map(a => ({
-      id: a.id, title: a.title, description: a.description, type: a.type,
+      id: a.id, title: a.title, description: a.description, types: a.types,
       departments: a.departments, batchIds: a.batchIds, status: a.status,
       deadline: a.deadline, maxScore: a.maxScore, createdAt: a.createdAt,
       counts: countMap.get(a.id) || { total: 0, completed: 0, absent: 0 },
+      scheduleCount: scheduleMap.get(a.id) || 0,
     }));
   }
 
@@ -133,8 +184,8 @@ export class AssessmentService {
   async getAssessment(id: string) {
     const assessment = await this.assessmentRepo.findOne({
       where: { id },
-      relations: ['links', 'submissions', 'submissions.student'],
-      order: { links: { displayOrder: 'ASC' } },
+      relations: ['links', 'schedules', 'submissions', 'submissions.student', 'submissions.schedule'],
+      order: { links: { displayOrder: 'ASC' }, schedules: { scheduleDate: 'ASC' } },
     });
     if (!assessment) throw new NotFoundException('Assessment not found');
 
@@ -144,6 +195,10 @@ export class AssessmentService {
         id: l.id, title: l.title, url: l.url, platform: l.platform,
         displayOrder: l.displayOrder, instructions: l.instructions,
       })),
+      schedules: (assessment.schedules || []).map(s => ({
+        id: s.id, batchLabel: s.batchLabel, departments: s.departments,
+        scheduleDate: s.scheduleDate, startTime: s.startTime, endTime: s.endTime, venue: s.venue,
+      })),
       submissions: (assessment.submissions || []).map(s => ({
         id: s.id, studentId: s.studentId,
         studentName: s.student?.fullName || null,
@@ -151,13 +206,18 @@ export class AssessmentService {
         department: s.student?.department || null,
         status: s.status, score: s.score, remarks: s.remarks,
         attemptedAt: s.attemptedAt, gradedAt: s.gradedAt,
+        scheduleId: s.scheduleId,
+        batchLabel: s.schedule?.batchLabel || null,
+        scheduleDate: s.schedule?.scheduleDate || null,
+        startTime: s.schedule?.startTime || null,
+        endTime: s.schedule?.endTime || null,
       })),
     };
   }
 
   // ─── Update Assessment ────────────────────────────
   async updateAssessment(id: string, data: {
-    title?: string; description?: string; type?: string;
+    title?: string; description?: string; types?: string[];
     departments?: string[]; batchIds?: string[];
     status?: string; deadline?: string; maxScore?: number;
   }) {
@@ -168,7 +228,7 @@ export class AssessmentService {
 
     if (data.title !== undefined) assessment.title = data.title;
     if (data.description !== undefined) assessment.description = data.description;
-    if (data.type !== undefined) assessment.type = data.type as Assessment['type'];
+    if (data.types !== undefined) assessment.types = data.types;
     if (data.departments !== undefined) assessment.departments = data.departments;
     if (data.batchIds !== undefined) assessment.batchIds = data.batchIds;
     if (data.status !== undefined) assessment.status = data.status as Assessment['status'];
@@ -177,9 +237,8 @@ export class AssessmentService {
 
     await this.assessmentRepo.save(assessment);
 
-    // If newly activated, assign students
     if (wasNotActive && assessment.status === 'active') {
-      await this.assignStudents(assessment.id, assessment.departments, assessment.batchIds);
+      await this.assignStudents(assessment.id);
     }
 
     return this.getAssessment(id);
@@ -204,15 +263,13 @@ export class AssessmentService {
       .where('l.assessment_id = :assessmentId', { assessmentId })
       .getRawOne();
 
-    const link = await this.linkRepo.save({
+    return this.linkRepo.save({
       assessmentId,
-      title: data.title,
-      url: data.url,
+      title: data.title, url: data.url,
       platform: data.platform || 'custom',
       displayOrder: (maxOrder?.max ?? -1) + 1,
       instructions: data.instructions || null,
     });
-    return link;
   }
 
   // ─── Remove Link ──────────────────────────────────
@@ -223,13 +280,60 @@ export class AssessmentService {
     return { message: 'Link removed' };
   }
 
+  // ─── Add Schedule ─────────────────────────────────
+  async addSchedule(assessmentId: string, data: {
+    batchLabel: string; departments: string[];
+    scheduleDate: string; startTime?: string; endTime?: string; venue?: string;
+  }) {
+    const assessment = await this.assessmentRepo.findOne({ where: { id: assessmentId } });
+    if (!assessment) throw new NotFoundException('Assessment not found');
+
+    const schedule = await this.scheduleRepo.save({
+      assessmentId,
+      batchLabel: data.batchLabel,
+      departments: data.departments,
+      scheduleDate: data.scheduleDate,
+      startTime: data.startTime || null,
+      endTime: data.endTime || null,
+      venue: data.venue || null,
+    });
+
+    // If assessment is active, auto-assign students from these departments
+    if (assessment.status === 'active' && data.departments.length > 0) {
+      const students = await this.studentRepo.createQueryBuilder('s')
+        .where('s.department IN (:...departments)', { departments: data.departments })
+        .select(['s.id'])
+        .getMany();
+
+      const existing = await this.submissionRepo.find({
+        where: { assessmentId, studentId: In(students.map(s => s.id)) },
+        select: ['studentId'],
+      });
+      const existingIds = new Set(existing.map(e => e.studentId));
+
+      const newSubs = students
+        .filter(s => !existingIds.has(s.id))
+        .map(s => ({ assessmentId, studentId: s.id, scheduleId: schedule.id, status: 'pending' as const }));
+
+      if (newSubs.length > 0) await this.submissionRepo.save(newSubs);
+    }
+
+    return schedule;
+  }
+
+  // ─── Remove Schedule ──────────────────────────────
+  async removeSchedule(scheduleId: string) {
+    const schedule = await this.scheduleRepo.findOne({ where: { id: scheduleId } });
+    if (!schedule) throw new NotFoundException('Schedule not found');
+    await this.scheduleRepo.remove(schedule);
+    return { message: 'Schedule removed' };
+  }
+
   // ─── Bulk Grade via Excel data ────────────────────
-  // Format: [{ usn: string, score: number, remarks?: string }]
   async bulkGrade(assessmentId: string, grades: { usn: string; score: number; remarks?: string }[]) {
     const assessment = await this.assessmentRepo.findOne({ where: { id: assessmentId } });
     if (!assessment) throw new NotFoundException('Assessment not found');
 
-    // Find all students by USN
     const usns = grades.map(g => g.usn.trim().toUpperCase());
     const students = await this.studentRepo
       .createQueryBuilder('s')
@@ -244,13 +348,8 @@ export class AssessmentService {
 
     for (const grade of grades) {
       const student = usnToStudent.get(grade.usn.trim().toUpperCase());
-      if (!student) {
-        notFound++;
-        notFoundUsns.push(grade.usn);
-        continue;
-      }
+      if (!student) { notFound++; notFoundUsns.push(grade.usn); continue; }
 
-      // Upsert submission
       let submission = await this.submissionRepo.findOne({
         where: { assessmentId, studentId: student.id },
       });
@@ -264,19 +363,16 @@ export class AssessmentService {
         await this.submissionRepo.save(submission);
       } else {
         await this.submissionRepo.save({
-          assessmentId,
-          studentId: student.id,
-          score: grade.score,
-          status: 'completed' as const,
+          assessmentId, studentId: student.id,
+          score: grade.score, status: 'completed' as const,
           remarks: grade.remarks || null,
-          gradedAt: new Date(),
-          attemptedAt: new Date(),
+          gradedAt: new Date(), attemptedAt: new Date(),
         });
       }
       graded++;
     }
 
-    // Mark all students without scores as absent
+    // Mark remaining pending as absent
     await this.submissionRepo
       .createQueryBuilder()
       .update()
@@ -308,11 +404,10 @@ export class AssessmentService {
     const maxScoreAchieved = scores.length > 0 ? Math.max(...scores) : null;
     const minScoreAchieved = scores.length > 0 ? Math.min(...scores) : null;
 
-    // Department-wise breakdown
-    const deptMap = new Map<string, { total: number; completed: number; avgScore: number; scores: number[] }>();
+    const deptMap = new Map<string, { total: number; completed: number; scores: number[] }>();
     for (const s of submissions) {
       const dept = s.student?.department || 'Unknown';
-      if (!deptMap.has(dept)) deptMap.set(dept, { total: 0, completed: 0, avgScore: 0, scores: [] });
+      if (!deptMap.has(dept)) deptMap.set(dept, { total: 0, completed: 0, scores: [] });
       const d = deptMap.get(dept)!;
       d.total++;
       if (s.status === 'completed') d.completed++;
@@ -340,7 +435,7 @@ export class AssessmentService {
 
     const submissions = await this.submissionRepo.find({
       where: { studentId: student.id },
-      relations: ['assessment', 'assessment.links'],
+      relations: ['assessment', 'assessment.links', 'schedule'],
       order: { createdAt: 'DESC' },
     });
 
@@ -349,7 +444,7 @@ export class AssessmentService {
       return {
         id: s.id, assessmentId: s.assessmentId,
         title: s.assessment?.title, description: s.assessment?.description,
-        type: s.assessment?.type, status: s.status,
+        types: s.assessment?.types || [], status: s.status,
         score: s.score, maxScore: s.assessment?.maxScore,
         remarks: s.remarks,
         deadline: s.assessment?.deadline,
@@ -358,6 +453,14 @@ export class AssessmentService {
           id: l.id, title: l.title, url: l.url, platform: l.platform, instructions: l.instructions,
         })),
         gradedAt: s.gradedAt, attemptedAt: s.attemptedAt,
+        // Schedule / batch info
+        schedule: s.schedule ? {
+          batchLabel: s.schedule.batchLabel,
+          scheduleDate: s.schedule.scheduleDate,
+          startTime: s.schedule.startTime,
+          endTime: s.schedule.endTime,
+          venue: s.schedule.venue,
+        } : null,
       };
     });
   }
