@@ -1018,7 +1018,7 @@ export default function AdminStudentsPage() {
                                       await adminApi.exportStudentsCsv({
                                         department: deptCode,
                                         batch: batch.name,
-                                      });
+                                      }, batch.name);
                                       setEmailToast({ type: "success", msg: `Downloaded ${batch.name} students` });
                                       setTimeout(() => setEmailToast(null), 3000);
                                     } catch {

@@ -181,7 +181,7 @@ export const adminApi = {
   deleteStudent: (id: string) => apiFetch(`/api/v1/admin/students/${id}`, { method: 'DELETE' }),
   createStudent: (data: { usn: string; email: string; fullName: string; department: string; batch?: string; phone?: string; gender?: string; category?: string; cgpa?: number; tenthPercent?: number; twelfthPercent?: number; backlogs?: number }) =>
     apiFetch('/api/v1/admin/students', { method: 'POST', body: data }),
-  exportStudentsCsv: async (params?: { search?: string; department?: string; status?: string; batch?: string }) => {
+  exportStudentsCsv: async (params?: { search?: string; department?: string; status?: string; batch?: string }, filename?: string) => {
     const query = new URLSearchParams();
     if (params?.search) query.set('search', params.search);
     if (params?.department) query.set('department', params.department);
@@ -196,7 +196,7 @@ export const adminApi = {
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `students_${Date.now()}.csv`; a.click();
+    a.href = url; a.download = filename ? `${filename}.csv` : `students_${Date.now()}.csv`; a.click();
     URL.revokeObjectURL(url);
   },
   // Bulk upload
