@@ -264,7 +264,7 @@ export class AssessmentService {
         scheduleDate: s.schedule?.scheduleDate || null,
         startTime: s.schedule?.startTime || null,
         endTime: s.schedule?.endTime || null,
-      })),
+      })).sort((a, b) => (a.usn || '').localeCompare(b.usn || '', undefined, { numeric: true })),
     };
   }
 
