@@ -58,6 +58,16 @@ export class AdminController {
     return { success: true, ...result };
   }
 
+  @Get('students-export')
+  async exportStudentsCsv(@Query() query: PaginationDto, @Res() res: Response) {
+    const csv = await this.adminService.exportStudentsCsv(query);
+    res.set({
+      'Content-Type': 'text/csv',
+      'Content-Disposition': `attachment; filename=students_${Date.now()}.csv`,
+    });
+    res.send(csv);
+  }
+
   @Get('students/:id')
   async getStudent(@Param('id') id: string) {
     const data = await this.adminService.getStudent(id);

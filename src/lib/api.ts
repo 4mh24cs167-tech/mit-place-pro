@@ -181,7 +181,24 @@ export const adminApi = {
   deleteStudent: (id: string) => apiFetch(`/api/v1/admin/students/${id}`, { method: 'DELETE' }),
   createStudent: (data: { usn: string; email: string; fullName: string; department: string; batch?: string; phone?: string; gender?: string; category?: string; cgpa?: number; tenthPercent?: number; twelfthPercent?: number; backlogs?: number }) =>
     apiFetch('/api/v1/admin/students', { method: 'POST', body: data }),
-
+  exportStudentsCsv: async (params?: { search?: string; department?: string; status?: string; batch?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.search) query.set('search', params.search);
+    if (params?.department) query.set('department', params.department);
+    if (params?.status) query.set('status', params.status);
+    if (params?.batch) query.set('batch', params.batch);
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const res = await fetch(`${baseUrl}/api/v1/admin/students-export?${query.toString()}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error('Export failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `students_${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  },
   // Bulk upload
   uploadStudents: (file: File, department?: string, batch?: string) => {
     const formData = new FormData();

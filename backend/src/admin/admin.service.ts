@@ -200,6 +200,46 @@ export class AdminService {
     };
   }
 
+  async exportStudentsCsv(query: PaginationDto) {
+    const { search, department, status, batch } = query;
+
+    const queryBuilder = this.studentRepo.createQueryBuilder('student')
+      .leftJoinAndSelect('student.user', 'user')
+      .leftJoinAndSelect('student.batch', 'batch')
+      .orderBy('batch.name', 'DESC')
+      .addOrderBy('student.department', 'ASC')
+      .addOrderBy('student.usn', 'ASC');
+
+    if (search) {
+      queryBuilder.andWhere(
+        '(student.full_name ILIKE :search OR student.usn ILIKE :search OR user.email ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+    if (department) queryBuilder.andWhere('student.department = :department', { department });
+    if (status) queryBuilder.andWhere('student.placementStatus = :status', { status });
+    if (batch) queryBuilder.andWhere('batch.name = :batch', { batch });
+
+    const students = await queryBuilder.getMany();
+
+    const escCsv = (val: string | number | null | undefined) => {
+      if (val == null) return '';
+      const str = String(val);
+      return str.includes(',') || str.includes('"') || str.includes('\n')
+        ? `"${str.replace(/"/g, '""')}"` : str;
+    };
+
+    const header = 'Name,USN,Email,Department,Batch,Semester,CGPA,10th%,12th%,Phone,Gender,Placement Status';
+    const rows = students.map(s => [
+      escCsv(s.fullName), escCsv(s.usn), escCsv(s.user?.email),
+      escCsv(s.department), escCsv(s.batch?.name), escCsv(s.semester),
+      escCsv(s.cgpa), escCsv(s.tenthPercent), escCsv(s.twelfthPercent),
+      escCsv(s.phone), escCsv(s.gender), escCsv(s.placementStatus),
+    ].join(','));
+
+    return [header, ...rows].join('\n');
+  }
+
   async getStudent(id: string) {
     const student = await this.studentRepo.findOne({
       where: { id },

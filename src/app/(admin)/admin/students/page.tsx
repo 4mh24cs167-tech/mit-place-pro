@@ -397,6 +397,23 @@ export default function AdminStudentsPage() {
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-white text-xs sm:text-sm font-medium text-foreground hover:bg-muted/50 transition-colors">
                 <Download className="w-3.5 h-3.5" /><span className="hidden sm:inline">Template</span>
               </button>
+              <button onClick={async () => {
+                try {
+                  await adminApi.exportStudentsCsv({
+                    search: searchQuery || undefined,
+                    department: deptFilter !== "all" ? deptFilter : undefined,
+                    status: statusFilter !== "all" ? statusFilter : undefined,
+                  });
+                  setEmailToast({ type: "success", msg: "CSV downloaded!" });
+                  setTimeout(() => setEmailToast(null), 3000);
+                } catch {
+                  setEmailToast({ type: "error", msg: "Export failed" });
+                  setTimeout(() => setEmailToast(null), 3000);
+                }
+              }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs sm:text-sm font-semibold hover:bg-emerald-100 transition-colors">
+                <Download className="w-3.5 h-3.5" /><span className="hidden sm:inline">Export CSV</span>
+              </button>
               <button onClick={() => setShowAddStudent(true)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-xs sm:text-sm font-semibold hover:bg-indigo-100 transition-colors">
                 <UserPlus className="w-3.5 h-3.5" /><span className="hidden sm:inline">Add Student</span>
@@ -994,6 +1011,26 @@ export default function AdminStudentsPage() {
                                 {batchOpen && isStudentListLoading && (
                                   <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
                                 )}
+                                <span
+                                  onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                      await adminApi.exportStudentsCsv({
+                                        department: deptCode,
+                                        batch: batch.name,
+                                      });
+                                      setEmailToast({ type: "success", msg: `Downloaded ${batch.name} students` });
+                                      setTimeout(() => setEmailToast(null), 3000);
+                                    } catch {
+                                      setEmailToast({ type: "error", msg: "Export failed" });
+                                      setTimeout(() => setEmailToast(null), 3000);
+                                    }
+                                  }}
+                                  className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-emerald-50 text-muted-foreground hover:text-emerald-600 transition-all"
+                                  title={`Download ${batch.name} students as CSV`}
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                </span>
                                 {batchOpen ? (
                                   <ChevronDown className="w-4 h-4 text-muted-foreground" />
                                 ) : (
