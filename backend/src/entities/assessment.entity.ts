@@ -149,6 +149,14 @@ export class AssessmentSchedule {
   @Column({ type: 'varchar', length: 20, nullable: true, name: 'end_time' })
   endTime: string | null;
 
+  /** USN range start (numeric suffix), e.g. 1 */
+  @Column({ type: 'int', nullable: true, name: 'usn_start' })
+  usnStart: number | null;
+
+  /** USN range end (numeric suffix), e.g. 100 */
+  @Column({ type: 'int', nullable: true, name: 'usn_end' })
+  usnEnd: number | null;
+
   @Column({ type: 'varchar', length: 200, nullable: true })
   venue: string | null;
 

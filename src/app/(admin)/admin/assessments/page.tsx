@@ -27,7 +27,7 @@ interface SubItemData {
   is24Hours: boolean; links: { title: string; url: string; platform?: string }[];
   displayOrder: number;
 }
-interface ScheduleItem { id: string; batchLabel: string; departments: string[]; scheduleDate: string; startTime: string | null; endTime: string | null; venue: string | null; }
+interface ScheduleItem { id: string; batchLabel: string; departments: string[]; scheduleDate: string; startTime: string | null; endTime: string | null; venue: string | null; usnStart: number | null; usnEnd: number | null; }
 interface SubmissionItem {
   id: string; studentId: string; studentName: string | null; usn: string | null;
   department: string | null; status: string; score: number | null; remarks: string | null;
@@ -302,6 +302,9 @@ export default function AdminAssessmentsPage() {
                             <div>
                               <p className="text-sm font-semibold text-foreground">{s.batchLabel}</p>
                               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                {(s as any).usnStart != null && (s as any).usnEnd != null && (
+                                  <span className="text-xs text-blue-600 font-semibold flex items-center gap-0.5">USN {(s as any).usnStart} – {(s as any).usnEnd}</span>
+                                )}
                                 <span className="text-xs text-muted-foreground flex items-center gap-0.5"><Calendar className="w-3 h-3" /> {new Date(s.scheduleDate).toLocaleDateString()}</span>
                                 {s.startTime && <span className="text-xs text-muted-foreground flex items-center gap-0.5"><Clock className="w-3 h-3" /> {s.startTime}{s.endTime ? ` - ${s.endTime}` : ""}</span>}
                                 {s.venue && <span className="text-xs text-muted-foreground flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {s.venue}</span>}
@@ -444,7 +447,7 @@ function CreateModal({ departments, onClose, onCreated }: {
   const [maxScore, setMaxScore] = useState("");
   const [status, setStatus] = useState("active");
   const [links, setLinks] = useState<{ title: string; url: string; platform: string }[]>([]);
-  const [schedules, setSchedules] = useState<{ batchLabel: string; departments: string[]; scheduleDate: string; startTime: string; endTime: string; venue: string }[]>([]);
+  const [schedules, setSchedules] = useState<{ batchLabel: string; departments: string[]; scheduleDate: string; startTime: string; endTime: string; venue: string; usnStart: string; usnEnd: string }[]>([]);
   const [subItems, setSubItems] = useState<SubItemForm[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -452,13 +455,7 @@ function CreateModal({ departments, onClose, onCreated }: {
   const toggleDept = (code: string) => setSelectedDepts(prev => prev.includes(code) ? prev.filter(d => d !== code) : [...prev, code]);
 
   const addSchedule = () => {
-    setSchedules([...schedules, { batchLabel: `Batch ${schedules.length + 1}`, departments: [], scheduleDate: "", startTime: "", endTime: "", venue: "" }]);
-  };
-
-  const toggleScheduleDept = (idx: number, code: string) => {
-    const n = [...schedules];
-    n[idx].departments = n[idx].departments.includes(code) ? n[idx].departments.filter(d => d !== code) : [...n[idx].departments, code];
-    setSchedules(n);
+    setSchedules([...schedules, { batchLabel: `Batch ${schedules.length + 1}`, departments: [], scheduleDate: "", startTime: "", endTime: "", venue: "", usnStart: "", usnEnd: "" }]);
   };
 
   const addSubItem = () => {
@@ -494,17 +491,18 @@ function CreateModal({ departments, onClose, onCreated }: {
     if (!title.trim()) return;
     setSaving(true);
     try {
-      const allDepts = [...new Set([...selectedDepts, ...schedules.flatMap(s => s.departments)])];
       await adminApi.createAssessment({
         title: title.trim(), description: description.trim() || undefined,
-        types: selectedTypes, departments: allDepts, status,
+        types: selectedTypes, departments: selectedDepts, status,
         deadline: deadline || undefined,
         maxScore: maxScore ? parseFloat(maxScore) : undefined,
         links: links.filter(l => l.title.trim() && l.url.trim()),
-        schedules: schedules.filter(s => s.scheduleDate && s.departments.length > 0).map(s => ({
-          batchLabel: s.batchLabel, departments: s.departments,
+        schedules: schedules.filter(s => s.scheduleDate).map(s => ({
+          batchLabel: s.batchLabel, departments: selectedDepts,
           scheduleDate: s.scheduleDate, startTime: s.startTime || undefined,
           endTime: s.endTime || undefined, venue: s.venue || undefined,
+          usnStart: s.usnStart ? parseInt(s.usnStart) : undefined,
+          usnEnd: s.usnEnd ? parseInt(s.usnEnd) : undefined,
         })),
         subItems: subItems.filter(si => si.title.trim()).map(si => ({
           title: si.title.trim(), type: si.type,
@@ -664,14 +662,14 @@ function CreateModal({ departments, onClose, onCreated }: {
             )}
           </div>
 
-          {/* Batch Schedules */}
+          {/* Batch Schedules — split by USN range */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Batch Schedules (different time slots per batch)</label>
+              <label className="text-xs font-semibold text-muted-foreground">Batch Schedules (split students by USN range)</label>
               <button onClick={addSchedule} className="text-xs text-indigo-600 font-medium hover:text-indigo-700 flex items-center gap-0.5"><Plus className="w-3 h-3" /> Add Batch</button>
             </div>
             {schedules.length === 0 ? (
-              <p className="text-[11px] text-muted-foreground">No batches — all departments share the same deadline.</p>
+              <p className="text-[11px] text-muted-foreground">No batches — all students share the same schedule. Add batches to split by USN range (e.g. 001–100 in Batch 1, 101–200 in Batch 2).</p>
             ) : (
               <div className="space-y-3">
                 {schedules.map((s, i) => (
@@ -681,15 +679,16 @@ function CreateModal({ departments, onClose, onCreated }: {
                         className="px-2 py-1 bg-white border border-border rounded-lg text-sm font-semibold w-32 focus:outline-none" />
                       <button onClick={() => setSchedules(schedules.filter((_, j) => j !== i))} className="p-1 text-red-400 hover:text-red-600"><X className="w-3.5 h-3.5" /></button>
                     </div>
-                    <div className="flex flex-wrap gap-1">
-                      {departments.map(d => (
-                        <button key={d.code} onClick={() => toggleScheduleDept(i, d.code)}
-                          className={cn("px-2 py-0.5 rounded text-[10px] font-medium border transition-all",
-                            s.departments.includes(d.code) ? "bg-blue-600 text-white border-blue-600" : "bg-white text-muted-foreground border-border")}>
-                          {d.code}
-                        </button>
-                      ))}
+                    {/* USN Range */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-semibold text-blue-600 whitespace-nowrap">USN Range:</span>
+                      <input type="number" value={s.usnStart} onChange={e => { const n = [...schedules]; n[i].usnStart = e.target.value; setSchedules(n); }}
+                        placeholder="From (e.g. 1)" className="w-28 px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
+                      <span className="text-xs text-muted-foreground">to</span>
+                      <input type="number" value={s.usnEnd} onChange={e => { const n = [...schedules]; n[i].usnEnd = e.target.value; setSchedules(n); }}
+                        placeholder="To (e.g. 100)" className="w-28 px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
                     </div>
+                    {/* Date + Time + Venue */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <input type="date" value={s.scheduleDate} onChange={e => { const n = [...schedules]; n[i].scheduleDate = e.target.value; setSchedules(n); }}
                         className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
