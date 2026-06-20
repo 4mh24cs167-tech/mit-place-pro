@@ -188,7 +188,7 @@ export const adminApi = {
     if (params?.status) query.set('status', params.status);
     if (params?.batch) query.set('batch', params.batch);
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     const res = await fetch(`${baseUrl}/api/v1/admin/students-export?${query.toString()}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
