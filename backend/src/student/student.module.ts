@@ -13,7 +13,7 @@ import { Notification } from '../entities/notification.entity';
 import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
 import { MeetingAssignment } from '../entities/round-meeting.entity';
 import { StudentDriveFeedback, CompanyDriveFeedback } from '../entities/feedback.entity';
-import { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule } from '../entities/assessment.entity';
+import { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule, AssessmentSubItem } from '../entities/assessment.entity';
 import { AdminModule } from '../admin/admin.module';
 
 @Module({
@@ -36,6 +36,7 @@ import { AdminModule } from '../admin/admin.module';
       AssessmentLink,
       AssessmentSubmission,
       AssessmentSchedule,
+      AssessmentSubItem,
     ]),
     UploadModule,
     AdminModule,

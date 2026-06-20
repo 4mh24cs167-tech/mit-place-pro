@@ -18,7 +18,7 @@ import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
 import { EmailLog } from '../entities/email-log.entity';
 import { StudentDriveFeedback, CompanyDriveFeedback } from '../entities/feedback.entity';
-import { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule } from '../entities/assessment.entity';
+import { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule, AssessmentSubItem } from '../entities/assessment.entity';
 import { FeedbackService } from './feedback.service';
 import { AssessmentService } from './assessment.service';
 
@@ -45,6 +45,7 @@ import { AssessmentService } from './assessment.service';
       AssessmentLink,
       AssessmentSubmission,
       AssessmentSchedule,
+      AssessmentSubItem,
     ]),
   ],
   controllers: [AdminController],

@@ -479,4 +479,30 @@ export class AdminController {
     const data = await this.assessmentService.removeSchedule(scheduleId);
     return { success: true, data };
   }
+
+  @Post('assessments/:id/sub-items')
+  async addAssessmentSubItem(@Param('id') id: string, @Body() body: {
+    title: string; type?: string; description?: string;
+    scheduleDate?: string; startTime?: string; endTime?: string;
+    is24Hours?: boolean; links?: { title: string; url: string; platform?: string }[];
+  }) {
+    const data = await this.assessmentService.addSubItem(id, body);
+    return { success: true, data };
+  }
+
+  @Patch('assessments/sub-items/:subItemId')
+  async updateAssessmentSubItem(@Param('subItemId') subItemId: string, @Body() body: {
+    title?: string; type?: string; description?: string;
+    scheduleDate?: string; startTime?: string; endTime?: string;
+    is24Hours?: boolean; links?: { title: string; url: string; platform?: string }[];
+  }) {
+    const data = await this.assessmentService.updateSubItem(subItemId, body);
+    return { success: true, data };
+  }
+
+  @Delete('assessments/sub-items/:subItemId')
+  async removeAssessmentSubItem(@Param('subItemId') subItemId: string) {
+    const data = await this.assessmentService.removeSubItem(subItemId);
+    return { success: true, data };
+  }
 }

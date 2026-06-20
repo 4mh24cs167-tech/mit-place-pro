@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import {
   ClipboardCheck, Loader2, AlertCircle, Plus, Trash2, ExternalLink,
   Link2, Upload, BarChart3, Clock, Users, X, CheckCircle2, Calendar, MapPin,
+  Layers,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 
@@ -20,6 +21,12 @@ interface AssessmentItem {
   scheduleCount: number;
 }
 interface LinkItem { id: string; title: string; url: string; platform: string; displayOrder: number; instructions: string | null; }
+interface SubItemData {
+  id: string; title: string; type: string; description: string | null;
+  scheduleDate: string | null; startTime: string | null; endTime: string | null;
+  is24Hours: boolean; links: { title: string; url: string; platform?: string }[];
+  displayOrder: number;
+}
 interface ScheduleItem { id: string; batchLabel: string; departments: string[]; scheduleDate: string; startTime: string | null; endTime: string | null; venue: string | null; }
 interface SubmissionItem {
   id: string; studentId: string; studentName: string | null; usn: string | null;
@@ -29,7 +36,7 @@ interface SubmissionItem {
 interface DetailedAssessment {
   id: string; title: string; description: string | null; types: string[];
   departments: string[]; status: string; deadline: string | null; maxScore: number | null;
-  links: LinkItem[]; schedules: ScheduleItem[]; submissions: SubmissionItem[];
+  links: LinkItem[]; subItems: SubItemData[]; schedules: ScheduleItem[]; submissions: SubmissionItem[];
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -235,6 +242,54 @@ export default function AdminAssessmentsPage() {
                     </div>
                   )}
 
+                  {/* Sub-Items */}
+                  {(detail.subItems || []).length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                        <Layers className="w-4 h-4" /> Sub-Assessments ({detail.subItems.length})
+                      </h3>
+                      <div className="space-y-2">
+                        {detail.subItems.map(si => (
+                          <div key={si.id} className="p-3.5 bg-gradient-to-r from-violet-50/80 to-indigo-50/80 rounded-xl border border-violet-100">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h4 className="text-sm font-bold text-foreground">{si.title}</h4>
+                                  <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold border capitalize", TYPE_COLORS[si.type] || TYPE_COLORS.custom)}>{si.type}</span>
+                                </div>
+                                {si.description && <p className="text-xs text-muted-foreground mb-1.5">{si.description}</p>}
+                                <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                                  {si.is24Hours ? (
+                                    <span className="flex items-center gap-0.5 text-emerald-600 font-medium"><Clock className="w-3 h-3" /> 24 Hours Access</span>
+                                  ) : (
+                                    <>
+                                      {si.scheduleDate && <span className="flex items-center gap-0.5"><Calendar className="w-3 h-3" /> {new Date(si.scheduleDate).toLocaleDateString()}</span>}
+                                      {si.startTime && <span className="flex items-center gap-0.5"><Clock className="w-3 h-3" /> {si.startTime}{si.endTime ? ` – ${si.endTime}` : ""}</span>}
+                                    </>
+                                  )}
+                                </div>
+                                {si.links.length > 0 && (
+                                  <div className="mt-2 space-y-1">
+                                    {si.links.map((l, li) => (
+                                      <a key={li} href={l.url} target="_blank" rel="noopener noreferrer"
+                                        className="flex items-center gap-2 px-2.5 py-1.5 bg-white rounded-lg border border-violet-100 hover:border-indigo-300 transition-all text-xs">
+                                        <Link2 className="w-3 h-3 text-indigo-500" />
+                                        <span className="font-medium text-foreground">{l.title}</span>
+                                        <ExternalLink className="w-3 h-3 text-muted-foreground ml-auto" />
+                                      </a>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                              <button onClick={async () => { await adminApi.removeAssessmentSubItem(si.id); fetchDetail(detail.id); showToast("success", "Sub-item removed"); }}
+                                className="p-1.5 text-red-400 hover:text-red-600 flex-shrink-0"><Trash2 className="w-3.5 h-3.5" /></button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Schedules / Batches */}
                   <div>
                     <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
@@ -370,7 +425,13 @@ export default function AdminAssessmentsPage() {
   );
 }
 
-// ─── Create Modal with multi-type + schedule builder ─
+// ─── Create Modal with sub-items builder ─
+interface SubItemForm {
+  title: string; type: string; description: string;
+  scheduleDate: string; startTime: string; endTime: string; is24Hours: boolean;
+  links: { title: string; url: string; platform: string }[];
+}
+
 function CreateModal({ departments, onClose, onCreated }: {
   departments: { id: string; code: string; name: string }[];
   onClose: () => void; onCreated: () => void;
@@ -382,8 +443,9 @@ function CreateModal({ departments, onClose, onCreated }: {
   const [deadline, setDeadline] = useState("");
   const [maxScore, setMaxScore] = useState("");
   const [status, setStatus] = useState("active");
-  const [links, setLinks] = useState<{ title: string; url: string; platform: string }[]>([{ title: "", url: "", platform: "custom" }]);
+  const [links, setLinks] = useState<{ title: string; url: string; platform: string }[]>([]);
   const [schedules, setSchedules] = useState<{ batchLabel: string; departments: string[]; scheduleDate: string; startTime: string; endTime: string; venue: string }[]>([]);
+  const [subItems, setSubItems] = useState<SubItemForm[]>([]);
   const [saving, setSaving] = useState(false);
 
   const toggleType = (t: string) => setSelectedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
@@ -399,11 +461,39 @@ function CreateModal({ departments, onClose, onCreated }: {
     setSchedules(n);
   };
 
+  const addSubItem = () => {
+    setSubItems([...subItems, { title: "", type: "aptitude", description: "", scheduleDate: "", startTime: "", endTime: "", is24Hours: false, links: [{ title: "", url: "", platform: "custom" }] }]);
+  };
+
+  const updateSubItem = (idx: number, field: string, val: any) => {
+    const n = [...subItems];
+    (n[idx] as any)[field] = val;
+    if (field === "is24Hours" && val) { n[idx].startTime = ""; n[idx].endTime = ""; }
+    setSubItems(n);
+  };
+
+  const addSubItemLink = (idx: number) => {
+    const n = [...subItems];
+    n[idx].links = [...n[idx].links, { title: "", url: "", platform: "custom" }];
+    setSubItems(n);
+  };
+
+  const updateSubItemLink = (siIdx: number, lIdx: number, field: string, val: string) => {
+    const n = [...subItems];
+    (n[siIdx].links[lIdx] as any)[field] = val;
+    setSubItems(n);
+  };
+
+  const removeSubItemLink = (siIdx: number, lIdx: number) => {
+    const n = [...subItems];
+    n[siIdx].links = n[siIdx].links.filter((_, j) => j !== lIdx);
+    setSubItems(n);
+  };
+
   const handleSave = async () => {
     if (!title.trim()) return;
     setSaving(true);
     try {
-      // Merge all schedule departments into main departments list
       const allDepts = [...new Set([...selectedDepts, ...schedules.flatMap(s => s.departments)])];
       await adminApi.createAssessment({
         title: title.trim(), description: description.trim() || undefined,
@@ -415,6 +505,15 @@ function CreateModal({ departments, onClose, onCreated }: {
           batchLabel: s.batchLabel, departments: s.departments,
           scheduleDate: s.scheduleDate, startTime: s.startTime || undefined,
           endTime: s.endTime || undefined, venue: s.venue || undefined,
+        })),
+        subItems: subItems.filter(si => si.title.trim()).map(si => ({
+          title: si.title.trim(), type: si.type,
+          description: si.description.trim() || undefined,
+          scheduleDate: si.scheduleDate || undefined,
+          startTime: si.is24Hours ? undefined : (si.startTime || undefined),
+          endTime: si.is24Hours ? undefined : (si.endTime || undefined),
+          is24Hours: si.is24Hours,
+          links: si.links.filter(l => l.title.trim() && l.url.trim()),
         })),
       });
       onCreated();
@@ -433,7 +532,7 @@ function CreateModal({ departments, onClose, onCreated }: {
           {/* Title */}
           <div>
             <label className="text-xs font-semibold text-muted-foreground block mb-1">Title *</label>
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Aptitude + Technical Test - Batch 2026"
+            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Placement Test - Batch 2026"
               className="w-full px-3 py-2.5 bg-white border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
           </div>
 
@@ -444,7 +543,7 @@ function CreateModal({ departments, onClose, onCreated }: {
               className="w-full px-3 py-2.5 bg-white border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none" />
           </div>
 
-          {/* Types — Multi Select */}
+          {/* Types */}
           <div>
             <label className="text-xs font-semibold text-muted-foreground block mb-1.5">Types (select multiple)</label>
             <div className="flex flex-wrap gap-1.5">
@@ -493,6 +592,78 @@ function CreateModal({ departments, onClose, onCreated }: {
             </div>
           </div>
 
+          {/* Sub-Items Builder */}
+          <div className="border-t border-border pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-violet-600" /> Sub-Assessments
+              </label>
+              <button onClick={addSubItem} className="text-xs text-violet-600 font-medium hover:text-violet-700 flex items-center gap-0.5"><Plus className="w-3 h-3" /> Add Sub-Assessment</button>
+            </div>
+            {subItems.length === 0 ? (
+              <p className="text-[11px] text-muted-foreground">Each sub-assessment gets its own type, time slot, and links. Click &quot;Add Sub-Assessment&quot; to start.</p>
+            ) : (
+              <div className="space-y-3">
+                {subItems.map((si, i) => (
+                  <div key={i} className="p-3 bg-gradient-to-r from-violet-50/60 to-indigo-50/60 rounded-xl border border-violet-100 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <input value={si.title} onChange={e => updateSubItem(i, "title", e.target.value)} placeholder="e.g. Aptitude Test"
+                        className="flex-1 px-2.5 py-1.5 bg-white border border-border rounded-lg text-sm font-semibold focus:outline-none" />
+                      <select value={si.type} onChange={e => updateSubItem(i, "type", e.target.value)}
+                        className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none capitalize">
+                        {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      <button onClick={() => setSubItems(subItems.filter((_, j) => j !== i))} className="p-1 text-red-400 hover:text-red-600"><X className="w-3.5 h-3.5" /></button>
+                    </div>
+
+                    <input value={si.description} onChange={e => updateSubItem(i, "description", e.target.value)} placeholder="Description (optional)"
+                      className="w-full px-2.5 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
+
+                    {/* Time */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <label className="flex items-center gap-1.5 text-xs">
+                        <input type="checkbox" checked={si.is24Hours} onChange={e => updateSubItem(i, "is24Hours", e.target.checked)}
+                          className="rounded border-border" />
+                        <span className="font-medium text-emerald-700">24 Hours</span>
+                      </label>
+                      {!si.is24Hours && (
+                        <>
+                          <input type="date" value={si.scheduleDate} onChange={e => updateSubItem(i, "scheduleDate", e.target.value)}
+                            className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
+                          <input value={si.startTime} onChange={e => updateSubItem(i, "startTime", e.target.value)} placeholder="10:00 AM"
+                            className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none w-24" />
+                          <input value={si.endTime} onChange={e => updateSubItem(i, "endTime", e.target.value)} placeholder="12:00 PM"
+                            className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none w-24" />
+                        </>
+                      )}
+                    </div>
+
+                    {/* Links for this sub-item */}
+                    <div>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Links</p>
+                      <div className="space-y-1.5">
+                        {si.links.map((l, li) => (
+                          <div key={li} className="flex items-center gap-1.5">
+                            <input value={l.title} onChange={e => updateSubItemLink(i, li, "title", e.target.value)} placeholder="Link title"
+                              className="flex-1 px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
+                            <input value={l.url} onChange={e => updateSubItemLink(i, li, "url", e.target.value)} placeholder="https://..."
+                              className="flex-[2] px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
+                            {si.links.length > 1 && (
+                              <button onClick={() => removeSubItemLink(i, li)} className="p-0.5 text-red-400 hover:text-red-600"><X className="w-3 h-3" /></button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <button onClick={() => addSubItemLink(i)} className="mt-1 text-[10px] text-indigo-600 font-medium hover:text-indigo-700 flex items-center gap-0.5">
+                        <Plus className="w-2.5 h-2.5" /> Add link
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Batch Schedules */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
@@ -500,7 +671,7 @@ function CreateModal({ departments, onClose, onCreated }: {
               <button onClick={addSchedule} className="text-xs text-indigo-600 font-medium hover:text-indigo-700 flex items-center gap-0.5"><Plus className="w-3 h-3" /> Add Batch</button>
             </div>
             {schedules.length === 0 ? (
-              <p className="text-[11px] text-muted-foreground">No batches — all departments share the same deadline. Click &quot;Add Batch&quot; to create separate time slots.</p>
+              <p className="text-[11px] text-muted-foreground">No batches — all departments share the same deadline.</p>
             ) : (
               <div className="space-y-3">
                 {schedules.map((s, i) => (
@@ -510,7 +681,6 @@ function CreateModal({ departments, onClose, onCreated }: {
                         className="px-2 py-1 bg-white border border-border rounded-lg text-sm font-semibold w-32 focus:outline-none" />
                       <button onClick={() => setSchedules(schedules.filter((_, j) => j !== i))} className="p-1 text-red-400 hover:text-red-600"><X className="w-3.5 h-3.5" /></button>
                     </div>
-                    {/* Departments for this batch */}
                     <div className="flex flex-wrap gap-1">
                       {departments.map(d => (
                         <button key={d.code} onClick={() => toggleScheduleDept(i, d.code)}
@@ -520,7 +690,6 @@ function CreateModal({ departments, onClose, onCreated }: {
                         </button>
                       ))}
                     </div>
-                    {/* Date + Time + Venue */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <input type="date" value={s.scheduleDate} onChange={e => { const n = [...schedules]; n[i].scheduleDate = e.target.value; setSchedules(n); }}
                         className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
@@ -537,26 +706,30 @@ function CreateModal({ departments, onClose, onCreated }: {
             )}
           </div>
 
-          {/* Links */}
+          {/* Direct Links (legacy) */}
           <div>
-            <label className="text-xs font-semibold text-muted-foreground block mb-1.5">Test Links</label>
-            <div className="space-y-2">
-              {links.map((l, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input value={l.title} onChange={e => { const n = [...links]; n[i].title = e.target.value; setLinks(n); }}
-                    placeholder="Link title" className="flex-1 px-2.5 py-2 bg-white border border-border rounded-lg text-xs focus:outline-none" />
-                  <input value={l.url} onChange={e => { const n = [...links]; n[i].url = e.target.value; setLinks(n); }}
-                    placeholder="https://..." className="flex-[2] px-2.5 py-2 bg-white border border-border rounded-lg text-xs focus:outline-none" />
-                  <select value={l.platform} onChange={e => { const n = [...links]; n[i].platform = e.target.value; setLinks(n); }}
-                    className="px-2 py-2 bg-white border border-border rounded-lg text-xs focus:outline-none hidden sm:block">
-                    {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                  {links.length > 1 && <button onClick={() => setLinks(links.filter((_, j) => j !== i))} className="p-1 text-red-400 hover:text-red-600"><X className="w-3.5 h-3.5" /></button>}
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-semibold text-muted-foreground">Direct Test Links (optional)</label>
+              <button onClick={() => setLinks([...links, { title: "", url: "", platform: "custom" }])}
+                className="text-xs text-indigo-600 font-medium hover:text-indigo-700 flex items-center gap-0.5"><Plus className="w-3 h-3" /> Add link</button>
             </div>
-            <button onClick={() => setLinks([...links, { title: "", url: "", platform: "custom" }])}
-              className="mt-2 text-xs text-indigo-600 font-medium hover:text-indigo-700 flex items-center gap-1"><Plus className="w-3 h-3" /> Add link</button>
+            {links.length > 0 && (
+              <div className="space-y-2">
+                {links.map((l, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <input value={l.title} onChange={e => { const n = [...links]; n[i].title = e.target.value; setLinks(n); }}
+                      placeholder="Link title" className="flex-1 px-2.5 py-2 bg-white border border-border rounded-lg text-xs focus:outline-none" />
+                    <input value={l.url} onChange={e => { const n = [...links]; n[i].url = e.target.value; setLinks(n); }}
+                      placeholder="https://..." className="flex-[2] px-2.5 py-2 bg-white border border-border rounded-lg text-xs focus:outline-none" />
+                    <select value={l.platform} onChange={e => { const n = [...links]; n[i].platform = e.target.value; setLinks(n); }}
+                      className="px-2 py-2 bg-white border border-border rounded-lg text-xs focus:outline-none hidden sm:block">
+                      {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                    <button onClick={() => setLinks(links.filter((_, j) => j !== i))} className="p-1 text-red-400 hover:text-red-600"><X className="w-3.5 h-3.5" /></button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Save */}

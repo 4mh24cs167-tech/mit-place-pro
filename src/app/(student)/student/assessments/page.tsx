@@ -6,7 +6,7 @@ import { studentApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import {
   ClipboardCheck, Loader2, AlertCircle, ExternalLink,
-  Clock, Trophy, CheckCircle2, XCircle, Lock, Calendar, MapPin,
+  Clock, Trophy, CheckCircle2, XCircle, Lock, Calendar, MapPin, Layers, Link2,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -16,12 +16,18 @@ interface ScheduleInfo {
   batchLabel: string; scheduleDate: string;
   startTime: string | null; endTime: string | null; venue: string | null;
 }
+interface SubItemInfo {
+  id: string; title: string; type: string; description: string | null;
+  scheduleDate: string | null; startTime: string | null; endTime: string | null;
+  is24Hours: boolean; links: { title: string; url: string; platform?: string }[];
+}
 
 interface AssessmentItem {
   id: string; assessmentId: string; title: string; description: string | null;
   types: string[]; status: string; score: number | null; maxScore: number | null;
   remarks: string | null; deadline: string | null; isExpired: boolean;
   links: { id: string; title: string; url: string; platform: string; instructions: string | null }[];
+  subItems: SubItemInfo[];
   gradedAt: string | null; attemptedAt: string | null;
   schedule: ScheduleInfo | null;
 }
@@ -89,6 +95,7 @@ export default function StudentAssessmentsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {active.map(a => {
                     const dl = a.deadline ? getDaysLeft(a.deadline) : null;
+                    const hasSubItems = (a.subItems || []).length > 0;
                     return (
                       <div key={a.id} className="i-card p-4 border-l-4 border-l-amber-400 hover:shadow-md transition-all">
                         <div className="flex items-start justify-between gap-2 mb-2">
@@ -126,6 +133,65 @@ export default function StudentAssessmentsPage() {
                         )}
 
                         {a.description && <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{a.description}</p>}
+
+                        {/* Sub-Items with their own links & timings */}
+                        {hasSubItems && (
+                          <div className="space-y-2.5 mb-3">
+                            {a.subItems.map(si => {
+                              const siTypeColor = TYPE_COLORS[si.type] || TYPE_COLORS.custom;
+                              return (
+                                <div key={si.id} className="p-3 bg-gradient-to-r from-violet-50/80 to-indigo-50/80 rounded-xl border border-violet-100">
+                                  <div className="flex items-center gap-2 mb-1.5">
+                                    <Layers className="w-3.5 h-3.5 text-violet-500 flex-shrink-0" />
+                                    <h4 className="text-sm font-bold text-foreground">{si.title}</h4>
+                                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold border capitalize", siTypeColor.bg, siTypeColor.text, siTypeColor.border)}>{si.type}</span>
+                                  </div>
+                                  {si.description && <p className="text-[11px] text-muted-foreground mb-1.5">{si.description}</p>}
+
+                                  {/* Sub-item timing */}
+                                  <div className="flex flex-wrap items-center gap-2 text-[11px] mb-2">
+                                    {si.is24Hours ? (
+                                      <span className="flex items-center gap-0.5 text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">
+                                        <Clock className="w-3 h-3" /> 24 Hours Access
+                                      </span>
+                                    ) : (
+                                      <>
+                                        {si.scheduleDate && (
+                                          <span className="flex items-center gap-0.5 text-muted-foreground">
+                                            <Calendar className="w-3 h-3" /> {new Date(si.scheduleDate).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" })}
+                                          </span>
+                                        )}
+                                        {si.startTime && (
+                                          <span className="flex items-center gap-0.5 text-muted-foreground">
+                                            <Clock className="w-3 h-3" /> {si.startTime}{si.endTime ? ` – ${si.endTime}` : ""}
+                                          </span>
+                                        )}
+                                      </>
+                                    )}
+                                  </div>
+
+                                  {/* Sub-item links */}
+                                  {si.links.length > 0 && (
+                                    <div className="space-y-1.5">
+                                      {si.links.map((l, li) => (
+                                        <a key={li} href={l.url} target="_blank" rel="noopener noreferrer"
+                                          className="flex items-center justify-between p-2 bg-white rounded-lg border border-violet-100 hover:border-indigo-300 hover:shadow-sm transition-all group">
+                                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                                            <Link2 className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />
+                                            <span className="text-xs font-medium text-foreground truncate">{l.title}</span>
+                                          </div>
+                                          <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-indigo-600 flex-shrink-0 ml-2 transition-colors" />
+                                        </a>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Direct links (legacy / top-level) */}
                         {a.links.length > 0 && (
                           <div className="space-y-1.5">
                             {a.links.map(l => (

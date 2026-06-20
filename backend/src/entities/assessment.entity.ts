@@ -53,6 +53,9 @@ export class Assessment {
   @OneToMany(() => AssessmentLink, (l) => l.assessment, { cascade: true })
   links: AssessmentLink[];
 
+  @OneToMany(() => AssessmentSubItem, (s) => s.assessment, { cascade: true })
+  subItems: AssessmentSubItem[];
+
   @OneToMany(() => AssessmentSchedule, (s) => s.assessment, { cascade: true })
   schedules: AssessmentSchedule[];
 
@@ -64,6 +67,53 @@ export class Assessment {
 
   @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
+}
+
+// ─── Assessment Sub-Item ─────────────────────────
+@Entity('assessment_sub_items')
+@Index('idx_asub_item_assessment_id', ['assessmentId'])
+export class AssessmentSubItem {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'uuid', name: 'assessment_id' })
+  assessmentId: string;
+
+  @ManyToOne(() => Assessment, (a) => a.subItems, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'assessment_id' })
+  assessment: Assessment;
+
+  @Column({ type: 'varchar', length: 200 })
+  title: string;
+
+  /** aptitude | technical | coding | interview | custom */
+  @Column({ type: 'varchar', length: 50, default: 'custom' })
+  type: string;
+
+  @Column({ type: 'text', nullable: true })
+  description: string | null;
+
+  @Column({ type: 'date', nullable: true, name: 'schedule_date' })
+  scheduleDate: string | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: true, name: 'start_time' })
+  startTime: string | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: true, name: 'end_time' })
+  endTime: string | null;
+
+  @Column({ type: 'boolean', default: false, name: 'is_24_hours' })
+  is24Hours: boolean;
+
+  /** Links stored as JSONB: [{title, url, platform?}] */
+  @Column({ type: 'jsonb', default: '[]' })
+  links: { title: string; url: string; platform?: string }[];
+
+  @Column({ type: 'smallint', default: 0, name: 'display_order' })
+  displayOrder: number;
+
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  createdAt: Date;
 }
 
 // ─── Assessment Schedule (Batch/Time Slot) ───────

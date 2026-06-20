@@ -310,6 +310,12 @@ export const adminApi = {
   getAssessmentStats: (id: string) => apiFetch(`/api/v1/admin/assessments/${id}/stats`),
   addAssessmentSchedule: (id: string, data: Record<string, unknown>) => apiFetch(`/api/v1/admin/assessments/${id}/schedules`, { method: 'POST', body: data }),
   removeAssessmentSchedule: (scheduleId: string) => apiFetch(`/api/v1/admin/assessments/schedules/${scheduleId}`, { method: 'DELETE' }),
+  addAssessmentSubItem: (assessmentId: string, data: { title: string; type?: string; description?: string; scheduleDate?: string; startTime?: string; endTime?: string; is24Hours?: boolean; links?: { title: string; url: string; platform?: string }[] }) =>
+    apiFetch(`/api/v1/admin/assessments/${assessmentId}/sub-items`, { method: 'POST', body: data }),
+  updateAssessmentSubItem: (subItemId: string, data: Record<string, unknown>) =>
+    apiFetch(`/api/v1/admin/assessments/sub-items/${subItemId}`, { method: 'PATCH', body: data }),
+  removeAssessmentSubItem: (subItemId: string) =>
+    apiFetch(`/api/v1/admin/assessments/sub-items/${subItemId}`, { method: 'DELETE' }),
 };
 
 // ─── Student ─────────────────────────────────────

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule } from '../entities/assessment.entity';
+import { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule, AssessmentSubItem } from '../entities/assessment.entity';
 import { Student } from '../entities/student.entity';
 
 @Injectable()
@@ -13,6 +13,7 @@ export class AssessmentService {
     @InjectRepository(AssessmentLink) private readonly linkRepo: Repository<AssessmentLink>,
     @InjectRepository(AssessmentSubmission) private readonly submissionRepo: Repository<AssessmentSubmission>,
     @InjectRepository(AssessmentSchedule) private readonly scheduleRepo: Repository<AssessmentSchedule>,
+    @InjectRepository(AssessmentSubItem) private readonly subItemRepo: Repository<AssessmentSubItem>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
   ) {}
 
@@ -23,6 +24,7 @@ export class AssessmentService {
     status?: string; deadline?: string; maxScore?: number;
     links?: { title: string; url: string; platform?: string; instructions?: string }[];
     schedules?: { batchLabel: string; departments: string[]; scheduleDate: string; startTime?: string; endTime?: string; venue?: string }[];
+    subItems?: { title: string; type?: string; description?: string; scheduleDate?: string; startTime?: string; endTime?: string; is24Hours?: boolean; links?: { title: string; url: string; platform?: string }[] }[];
   }) {
     const assessment = await this.assessmentRepo.save({
       title: data.title,
@@ -61,6 +63,23 @@ export class AssessmentService {
         venue: s.venue || null,
       }));
       await this.scheduleRepo.save(scheduleEntities);
+    }
+
+    // Save sub-items
+    if (data.subItems && data.subItems.length > 0) {
+      const subEntities = data.subItems.map((si, i) => ({
+        assessmentId: assessment.id,
+        title: si.title,
+        type: si.type || 'custom',
+        description: si.description || null,
+        scheduleDate: si.scheduleDate || null,
+        startTime: si.startTime || null,
+        endTime: si.endTime || null,
+        is24Hours: si.is24Hours || false,
+        links: si.links || [],
+        displayOrder: i,
+      }));
+      await this.subItemRepo.save(subEntities);
     }
 
     // Auto-assign submissions if status is active
@@ -184,8 +203,8 @@ export class AssessmentService {
   async getAssessment(id: string) {
     const assessment = await this.assessmentRepo.findOne({
       where: { id },
-      relations: ['links', 'schedules', 'submissions', 'submissions.student', 'submissions.schedule'],
-      order: { links: { displayOrder: 'ASC' }, schedules: { scheduleDate: 'ASC' } },
+      relations: ['links', 'subItems', 'schedules', 'submissions', 'submissions.student', 'submissions.schedule'],
+      order: { links: { displayOrder: 'ASC' }, subItems: { displayOrder: 'ASC' }, schedules: { scheduleDate: 'ASC' } },
     });
     if (!assessment) throw new NotFoundException('Assessment not found');
 
@@ -194,6 +213,11 @@ export class AssessmentService {
       links: (assessment.links || []).map(l => ({
         id: l.id, title: l.title, url: l.url, platform: l.platform,
         displayOrder: l.displayOrder, instructions: l.instructions,
+      })),
+      subItems: (assessment.subItems || []).map(si => ({
+        id: si.id, title: si.title, type: si.type, description: si.description,
+        scheduleDate: si.scheduleDate, startTime: si.startTime, endTime: si.endTime,
+        is24Hours: si.is24Hours, links: si.links || [], displayOrder: si.displayOrder,
       })),
       schedules: (assessment.schedules || []).map(s => ({
         id: s.id, batchLabel: s.batchLabel, departments: s.departments,
@@ -329,6 +353,64 @@ export class AssessmentService {
     return { message: 'Schedule removed' };
   }
 
+  // ─── Add Sub-Item ────────────────────────────────
+  async addSubItem(assessmentId: string, data: {
+    title: string; type?: string; description?: string;
+    scheduleDate?: string; startTime?: string; endTime?: string;
+    is24Hours?: boolean; links?: { title: string; url: string; platform?: string }[];
+  }) {
+    const assessment = await this.assessmentRepo.findOne({ where: { id: assessmentId } });
+    if (!assessment) throw new NotFoundException('Assessment not found');
+
+    const maxOrder = await this.subItemRepo
+      .createQueryBuilder('si')
+      .select('MAX(si.display_order)', 'max')
+      .where('si.assessment_id = :assessmentId', { assessmentId })
+      .getRawOne();
+
+    return this.subItemRepo.save({
+      assessmentId,
+      title: data.title,
+      type: data.type || 'custom',
+      description: data.description || null,
+      scheduleDate: data.scheduleDate || null,
+      startTime: data.startTime || null,
+      endTime: data.endTime || null,
+      is24Hours: data.is24Hours || false,
+      links: data.links || [],
+      displayOrder: (maxOrder?.max ?? -1) + 1,
+    });
+  }
+
+  // ─── Update Sub-Item ─────────────────────────────
+  async updateSubItem(subItemId: string, data: {
+    title?: string; type?: string; description?: string;
+    scheduleDate?: string; startTime?: string; endTime?: string;
+    is24Hours?: boolean; links?: { title: string; url: string; platform?: string }[];
+  }) {
+    const subItem = await this.subItemRepo.findOne({ where: { id: subItemId } });
+    if (!subItem) throw new NotFoundException('Sub-item not found');
+
+    if (data.title !== undefined) subItem.title = data.title;
+    if (data.type !== undefined) subItem.type = data.type;
+    if (data.description !== undefined) subItem.description = data.description || null;
+    if (data.scheduleDate !== undefined) subItem.scheduleDate = data.scheduleDate || null;
+    if (data.startTime !== undefined) subItem.startTime = data.startTime || null;
+    if (data.endTime !== undefined) subItem.endTime = data.endTime || null;
+    if (data.is24Hours !== undefined) subItem.is24Hours = data.is24Hours;
+    if (data.links !== undefined) subItem.links = data.links;
+
+    return this.subItemRepo.save(subItem);
+  }
+
+  // ─── Remove Sub-Item ─────────────────────────────
+  async removeSubItem(subItemId: string) {
+    const subItem = await this.subItemRepo.findOne({ where: { id: subItemId } });
+    if (!subItem) throw new NotFoundException('Sub-item not found');
+    await this.subItemRepo.remove(subItem);
+    return { message: 'Sub-item removed' };
+  }
+
   // ─── Bulk Grade via Excel data ────────────────────
   async bulkGrade(assessmentId: string, grades: { usn: string; score: number; remarks?: string }[]) {
     const assessment = await this.assessmentRepo.findOne({ where: { id: assessmentId } });
@@ -435,7 +517,7 @@ export class AssessmentService {
 
     const submissions = await this.submissionRepo.find({
       where: { studentId: student.id },
-      relations: ['assessment', 'assessment.links', 'schedule'],
+      relations: ['assessment', 'assessment.links', 'assessment.subItems', 'schedule'],
       order: { createdAt: 'DESC' },
     });
 
@@ -451,6 +533,11 @@ export class AssessmentService {
         isExpired: !!isExpired,
         links: isExpired ? [] : (s.assessment?.links || []).map(l => ({
           id: l.id, title: l.title, url: l.url, platform: l.platform, instructions: l.instructions,
+        })),
+        subItems: isExpired ? [] : (s.assessment?.subItems || []).map(si => ({
+          id: si.id, title: si.title, type: si.type, description: si.description,
+          scheduleDate: si.scheduleDate, startTime: si.startTime, endTime: si.endTime,
+          is24Hours: si.is24Hours, links: si.links || [],
         })),
         gradedAt: s.gradedAt, attemptedAt: s.attemptedAt,
         // Schedule / batch info
