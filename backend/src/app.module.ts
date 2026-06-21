@@ -27,7 +27,7 @@ import {
 import { RoundMeeting, MeetingGroup, MeetingAssignment } from './entities';
 import { EmailLog } from './entities';
 import { StudentDriveFeedback, CompanyDriveFeedback } from './entities';
-import { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule, AssessmentSubItem } from './entities';
+import { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule, AssessmentSubItem, AssessmentCredential } from './entities';
 
 const entities = [
   User,
@@ -58,6 +58,7 @@ const entities = [
   AssessmentSubmission,
   AssessmentSchedule,
   AssessmentSubItem,
+  AssessmentCredential,
 ];
 
 @Module({
