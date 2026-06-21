@@ -547,7 +547,7 @@ export default function AdminAssessmentsPage() {
                   {/* Upload Test Credentials */}
                   <div className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-100">
                     <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-1.5"><KeyRound className="w-4 h-4 text-amber-600" /> Upload Test Credentials</h3>
-                    <p className="text-[11px] text-muted-foreground mb-3">Upload <strong>.xlsx or .csv</strong> with columns: <strong>Email, LoginID, Password</strong> — assigns external test platform credentials to students.</p>
+                    <p className="text-[11px] text-muted-foreground mb-3">Upload <strong>.xlsx or .csv</strong> with columns: <strong>Email, Password</strong> (LoginID optional — defaults to Email). Matched by student email.</p>
                     <input ref={credFileRef} type="file" accept=".csv,.txt,.xlsx,.xls" className="hidden"
                       onChange={async e => {
                         if (!e.target.files?.[0]) return;
@@ -583,12 +583,12 @@ export default function AdminAssessmentsPage() {
                           const emailKey = keys.find(k => ['email', 'mail', 'student_email'].includes(k));
                           const loginKey = keys.find(k => ['loginid', 'login_id', 'id', 'username', 'user_id'].includes(k));
                           const passKey = keys.find(k => ['password', 'pass', 'pwd', 'login_password'].includes(k));
-                          if (!emailKey || !loginKey || !passKey) {
-                            showToast('error', 'File must have Email, LoginID, Password columns'); setUploadingCreds(false); return;
+                          if (!emailKey || !passKey) {
+                            showToast('error', 'File must have Email and Password columns'); setUploadingCreds(false); return;
                           }
                           const creds = rows.map(r => ({
-                            email: r[emailKey] || '', loginId: r[loginKey] || '', password: r[passKey] || '',
-                          })).filter(c => c.email && c.loginId);
+                            email: r[emailKey] || '', loginId: loginKey ? (r[loginKey] || r[emailKey] || '') : (r[emailKey] || ''), password: r[passKey] || '',
+                          })).filter(c => c.email && c.password);
                           const res = await adminApi.uploadAssessmentCredentials(detail.id, creds) as any;
                           showToast('success', `Credentials: ${res?.data?.matched || 0} matched, ${res?.data?.notFound || 0} not found`);
                         } catch { showToast('error', 'Credential upload failed'); } finally { setUploadingCreds(false); e.target.value = ''; }
