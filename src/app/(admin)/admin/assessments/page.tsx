@@ -10,6 +10,7 @@ import {
   Layers, KeyRound,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
+import * as XLSX from "xlsx";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -78,6 +79,7 @@ export default function AdminAssessmentsPage() {
   const [newBatch, setNewBatch] = useState({ batchLabel: "", scheduleDate: "", startTime: "", endTime: "", venue: "", usnStart: "", usnEnd: "" });
   const [showAddSubItem, setShowAddSubItem] = useState(false);
   const [newSubItem, setNewSubItem] = useState({ title: "", type: "aptitude", description: "", scheduleDate: "", startTime: "", endTime: "", is24Hours: false, links: [{ title: "", url: "", platform: "custom" }] });
+  const [selectedDept, setSelectedDept] = useState<string | null>(null);
 
   const showToast = (type: "success" | "error", msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 4000); };
 
@@ -252,6 +254,27 @@ export default function AdminAssessmentsPage() {
                     </div>
                   )}
 
+                  {/* Department Tabs */}
+                  {detail.departments.length > 0 && (
+                    <div>
+                      <p className="text-xs font-semibold text-muted-foreground mb-1.5">Select Department</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        <button onClick={() => setSelectedDept(null)}
+                          className={cn("px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
+                            selectedDept === null ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-muted-foreground border-border hover:border-indigo-300")}>
+                          All Depts
+                        </button>
+                        {detail.departments.map(d => (
+                          <button key={d} onClick={() => setSelectedDept(d)}
+                            className={cn("px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
+                              selectedDept === d ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-muted-foreground border-border hover:border-indigo-300")}>
+                            {d}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Sub-Items */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -374,18 +397,19 @@ export default function AdminAssessmentsPage() {
                     )}
                   </div>
 
+                  {(() => { const filteredSchedules = selectedDept ? detail.schedules.filter(s => s.departments.includes(selectedDept)) : detail.schedules; return (
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4" /> Batch Schedule ({detail.schedules.length})
+                        <Calendar className="w-4 h-4" /> Batch Schedule ({filteredSchedules.length}){selectedDept && <span className="text-xs text-indigo-500 font-normal ml-1">· {selectedDept}</span>}
                       </h3>
                       <button onClick={() => setShowAddBatch(!showAddBatch)} className="text-xs text-blue-600 font-medium hover:text-blue-700 flex items-center gap-0.5">
-                        <Plus className="w-3 h-3" /> Add Batch
+                        <Plus className="w-3 h-3" /> Add Batch{selectedDept ? ` (${selectedDept})` : ""}
                       </button>
                     </div>
-                    {detail.schedules.length > 0 && (
+                    {filteredSchedules.length > 0 && (
                       <div className="space-y-2 mb-2">
-                        {detail.schedules.map(s => (
+                        {filteredSchedules.map(s => (
                           <div key={s.id} className="flex items-center justify-between p-3 bg-blue-50/60 rounded-xl border border-blue-100">
                             <div>
                               <p className="text-sm font-semibold text-foreground">{s.batchLabel}</p>
@@ -405,7 +429,7 @@ export default function AdminAssessmentsPage() {
                         ))}
                       </div>
                     )}
-                    {!showAddBatch && detail.schedules.length === 0 && <p className="text-sm text-muted-foreground">No batch schedules — click "Add Batch" to split by USN range.</p>}
+                    {!showAddBatch && filteredSchedules.length === 0 && <p className="text-sm text-muted-foreground">No batch schedules{selectedDept ? ` for ${selectedDept}` : ""} — click "Add Batch" to create.</p>}
                     {showAddBatch && (
                       <div className="p-3 bg-blue-50/40 rounded-xl border border-blue-100 space-y-2 mt-2">
                         <div className="flex items-center gap-2">
@@ -434,7 +458,7 @@ export default function AdminAssessmentsPage() {
                         <button disabled={!newBatch.batchLabel.trim() || !newBatch.scheduleDate} onClick={async () => {
                           try {
                             await adminApi.addAssessmentSchedule(detail.id, {
-                              batchLabel: newBatch.batchLabel, departments: detail.departments,
+                              batchLabel: newBatch.batchLabel, departments: selectedDept ? [selectedDept] : detail.departments,
                               scheduleDate: newBatch.scheduleDate, startTime: newBatch.startTime || undefined,
                               endTime: newBatch.endTime || undefined, venue: newBatch.venue || undefined,
                               usnStart: newBatch.usnStart ? parseInt(newBatch.usnStart) : undefined,
@@ -450,6 +474,7 @@ export default function AdminAssessmentsPage() {
                       </div>
                     )}
                   </div>
+                  ); })()}
 
                   {/* Links */}
                   <div>
@@ -521,43 +546,66 @@ export default function AdminAssessmentsPage() {
 
                   {/* Upload Test Credentials */}
                   <div className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-100">
-                    <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-1.5"><KeyRound className="w-4 h-4 text-amber-600" /> Upload Test Credentials (CSV)</h3>
-                    <p className="text-[11px] text-muted-foreground mb-3">CSV: <strong>Email, LoginID, Password</strong> — assigns external test platform credentials to students. Matched by student email.</p>
-                    <input ref={credFileRef} type="file" accept=".csv,.txt" className="hidden"
+                    <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-1.5"><KeyRound className="w-4 h-4 text-amber-600" /> Upload Test Credentials</h3>
+                    <p className="text-[11px] text-muted-foreground mb-3">Upload <strong>.xlsx or .csv</strong> with columns: <strong>Email, LoginID, Password</strong> — assigns external test platform credentials to students.</p>
+                    <input ref={credFileRef} type="file" accept=".csv,.txt,.xlsx,.xls" className="hidden"
                       onChange={async e => {
                         if (!e.target.files?.[0]) return;
+                        const file = e.target.files[0];
                         setUploadingCreds(true);
                         try {
-                          const text = await e.target.files[0].text();
-                          const lines = text.split("\n").filter(l => l.trim());
-                          if (lines.length < 2) { showToast("error", "CSV must have header + data rows"); return; }
-                          const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
-                          const emailIdx = headers.findIndex(h => ["email", "mail", "student_email"].includes(h));
-                          const loginIdx = headers.findIndex(h => ["loginid", "login_id", "id", "username", "user_id"].includes(h));
-                          const passIdx = headers.findIndex(h => ["password", "pass", "pwd", "login_password"].includes(h));
-                          if (emailIdx < 0 || loginIdx < 0 || passIdx < 0) {
-                            showToast("error", "CSV must have Email, LoginID, Password columns"); return;
+                          let rows: Record<string, string>[] = [];
+                          const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+                          if (isExcel) {
+                            const buf = await file.arrayBuffer();
+                            const wb = XLSX.read(buf, { type: 'array' });
+                            const ws = wb.Sheets[wb.SheetNames[0]];
+                            const jsonData = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: '' });
+                            rows = jsonData.map(r => {
+                              const norm: Record<string, string> = {};
+                              for (const [k, v] of Object.entries(r)) norm[k.trim().toLowerCase()] = String(v).trim();
+                              return norm;
+                            });
+                          } else {
+                            const text = await file.text();
+                            const lines = text.split('\n').filter(l => l.trim());
+                            if (lines.length < 2) { showToast('error', 'File must have header + data rows'); setUploadingCreds(false); return; }
+                            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+                            rows = lines.slice(1).map(line => {
+                              const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+                              const obj: Record<string, string> = {};
+                              headers.forEach((h, i) => { obj[h] = cols[i] || ''; });
+                              return obj;
+                            });
                           }
-                          const creds = lines.slice(1).map(line => {
-                            const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ""));
-                            return { email: cols[emailIdx] || "", loginId: cols[loginIdx] || "", password: cols[passIdx] || "" };
-                          }).filter(c => c.email && c.loginId);
+                          if (rows.length === 0) { showToast('error', 'No data rows found'); setUploadingCreds(false); return; }
+                          const keys = Object.keys(rows[0]);
+                          const emailKey = keys.find(k => ['email', 'mail', 'student_email'].includes(k));
+                          const loginKey = keys.find(k => ['loginid', 'login_id', 'id', 'username', 'user_id'].includes(k));
+                          const passKey = keys.find(k => ['password', 'pass', 'pwd', 'login_password'].includes(k));
+                          if (!emailKey || !loginKey || !passKey) {
+                            showToast('error', 'File must have Email, LoginID, Password columns'); setUploadingCreds(false); return;
+                          }
+                          const creds = rows.map(r => ({
+                            email: r[emailKey] || '', loginId: r[loginKey] || '', password: r[passKey] || '',
+                          })).filter(c => c.email && c.loginId);
                           const res = await adminApi.uploadAssessmentCredentials(detail.id, creds) as any;
-                          showToast("success", `Credentials: ${res?.data?.matched || 0} matched, ${res?.data?.notFound || 0} not found`);
-                        } catch { showToast("error", "Credential upload failed"); } finally { setUploadingCreds(false); e.target.value = ""; }
+                          showToast('success', `Credentials: ${res?.data?.matched || 0} matched, ${res?.data?.notFound || 0} not found`);
+                        } catch { showToast('error', 'Credential upload failed'); } finally { setUploadingCreds(false); e.target.value = ''; }
                       }} />
                     <button onClick={() => credFileRef.current?.click()} disabled={uploadingCreds}
                       className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg text-sm font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50">
                       {uploadingCreds ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
-                      {uploadingCreds ? "Uploading..." : "Upload Credentials CSV"}
+                      {uploadingCreds ? "Uploading..." : "Upload Credentials (.xlsx / .csv)"}
                     </button>
                   </div>
 
                   {/* Submissions Table */}
+                  {(() => { const filteredSubs = selectedDept ? detail.submissions.filter(s => s.department === selectedDept) : detail.submissions; return (
                   <div>
-                    <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5"><Users className="w-4 h-4" /> Submissions ({detail.submissions.length})</h3>
-                    {detail.submissions.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No students assigned. Publish to assign.</p>
+                    <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5"><Users className="w-4 h-4" /> Submissions ({filteredSubs.length}){selectedDept && <span className="text-xs text-indigo-500 font-normal ml-1">· {selectedDept}</span>}</h3>
+                    {filteredSubs.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No students{selectedDept ? ` in ${selectedDept}` : ""}. Publish to assign.</p>
                     ) : (
                       <div className="overflow-x-auto -mx-1">
                         <table className="w-full text-sm">
@@ -570,7 +618,7 @@ export default function AdminAssessmentsPage() {
                             <th className="text-center py-2 px-2 text-[11px] font-semibold text-muted-foreground">Score</th>
                           </tr></thead>
                           <tbody>
-                            {detail.submissions.map(s => (
+                            {filteredSubs.map(s => (
                               <tr key={s.id} className="border-b border-border/50 hover:bg-accent/20 transition-colors">
                                 <td className="py-2 px-2 text-foreground font-medium truncate max-w-[120px]">{s.studentName || "—"}</td>
                                 <td className="py-2 px-2 text-muted-foreground text-xs">{s.usn || "—"}</td>
@@ -590,6 +638,7 @@ export default function AdminAssessmentsPage() {
                       </div>
                     )}
                   </div>
+                  ); })()}
 
                   {/* Dept Stats */}
                   {stats?.departmentStats?.length > 0 && (
