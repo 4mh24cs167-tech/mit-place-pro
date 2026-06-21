@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import {
   ClipboardCheck, Loader2, AlertCircle, Plus, Trash2, ExternalLink,
   Link2, Upload, BarChart3, Clock, Users, X, CheckCircle2, Calendar, MapPin,
-  Layers,
+  Layers, KeyRound,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 
@@ -66,8 +66,10 @@ export default function AdminAssessmentsPage() {
   const [filterStatus, setFilterStatus] = useState("");
   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [uploadingGrades, setUploadingGrades] = useState(false);
+  const [uploadingCreds, setUploadingCreds] = useState(false);
   const [stats, setStats] = useState<any>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const credFileRef = useRef<HTMLInputElement>(null);
 
   const showToast = (type: "success" | "error", msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 4000); };
 
@@ -351,6 +353,40 @@ export default function AdminAssessmentsPage() {
                       className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-lg text-sm font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50">
                       {uploadingGrades ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                       {uploadingGrades ? "Processing..." : "Upload CSV"}
+                    </button>
+                  </div>
+
+                  {/* Upload Test Credentials */}
+                  <div className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-100">
+                    <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-1.5"><KeyRound className="w-4 h-4 text-amber-600" /> Upload Test Credentials (CSV)</h3>
+                    <p className="text-[11px] text-muted-foreground mb-3">CSV: <strong>Email, LoginID, Password</strong> — assigns external test platform credentials to students. Matched by student email.</p>
+                    <input ref={credFileRef} type="file" accept=".csv,.txt" className="hidden"
+                      onChange={async e => {
+                        if (!e.target.files?.[0]) return;
+                        setUploadingCreds(true);
+                        try {
+                          const text = await e.target.files[0].text();
+                          const lines = text.split("\n").filter(l => l.trim());
+                          if (lines.length < 2) { showToast("error", "CSV must have header + data rows"); return; }
+                          const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+                          const emailIdx = headers.findIndex(h => ["email", "mail", "student_email"].includes(h));
+                          const loginIdx = headers.findIndex(h => ["loginid", "login_id", "id", "username", "user_id"].includes(h));
+                          const passIdx = headers.findIndex(h => ["password", "pass", "pwd", "login_password"].includes(h));
+                          if (emailIdx < 0 || loginIdx < 0 || passIdx < 0) {
+                            showToast("error", "CSV must have Email, LoginID, Password columns"); return;
+                          }
+                          const creds = lines.slice(1).map(line => {
+                            const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ""));
+                            return { email: cols[emailIdx] || "", loginId: cols[loginIdx] || "", password: cols[passIdx] || "" };
+                          }).filter(c => c.email && c.loginId);
+                          const res = await adminApi.uploadAssessmentCredentials(detail.id, creds) as any;
+                          showToast("success", `Credentials: ${res?.data?.matched || 0} matched, ${res?.data?.notFound || 0} not found`);
+                        } catch { showToast("error", "Credential upload failed"); } finally { setUploadingCreds(false); e.target.value = ""; }
+                      }} />
+                    <button onClick={() => credFileRef.current?.click()} disabled={uploadingCreds}
+                      className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg text-sm font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50">
+                      {uploadingCreds ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+                      {uploadingCreds ? "Uploading..." : "Upload Credentials CSV"}
                     </button>
                   </div>
 

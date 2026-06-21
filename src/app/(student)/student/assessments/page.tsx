@@ -6,7 +6,7 @@ import { studentApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import {
   ClipboardCheck, Loader2, AlertCircle, ExternalLink,
-  Clock, Trophy, CheckCircle2, XCircle, Lock, Calendar, MapPin, Layers, Link2,
+  Clock, Trophy, CheckCircle2, XCircle, Lock, Calendar, MapPin, Layers, Link2, KeyRound,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -30,6 +30,7 @@ interface AssessmentItem {
   subItems: SubItemInfo[];
   gradedAt: string | null; attemptedAt: string | null;
   schedule: ScheduleInfo | null;
+  credentials: { loginId: string; password: string } | null;
 }
 
 const TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -133,6 +134,26 @@ export default function StudentAssessmentsPage() {
                         )}
 
                         {a.description && <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{a.description}</p>}
+
+                        {/* Test Platform Credentials */}
+                        {a.credentials && (
+                          <div className="mb-3 p-3 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200">
+                            <div className="flex items-center gap-1.5 mb-2">
+                              <KeyRound className="w-4 h-4 text-amber-600" />
+                              <span className="text-xs font-bold text-amber-700">Your Test Credentials</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="p-2 bg-white rounded-lg border border-amber-100">
+                                <p className="text-[10px] font-semibold text-muted-foreground uppercase">Login ID</p>
+                                <p className="text-sm font-mono font-bold text-foreground select-all">{a.credentials.loginId}</p>
+                              </div>
+                              <div className="p-2 bg-white rounded-lg border border-amber-100">
+                                <p className="text-[10px] font-semibold text-muted-foreground uppercase">Password</p>
+                                <p className="text-sm font-mono font-bold text-foreground select-all">{a.credentials.password}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Sub-Items with their own links & timings */}
                         {hasSubItems && (

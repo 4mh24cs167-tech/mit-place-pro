@@ -62,6 +62,9 @@ export class Assessment {
   @OneToMany(() => AssessmentSubmission, (s) => s.assessment, { cascade: true })
   submissions: AssessmentSubmission[];
 
+  @OneToMany(() => AssessmentCredential, (c) => c.assessment, { cascade: true })
+  credentials: AssessmentCredential[];
+
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
@@ -251,4 +254,39 @@ export class AssessmentSubmission {
 
   @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
   updatedAt: Date;
+}
+
+// ─── Assessment Credential (per-student test login) ──
+@Entity('assessment_credentials')
+@Unique(['assessmentId', 'studentId'])
+@Index('idx_acred_assessment_id', ['assessmentId'])
+@Index('idx_acred_student_id', ['studentId'])
+export class AssessmentCredential {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'uuid', name: 'assessment_id' })
+  assessmentId: string;
+
+  @ManyToOne(() => Assessment, (a) => a.credentials, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'assessment_id' })
+  assessment: Assessment;
+
+  @Column({ type: 'uuid', name: 'student_id' })
+  studentId: string;
+
+  @ManyToOne(() => Student, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'student_id' })
+  student: Student;
+
+  /** The test platform login ID/email */
+  @Column({ type: 'varchar', length: 300, name: 'login_id' })
+  loginId: string;
+
+  /** The test platform password */
+  @Column({ type: 'varchar', length: 300, name: 'login_password' })
+  loginPassword: string;
+
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  createdAt: Date;
 }

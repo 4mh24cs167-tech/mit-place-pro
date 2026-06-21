@@ -316,6 +316,8 @@ export const adminApi = {
     apiFetch(`/api/v1/admin/assessments/sub-items/${subItemId}`, { method: 'PATCH', body: data }),
   removeAssessmentSubItem: (subItemId: string) =>
     apiFetch(`/api/v1/admin/assessments/sub-items/${subItemId}`, { method: 'DELETE' }),
+  uploadAssessmentCredentials: (id: string, credentials: { email: string; loginId: string; password: string }[]) =>
+    apiFetch(`/api/v1/admin/assessments/${id}/credentials`, { method: 'POST', body: { credentials } }),
 };
 
 // ─── Student ─────────────────────────────────────

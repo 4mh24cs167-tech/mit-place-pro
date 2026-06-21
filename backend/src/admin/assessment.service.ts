@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
-import { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule, AssessmentSubItem } from '../entities/assessment.entity';
+import { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule, AssessmentSubItem, AssessmentCredential } from '../entities/assessment.entity';
 import { Student } from '../entities/student.entity';
 
 @Injectable()
@@ -14,6 +14,7 @@ export class AssessmentService {
     @InjectRepository(AssessmentSubmission) private readonly submissionRepo: Repository<AssessmentSubmission>,
     @InjectRepository(AssessmentSchedule) private readonly scheduleRepo: Repository<AssessmentSchedule>,
     @InjectRepository(AssessmentSubItem) private readonly subItemRepo: Repository<AssessmentSubItem>,
+    @InjectRepository(AssessmentCredential) private readonly credentialRepo: Repository<AssessmentCredential>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
   ) {}
 
@@ -540,6 +541,57 @@ export class AssessmentService {
     };
   }
 
+  // ─── Upload Credentials (CSV: email, loginId, password) ──
+  async uploadCredentials(assessmentId: string, credentials: { email: string; loginId: string; password: string }[]) {
+    const assessment = await this.assessmentRepo.findOne({ where: { id: assessmentId } });
+    if (!assessment) throw new NotFoundException('Assessment not found');
+
+    // Get all unique emails from the CSV
+    const emails = [...new Set(credentials.map(c => c.email.trim().toLowerCase()))];
+
+    // Find students by email (via User relation)
+    const students = await this.studentRepo.createQueryBuilder('s')
+      .innerJoin('s.user', 'u')
+      .where('LOWER(u.email) IN (:...emails)', { emails })
+      .select(['s.id', 'u.email'])
+      .addSelect('u.email', 'userEmail')
+      .getRawMany();
+
+    const emailToStudentId = new Map<string, string>();
+    for (const s of students) {
+      emailToStudentId.set((s.userEmail || s.u_email || '').toLowerCase(), s.s_id);
+    }
+
+    let matched = 0;
+    let notFound = 0;
+
+    for (const cred of credentials) {
+      const email = cred.email.trim().toLowerCase();
+      const studentId = emailToStudentId.get(email);
+      if (!studentId) { notFound++; continue; }
+
+      // Upsert credential
+      const existing = await this.credentialRepo.findOne({
+        where: { assessmentId, studentId },
+      });
+      if (existing) {
+        existing.loginId = cred.loginId;
+        existing.loginPassword = cred.password;
+        await this.credentialRepo.save(existing);
+      } else {
+        await this.credentialRepo.save({
+          assessmentId, studentId,
+          loginId: cred.loginId,
+          loginPassword: cred.password,
+        });
+      }
+      matched++;
+    }
+
+    this.logger.log(`Credentials uploaded: ${matched} matched, ${notFound} not found`);
+    return { matched, notFound, total: credentials.length };
+  }
+
   // ─── Student: Get My Assessments ──────────────────
   async getStudentAssessments(userId: string) {
     const student = await this.studentRepo.findOne({ where: { userId } });
@@ -553,8 +605,19 @@ export class AssessmentService {
       order: { createdAt: 'DESC' },
     });
 
+    // Fetch all credentials for this student's assessments
+    const assessmentIds = [...new Set(submissions.map(s => s.assessmentId))];
+    let credMap = new Map<string, { loginId: string; loginPassword: string }>();
+    if (assessmentIds.length > 0) {
+      const creds = await this.credentialRepo.find({
+        where: { studentId: student.id, assessmentId: In(assessmentIds) },
+      });
+      credMap = new Map(creds.map(c => [c.assessmentId, { loginId: c.loginId, loginPassword: c.loginPassword }]));
+    }
+
     return submissions.map(s => {
       const isExpired = s.assessment?.deadline && new Date(s.assessment.deadline) < now;
+      const cred = credMap.get(s.assessmentId);
       return {
         id: s.id, assessmentId: s.assessmentId,
         title: s.assessment?.title, description: s.assessment?.description,
@@ -572,6 +635,8 @@ export class AssessmentService {
           is24Hours: si.is24Hours, links: si.links || [],
         })),
         gradedAt: s.gradedAt, attemptedAt: s.attemptedAt,
+        // Credentials for this assessment
+        credentials: cred ? { loginId: cred.loginId, password: cred.loginPassword } : null,
         // Schedule / batch info
         schedule: s.schedule ? {
           batchLabel: s.schedule.batchLabel,

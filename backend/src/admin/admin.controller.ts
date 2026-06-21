@@ -505,4 +505,13 @@ export class AdminController {
     const data = await this.assessmentService.removeSubItem(subItemId);
     return { success: true, data };
   }
+
+  @Post('assessments/:id/credentials')
+  async uploadAssessmentCredentials(
+    @Param('id') id: string,
+    @Body() body: { credentials: { email: string; loginId: string; password: string }[] },
+  ) {
+    const data = await this.assessmentService.uploadCredentials(id, body.credentials);
+    return { success: true, data };
+  }
 }
