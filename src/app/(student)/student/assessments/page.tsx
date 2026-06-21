@@ -119,15 +119,27 @@ export default function StudentAssessmentsPage() {
 
                         {/* Schedule / Batch Info */}
                         {a.schedule && (
-                          <div className="mb-3 p-2.5 bg-blue-50/60 rounded-xl border border-blue-100">
-                            <p className="text-xs font-semibold text-blue-700 mb-1">{a.schedule.batchLabel}</p>
-                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-blue-600">
-                              <span className="flex items-center gap-0.5"><Calendar className="w-3 h-3" /> {new Date(a.schedule.scheduleDate).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</span>
+                          <div className="mb-3 p-3.5 bg-gradient-to-r from-blue-50/80 to-cyan-50/80 rounded-xl border border-blue-200 shadow-sm">
+                            <div className="flex items-center gap-2 mb-2">
+                              <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+                                <Calendar className="w-4 h-4 text-white" />
+                              </div>
+                              <h4 className="text-sm font-bold text-foreground">{a.schedule.batchLabel}</h4>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-700 border border-blue-200">Your Batch</span>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-3 text-xs">
+                              <span className="flex items-center gap-1 font-semibold text-blue-700 bg-white px-2.5 py-1 rounded-lg border border-blue-100">
+                                <Calendar className="w-3.5 h-3.5" /> {new Date(a.schedule.scheduleDate).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                              </span>
                               {a.schedule.startTime && (
-                                <span className="flex items-center gap-0.5"><Clock className="w-3 h-3" /> {a.schedule.startTime}{a.schedule.endTime ? ` – ${a.schedule.endTime}` : ""}</span>
+                                <span className="flex items-center gap-1 font-semibold text-blue-700 bg-white px-2.5 py-1 rounded-lg border border-blue-100">
+                                  <Clock className="w-3.5 h-3.5" /> {a.schedule.startTime}{a.schedule.endTime ? ` – ${a.schedule.endTime}` : ""}
+                                </span>
                               )}
                               {a.schedule.venue && (
-                                <span className="flex items-center gap-0.5"><MapPin className="w-3 h-3" /> {a.schedule.venue}</span>
+                                <span className="flex items-center gap-1 font-semibold text-blue-700 bg-white px-2.5 py-1 rounded-lg border border-blue-100">
+                                  <MapPin className="w-3.5 h-3.5" /> {a.schedule.venue}
+                                </span>
                               )}
                             </div>
                           </div>
