@@ -464,13 +464,7 @@ export default function AdminAssessmentsPage() {
   );
 }
 
-// ─── Create Modal with sub-items builder ─
-interface SubItemForm {
-  title: string; type: string; description: string;
-  scheduleDate: string; startTime: string; endTime: string; is24Hours: boolean;
-  links: { title: string; url: string; platform: string }[];
-}
-
+// ─── Simplified Create Modal ─
 function CreateModal({ departments, onClose, onCreated }: {
   departments: { id: string; code: string; name: string }[];
   onClose: () => void; onCreated: () => void;
@@ -479,49 +473,11 @@ function CreateModal({ departments, onClose, onCreated }: {
   const [description, setDescription] = useState("");
   const [selectedTypes, setSelectedTypes] = useState<string[]>(["aptitude"]);
   const [selectedDepts, setSelectedDepts] = useState<string[]>([]);
-  const [deadline, setDeadline] = useState("");
-  const [maxScore, setMaxScore] = useState("");
   const [status, setStatus] = useState("active");
-  const [links, setLinks] = useState<{ title: string; url: string; platform: string }[]>([]);
-  const [schedules, setSchedules] = useState<{ batchLabel: string; departments: string[]; scheduleDate: string; startTime: string; endTime: string; venue: string; usnStart: string; usnEnd: string }[]>([]);
-  const [subItems, setSubItems] = useState<SubItemForm[]>([]);
   const [saving, setSaving] = useState(false);
 
   const toggleType = (t: string) => setSelectedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
   const toggleDept = (code: string) => setSelectedDepts(prev => prev.includes(code) ? prev.filter(d => d !== code) : [...prev, code]);
-
-  const addSchedule = () => {
-    setSchedules([...schedules, { batchLabel: `Batch ${schedules.length + 1}`, departments: [], scheduleDate: "", startTime: "", endTime: "", venue: "", usnStart: "", usnEnd: "" }]);
-  };
-
-  const addSubItem = () => {
-    setSubItems([...subItems, { title: "", type: "aptitude", description: "", scheduleDate: "", startTime: "", endTime: "", is24Hours: false, links: [{ title: "", url: "", platform: "custom" }] }]);
-  };
-
-  const updateSubItem = (idx: number, field: string, val: any) => {
-    const n = [...subItems];
-    (n[idx] as any)[field] = val;
-    if (field === "is24Hours" && val) { n[idx].startTime = ""; n[idx].endTime = ""; }
-    setSubItems(n);
-  };
-
-  const addSubItemLink = (idx: number) => {
-    const n = [...subItems];
-    n[idx].links = [...n[idx].links, { title: "", url: "", platform: "custom" }];
-    setSubItems(n);
-  };
-
-  const updateSubItemLink = (siIdx: number, lIdx: number, field: string, val: string) => {
-    const n = [...subItems];
-    (n[siIdx].links[lIdx] as any)[field] = val;
-    setSubItems(n);
-  };
-
-  const removeSubItemLink = (siIdx: number, lIdx: number) => {
-    const n = [...subItems];
-    n[siIdx].links = n[siIdx].links.filter((_, j) => j !== lIdx);
-    setSubItems(n);
-  };
 
   const handleSave = async () => {
     if (!title.trim()) return;
@@ -530,25 +486,6 @@ function CreateModal({ departments, onClose, onCreated }: {
       await adminApi.createAssessment({
         title: title.trim(), description: description.trim() || undefined,
         types: selectedTypes, departments: selectedDepts, status,
-        deadline: deadline || undefined,
-        maxScore: maxScore ? parseFloat(maxScore) : undefined,
-        links: links.filter(l => l.title.trim() && l.url.trim()),
-        schedules: schedules.filter(s => s.scheduleDate).map(s => ({
-          batchLabel: s.batchLabel, departments: selectedDepts,
-          scheduleDate: s.scheduleDate, startTime: s.startTime || undefined,
-          endTime: s.endTime || undefined, venue: s.venue || undefined,
-          usnStart: s.usnStart ? parseInt(s.usnStart) : undefined,
-          usnEnd: s.usnEnd ? parseInt(s.usnEnd) : undefined,
-        })),
-        subItems: subItems.filter(si => si.title.trim()).map(si => ({
-          title: si.title.trim(), type: si.type,
-          description: si.description.trim() || undefined,
-          scheduleDate: si.scheduleDate || undefined,
-          startTime: si.is24Hours ? undefined : (si.startTime || undefined),
-          endTime: si.is24Hours ? undefined : (si.endTime || undefined),
-          is24Hours: si.is24Hours,
-          links: si.links.filter(l => l.title.trim() && l.url.trim()),
-        })),
       });
       onCreated();
     } catch { /* */ } finally { setSaving(false); }
@@ -556,7 +493,7 @@ function CreateModal({ departments, onClose, onCreated }: {
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-start justify-center pt-4 sm:pt-8 px-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="p-5 sm:p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-foreground">New Assessment</h2>
@@ -591,25 +528,13 @@ function CreateModal({ departments, onClose, onCreated }: {
             </div>
           </div>
 
-          {/* Status + Max Score + Deadline */}
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">Status</label>
-              <select value={status} onChange={e => setStatus(e.target.value)} className="w-full px-3 py-2.5 bg-white border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
-                <option value="draft">Draft</option>
-                <option value="active">Active</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">Max Score</label>
-              <input type="number" value={maxScore} onChange={e => setMaxScore(e.target.value)} placeholder="100"
-                className="w-full px-3 py-2.5 bg-white border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
-            </div>
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground block mb-1">Deadline</label>
-              <input type="datetime-local" value={deadline} onChange={e => setDeadline(e.target.value)}
-                className="w-full px-3 py-2.5 bg-white border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30" />
-            </div>
+          {/* Status */}
+          <div>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">Status</label>
+            <select value={status} onChange={e => setStatus(e.target.value)} className="w-full px-3 py-2.5 bg-white border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30">
+              <option value="draft">Draft</option>
+              <option value="active">Active</option>
+            </select>
           </div>
 
           {/* Departments */}
@@ -626,146 +551,7 @@ function CreateModal({ departments, onClose, onCreated }: {
             </div>
           </div>
 
-          {/* Sub-Items Builder */}
-          <div className="border-t border-border pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-violet-600" /> Sub-Assessments
-              </label>
-              <button onClick={addSubItem} className="text-xs text-violet-600 font-medium hover:text-violet-700 flex items-center gap-0.5"><Plus className="w-3 h-3" /> Add Sub-Assessment</button>
-            </div>
-            {subItems.length === 0 ? (
-              <p className="text-[11px] text-muted-foreground">Each sub-assessment gets its own type, time slot, and links. Click &quot;Add Sub-Assessment&quot; to start.</p>
-            ) : (
-              <div className="space-y-3">
-                {subItems.map((si, i) => (
-                  <div key={i} className="p-3 bg-gradient-to-r from-violet-50/60 to-indigo-50/60 rounded-xl border border-violet-100 space-y-2.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <input value={si.title} onChange={e => updateSubItem(i, "title", e.target.value)} placeholder="e.g. Aptitude Test"
-                        className="flex-1 px-2.5 py-1.5 bg-white border border-border rounded-lg text-sm font-semibold focus:outline-none" />
-                      <select value={si.type} onChange={e => updateSubItem(i, "type", e.target.value)}
-                        className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none capitalize">
-                        {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                      <button onClick={() => setSubItems(subItems.filter((_, j) => j !== i))} className="p-1 text-red-400 hover:text-red-600"><X className="w-3.5 h-3.5" /></button>
-                    </div>
-
-                    <input value={si.description} onChange={e => updateSubItem(i, "description", e.target.value)} placeholder="Description (optional)"
-                      className="w-full px-2.5 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
-
-                    {/* Time */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <label className="flex items-center gap-1.5 text-xs">
-                        <input type="checkbox" checked={si.is24Hours} onChange={e => updateSubItem(i, "is24Hours", e.target.checked)}
-                          className="rounded border-border" />
-                        <span className="font-medium text-emerald-700">24 Hours</span>
-                      </label>
-                      {!si.is24Hours && (
-                        <>
-                          <input type="date" value={si.scheduleDate} onChange={e => updateSubItem(i, "scheduleDate", e.target.value)}
-                            className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
-                          <input value={si.startTime} onChange={e => updateSubItem(i, "startTime", e.target.value)} placeholder="10:00 AM"
-                            className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none w-24" />
-                          <input value={si.endTime} onChange={e => updateSubItem(i, "endTime", e.target.value)} placeholder="12:00 PM"
-                            className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none w-24" />
-                        </>
-                      )}
-                    </div>
-
-                    {/* Links for this sub-item */}
-                    <div>
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Links</p>
-                      <div className="space-y-1.5">
-                        {si.links.map((l, li) => (
-                          <div key={li} className="flex items-center gap-1.5">
-                            <input value={l.title} onChange={e => updateSubItemLink(i, li, "title", e.target.value)} placeholder="Link title"
-                              className="flex-1 px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
-                            <input value={l.url} onChange={e => updateSubItemLink(i, li, "url", e.target.value)} placeholder="https://..."
-                              className="flex-[2] px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
-                            {si.links.length > 1 && (
-                              <button onClick={() => removeSubItemLink(i, li)} className="p-0.5 text-red-400 hover:text-red-600"><X className="w-3 h-3" /></button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      <button onClick={() => addSubItemLink(i)} className="mt-1 text-[10px] text-indigo-600 font-medium hover:text-indigo-700 flex items-center gap-0.5">
-                        <Plus className="w-2.5 h-2.5" /> Add link
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Batch Schedules — split by USN range */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Batch Schedules (split students by USN range)</label>
-              <button onClick={addSchedule} className="text-xs text-indigo-600 font-medium hover:text-indigo-700 flex items-center gap-0.5"><Plus className="w-3 h-3" /> Add Batch</button>
-            </div>
-            {schedules.length === 0 ? (
-              <p className="text-[11px] text-muted-foreground">No batches — all students share the same schedule. Add batches to split by USN range (e.g. 001–100 in Batch 1, 101–200 in Batch 2).</p>
-            ) : (
-              <div className="space-y-3">
-                {schedules.map((s, i) => (
-                  <div key={i} className="p-3 bg-blue-50/50 rounded-xl border border-blue-100 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <input value={s.batchLabel} onChange={e => { const n = [...schedules]; n[i].batchLabel = e.target.value; setSchedules(n); }}
-                        className="px-2 py-1 bg-white border border-border rounded-lg text-sm font-semibold w-32 focus:outline-none" />
-                      <button onClick={() => setSchedules(schedules.filter((_, j) => j !== i))} className="p-1 text-red-400 hover:text-red-600"><X className="w-3.5 h-3.5" /></button>
-                    </div>
-                    {/* USN Range */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-semibold text-blue-600 whitespace-nowrap">USN Range:</span>
-                      <input type="number" value={s.usnStart} onChange={e => { const n = [...schedules]; n[i].usnStart = e.target.value; setSchedules(n); }}
-                        placeholder="From (e.g. 1)" className="w-28 px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
-                      <span className="text-xs text-muted-foreground">to</span>
-                      <input type="number" value={s.usnEnd} onChange={e => { const n = [...schedules]; n[i].usnEnd = e.target.value; setSchedules(n); }}
-                        placeholder="To (e.g. 100)" className="w-28 px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
-                    </div>
-                    {/* Date + Time + Venue */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      <input type="date" value={s.scheduleDate} onChange={e => { const n = [...schedules]; n[i].scheduleDate = e.target.value; setSchedules(n); }}
-                        className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
-                      <input value={s.startTime} onChange={e => { const n = [...schedules]; n[i].startTime = e.target.value; setSchedules(n); }}
-                        placeholder="10:00 AM" className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
-                      <input value={s.endTime} onChange={e => { const n = [...schedules]; n[i].endTime = e.target.value; setSchedules(n); }}
-                        placeholder="12:00 PM" className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
-                      <input value={s.venue} onChange={e => { const n = [...schedules]; n[i].venue = e.target.value; setSchedules(n); }}
-                        placeholder="Venue" className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Direct Links (legacy) */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-semibold text-muted-foreground">Direct Test Links (optional)</label>
-              <button onClick={() => setLinks([...links, { title: "", url: "", platform: "custom" }])}
-                className="text-xs text-indigo-600 font-medium hover:text-indigo-700 flex items-center gap-0.5"><Plus className="w-3 h-3" /> Add link</button>
-            </div>
-            {links.length > 0 && (
-              <div className="space-y-2">
-                {links.map((l, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <input value={l.title} onChange={e => { const n = [...links]; n[i].title = e.target.value; setLinks(n); }}
-                      placeholder="Link title" className="flex-1 px-2.5 py-2 bg-white border border-border rounded-lg text-xs focus:outline-none" />
-                    <input value={l.url} onChange={e => { const n = [...links]; n[i].url = e.target.value; setLinks(n); }}
-                      placeholder="https://..." className="flex-[2] px-2.5 py-2 bg-white border border-border rounded-lg text-xs focus:outline-none" />
-                    <select value={l.platform} onChange={e => { const n = [...links]; n[i].platform = e.target.value; setLinks(n); }}
-                      className="px-2 py-2 bg-white border border-border rounded-lg text-xs focus:outline-none hidden sm:block">
-                      {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
-                    </select>
-                    <button onClick={() => setLinks(links.filter((_, j) => j !== i))} className="p-1 text-red-400 hover:text-red-600"><X className="w-3.5 h-3.5" /></button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <p className="text-[11px] text-muted-foreground text-center">You can add links, sub-assessments, batches, and credentials after creating.</p>
 
           {/* Save */}
           <button onClick={handleSave} disabled={saving || !title.trim()}
@@ -778,3 +564,4 @@ function CreateModal({ departments, onClose, onCreated }: {
     </div>
   );
 }
+
