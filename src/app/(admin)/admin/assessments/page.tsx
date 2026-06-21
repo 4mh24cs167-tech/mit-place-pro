@@ -71,6 +71,14 @@ export default function AdminAssessmentsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const credFileRef = useRef<HTMLInputElement>(null);
 
+  // Inline add forms
+  const [showAddLink, setShowAddLink] = useState(false);
+  const [newLink, setNewLink] = useState({ title: "", url: "", platform: "custom" });
+  const [showAddBatch, setShowAddBatch] = useState(false);
+  const [newBatch, setNewBatch] = useState({ batchLabel: "", scheduleDate: "", startTime: "", endTime: "", venue: "", usnStart: "", usnEnd: "" });
+  const [showAddSubItem, setShowAddSubItem] = useState(false);
+  const [newSubItem, setNewSubItem] = useState({ title: "", type: "aptitude", description: "", scheduleDate: "", startTime: "", endTime: "", is24Hours: false, links: [{ title: "", url: "", platform: "custom" }] });
+
   const showToast = (type: "success" | "error", msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 4000); };
 
   const fetchAssessments = useCallback(async () => {
@@ -245,11 +253,17 @@ export default function AdminAssessmentsPage() {
                   )}
 
                   {/* Sub-Items */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                        <Layers className="w-4 h-4" /> Sub-Assessments ({(detail.subItems || []).length})
+                      </h3>
+                      <button onClick={() => setShowAddSubItem(!showAddSubItem)} className="text-xs text-violet-600 font-medium hover:text-violet-700 flex items-center gap-0.5">
+                        <Plus className="w-3 h-3" /> Add Sub-Assessment
+                      </button>
+                    </div>
                   {(detail.subItems || []).length > 0 && (
                     <div>
-                      <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
-                        <Layers className="w-4 h-4" /> Sub-Assessments ({detail.subItems.length})
-                      </h3>
                       <div className="space-y-2">
                         {detail.subItems.map(si => (
                           <div key={si.id} className="p-3.5 bg-gradient-to-r from-violet-50/80 to-indigo-50/80 rounded-xl border border-violet-100">
@@ -291,14 +305,86 @@ export default function AdminAssessmentsPage() {
                       </div>
                     </div>
                   )}
+                    {!showAddSubItem && (detail.subItems || []).length === 0 && <p className="text-sm text-muted-foreground">No sub-assessments — click "Add Sub-Assessment" to add.</p>}
+                    {showAddSubItem && (
+                      <div className="p-3 bg-violet-50/40 rounded-xl border border-violet-100 space-y-2 mt-2">
+                        <div className="flex items-center gap-2">
+                          <input value={newSubItem.title} onChange={e => setNewSubItem({ ...newSubItem, title: e.target.value })} placeholder="e.g. Aptitude Test"
+                            className="flex-1 px-2.5 py-1.5 bg-white border border-border rounded-lg text-sm font-semibold focus:outline-none" />
+                          <select value={newSubItem.type} onChange={e => setNewSubItem({ ...newSubItem, type: e.target.value })}
+                            className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none capitalize">
+                            {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                          <button onClick={() => setShowAddSubItem(false)} className="p-1 text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
+                        </div>
+                        <input value={newSubItem.description} onChange={e => setNewSubItem({ ...newSubItem, description: e.target.value })} placeholder="Description (optional)"
+                          className="w-full px-2.5 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <label className="flex items-center gap-1.5 text-xs">
+                            <input type="checkbox" checked={newSubItem.is24Hours} onChange={e => setNewSubItem({ ...newSubItem, is24Hours: e.target.checked, startTime: "", endTime: "" })}
+                              className="rounded border-border" />
+                            <span className="font-medium text-emerald-700">24 Hours</span>
+                          </label>
+                          {!newSubItem.is24Hours && (
+                            <>
+                              <input type="date" value={newSubItem.scheduleDate} onChange={e => setNewSubItem({ ...newSubItem, scheduleDate: e.target.value })}
+                                className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
+                              <input value={newSubItem.startTime} onChange={e => setNewSubItem({ ...newSubItem, startTime: e.target.value })} placeholder="10:00 AM"
+                                className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none w-24" />
+                              <input value={newSubItem.endTime} onChange={e => setNewSubItem({ ...newSubItem, endTime: e.target.value })} placeholder="12:00 PM"
+                                className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none w-24" />
+                            </>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Links</p>
+                          {newSubItem.links.map((l, li) => (
+                            <div key={li} className="flex items-center gap-1.5 mb-1">
+                              <input value={l.title} onChange={e => { const n = [...newSubItem.links]; n[li] = { ...n[li], title: e.target.value }; setNewSubItem({ ...newSubItem, links: n }); }} placeholder="Link title"
+                                className="flex-1 px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
+                              <input value={l.url} onChange={e => { const n = [...newSubItem.links]; n[li] = { ...n[li], url: e.target.value }; setNewSubItem({ ...newSubItem, links: n }); }} placeholder="https://..."
+                                className="flex-[2] px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
+                              {newSubItem.links.length > 1 && (
+                                <button onClick={() => setNewSubItem({ ...newSubItem, links: newSubItem.links.filter((_, j) => j !== li) })} className="p-0.5 text-red-400 hover:text-red-600"><X className="w-3 h-3" /></button>
+                              )}
+                            </div>
+                          ))}
+                          <button onClick={() => setNewSubItem({ ...newSubItem, links: [...newSubItem.links, { title: "", url: "", platform: "custom" }] })}
+                            className="mt-1 text-[10px] text-indigo-600 font-medium hover:text-indigo-700 flex items-center gap-0.5"><Plus className="w-2.5 h-2.5" /> Add link</button>
+                        </div>
+                        <button disabled={!newSubItem.title.trim()} onClick={async () => {
+                          try {
+                            await adminApi.addAssessmentSubItem(detail.id, {
+                              title: newSubItem.title.trim(), type: newSubItem.type,
+                              description: newSubItem.description.trim() || undefined,
+                              scheduleDate: newSubItem.scheduleDate || undefined,
+                              startTime: newSubItem.is24Hours ? undefined : (newSubItem.startTime || undefined),
+                              endTime: newSubItem.is24Hours ? undefined : (newSubItem.endTime || undefined),
+                              is24Hours: newSubItem.is24Hours,
+                              links: newSubItem.links.filter(l => l.title.trim() && l.url.trim()),
+                            });
+                            showToast("success", "Sub-assessment added"); setShowAddSubItem(false);
+                            setNewSubItem({ title: "", type: "aptitude", description: "", scheduleDate: "", startTime: "", endTime: "", is24Hours: false, links: [{ title: "", url: "", platform: "custom" }] });
+                            fetchDetail(detail.id);
+                          } catch { showToast("error", "Failed to add sub-assessment"); }
+                        }} className="px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-medium hover:bg-violet-700 transition-colors disabled:opacity-50">
+                          Add Sub-Assessment
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
-                  {/* Schedules / Batches */}
                   <div>
-                    <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
-                      <Calendar className="w-4 h-4" /> Batch Schedule ({detail.schedules.length})
-                    </h3>
-                    {detail.schedules.length > 0 ? (
-                      <div className="space-y-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4" /> Batch Schedule ({detail.schedules.length})
+                      </h3>
+                      <button onClick={() => setShowAddBatch(!showAddBatch)} className="text-xs text-blue-600 font-medium hover:text-blue-700 flex items-center gap-0.5">
+                        <Plus className="w-3 h-3" /> Add Batch
+                      </button>
+                    </div>
+                    {detail.schedules.length > 0 && (
+                      <div className="space-y-2 mb-2">
                         {detail.schedules.map(s => (
                           <div key={s.id} className="flex items-center justify-between p-3 bg-blue-50/60 rounded-xl border border-blue-100">
                             <div>
@@ -318,14 +404,63 @@ export default function AdminAssessmentsPage() {
                           </div>
                         ))}
                       </div>
-                    ) : <p className="text-sm text-muted-foreground">No batch schedules — all departments share the same deadline.</p>}
+                    )}
+                    {!showAddBatch && detail.schedules.length === 0 && <p className="text-sm text-muted-foreground">No batch schedules — click "Add Batch" to split by USN range.</p>}
+                    {showAddBatch && (
+                      <div className="p-3 bg-blue-50/40 rounded-xl border border-blue-100 space-y-2 mt-2">
+                        <div className="flex items-center gap-2">
+                          <input value={newBatch.batchLabel} onChange={e => setNewBatch({ ...newBatch, batchLabel: e.target.value })} placeholder="Batch name (e.g. Batch 1)"
+                            className="flex-1 px-2.5 py-1.5 bg-white border border-border rounded-lg text-sm focus:outline-none" />
+                          <button onClick={() => setShowAddBatch(false)} className="p-1 text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-semibold text-blue-600 whitespace-nowrap">USN Range:</span>
+                          <input type="number" value={newBatch.usnStart} onChange={e => setNewBatch({ ...newBatch, usnStart: e.target.value })} placeholder="From (e.g. 1)"
+                            className="w-24 px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
+                          <span className="text-xs text-muted-foreground">to</span>
+                          <input type="number" value={newBatch.usnEnd} onChange={e => setNewBatch({ ...newBatch, usnEnd: e.target.value })} placeholder="To (e.g. 100)"
+                            className="w-24 px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <input type="date" value={newBatch.scheduleDate} onChange={e => setNewBatch({ ...newBatch, scheduleDate: e.target.value })}
+                            className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
+                          <input value={newBatch.startTime} onChange={e => setNewBatch({ ...newBatch, startTime: e.target.value })} placeholder="10:00 AM"
+                            className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
+                          <input value={newBatch.endTime} onChange={e => setNewBatch({ ...newBatch, endTime: e.target.value })} placeholder="12:00 PM"
+                            className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
+                          <input value={newBatch.venue} onChange={e => setNewBatch({ ...newBatch, venue: e.target.value })} placeholder="Venue"
+                            className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
+                        </div>
+                        <button disabled={!newBatch.batchLabel.trim() || !newBatch.scheduleDate} onClick={async () => {
+                          try {
+                            await adminApi.addAssessmentSchedule(detail.id, {
+                              batchLabel: newBatch.batchLabel, departments: detail.departments,
+                              scheduleDate: newBatch.scheduleDate, startTime: newBatch.startTime || undefined,
+                              endTime: newBatch.endTime || undefined, venue: newBatch.venue || undefined,
+                              usnStart: newBatch.usnStart ? parseInt(newBatch.usnStart) : undefined,
+                              usnEnd: newBatch.usnEnd ? parseInt(newBatch.usnEnd) : undefined,
+                            });
+                            showToast("success", "Batch added"); setShowAddBatch(false);
+                            setNewBatch({ batchLabel: "", scheduleDate: "", startTime: "", endTime: "", venue: "", usnStart: "", usnEnd: "" });
+                            fetchDetail(detail.id);
+                          } catch { showToast("error", "Failed to add batch"); }
+                        }} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors disabled:opacity-50">
+                          Add Batch
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Links */}
                   <div>
-                    <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5"><Link2 className="w-4 h-4" /> Test Links ({detail.links.length})</h3>
-                    {detail.links.length === 0 ? <p className="text-sm text-muted-foreground">No links added</p> : (
-                      <div className="space-y-2">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5"><Link2 className="w-4 h-4" /> Test Links ({detail.links.length})</h3>
+                      <button onClick={() => setShowAddLink(!showAddLink)} className="text-xs text-indigo-600 font-medium hover:text-indigo-700 flex items-center gap-0.5">
+                        <Plus className="w-3 h-3" /> Add Link
+                      </button>
+                    </div>
+                    {detail.links.length > 0 && (
+                      <div className="space-y-2 mb-2">
                         {detail.links.map(l => (
                           <div key={l.id} className="flex items-center justify-between p-2.5 bg-accent/30 rounded-xl">
                             <div className="min-w-0 flex-1">
@@ -339,6 +474,34 @@ export default function AdminAssessmentsPage() {
                             </div>
                           </div>
                         ))}
+                      </div>
+                    )}
+                    {!showAddLink && detail.links.length === 0 && <p className="text-sm text-muted-foreground">No links added — click "Add Link" to add test URLs.</p>}
+                    {showAddLink && (
+                      <div className="p-3 bg-indigo-50/40 rounded-xl border border-indigo-100 space-y-2 mt-2">
+                        <div className="flex items-center gap-2">
+                          <input value={newLink.title} onChange={e => setNewLink({ ...newLink, title: e.target.value })} placeholder="Link title (e.g. HackerRank Test)"
+                            className="flex-1 px-2.5 py-1.5 bg-white border border-border rounded-lg text-sm focus:outline-none" />
+                          <button onClick={() => setShowAddLink(false)} className="p-1 text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
+                        </div>
+                        <input value={newLink.url} onChange={e => setNewLink({ ...newLink, url: e.target.value })} placeholder="https://..."
+                          className="w-full px-2.5 py-1.5 bg-white border border-border rounded-lg text-sm focus:outline-none" />
+                        <div className="flex items-center gap-2">
+                          <select value={newLink.platform} onChange={e => setNewLink({ ...newLink, platform: e.target.value })}
+                            className="px-2 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none">
+                            {PLATFORMS.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                          <button disabled={!newLink.title.trim() || !newLink.url.trim()} onClick={async () => {
+                            try {
+                              await adminApi.addAssessmentLink(detail.id, newLink);
+                              showToast("success", "Link added"); setShowAddLink(false);
+                              setNewLink({ title: "", url: "", platform: "custom" });
+                              fetchDetail(detail.id);
+                            } catch { showToast("error", "Failed to add link"); }
+                          }} className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50">
+                            Add Link
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
