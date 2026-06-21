@@ -361,10 +361,10 @@ export class AssessmentService {
       let studentQuery = this.studentRepo.createQueryBuilder('s')
         .where('s.department IN (:...departments)', { departments: data.departments });
 
-      // If USN range provided, filter by numeric part of USN
+      // If USN range provided, filter by last 3 digits of USN
       if (data.usnStart != null && data.usnEnd != null) {
         studentQuery = studentQuery.andWhere(
-          "CAST(NULLIF(regexp_replace(s.usn, '[^0-9]', '', 'g'), '') AS INTEGER) BETWEEN :usnStart AND :usnEnd",
+          "CAST(RIGHT(s.usn, 3) AS INTEGER) BETWEEN :usnStart AND :usnEnd",
           { usnStart: data.usnStart, usnEnd: data.usnEnd }
         );
       }
