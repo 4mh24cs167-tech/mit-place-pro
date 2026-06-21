@@ -357,22 +357,43 @@ export class AssessmentService {
 
     // If assessment is active, auto-assign students from these departments
     if (assessment.status === 'active' && data.departments.length > 0) {
-      const students = await this.studentRepo.createQueryBuilder('s')
-        .where('s.department IN (:...departments)', { departments: data.departments })
-        .select(['s.id'])
-        .getMany();
+      // Build query for students in the specified departments
+      let studentQuery = this.studentRepo.createQueryBuilder('s')
+        .where('s.department IN (:...departments)', { departments: data.departments });
 
-      const existing = await this.submissionRepo.find({
-        where: { assessmentId, studentId: In(students.map(s => s.id)) },
-        select: ['studentId'],
-      });
-      const existingIds = new Set(existing.map(e => e.studentId));
+      // If USN range provided, filter by numeric part of USN
+      if (data.usnStart != null && data.usnEnd != null) {
+        studentQuery = studentQuery.andWhere(
+          "CAST(NULLIF(regexp_replace(s.usn, '[^0-9]', '', 'g'), '') AS INTEGER) BETWEEN :usnStart AND :usnEnd",
+          { usnStart: data.usnStart, usnEnd: data.usnEnd }
+        );
+      }
 
-      const newSubs = students
-        .filter(s => !existingIds.has(s.id))
-        .map(s => ({ assessmentId, studentId: s.id, scheduleId: schedule.id, status: 'pending' as const }));
+      const students = await studentQuery.select(['s.id']).getMany();
+      const studentIds = students.map(s => s.id);
 
-      if (newSubs.length > 0) await this.submissionRepo.save(newSubs);
+      if (studentIds.length > 0) {
+        // Update existing submissions to assign this schedule
+        await this.submissionRepo.createQueryBuilder()
+          .update()
+          .set({ scheduleId: schedule.id })
+          .where('assessment_id = :assessmentId', { assessmentId })
+          .andWhere('student_id IN (:...studentIds)', { studentIds })
+          .execute();
+
+        // Create new submissions for students not yet assigned
+        const existing = await this.submissionRepo.find({
+          where: { assessmentId, studentId: In(studentIds) },
+          select: ['studentId'],
+        });
+        const existingIds = new Set(existing.map(e => e.studentId));
+
+        const newSubs = students
+          .filter(s => !existingIds.has(s.id))
+          .map(s => ({ assessmentId, studentId: s.id, scheduleId: schedule.id, status: 'pending' as const }));
+
+        if (newSubs.length > 0) await this.submissionRepo.save(newSubs);
+      }
     }
 
     return schedule;
