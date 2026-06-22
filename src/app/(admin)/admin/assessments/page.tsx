@@ -697,7 +697,7 @@ export default function AdminAssessmentsPage() {
                   </div>
 
                   {/* Submissions Table */}
-                  {(() => { const filteredSubs = selectedDepts.length > 0 ? detail.submissions.filter(s => selectedDepts.includes(s.department)) : detail.submissions; return (
+                  {(() => { const filteredSubs = selectedDepts.length > 0 ? detail.submissions.filter(s => !!s.department && selectedDepts.includes(s.department)) : detail.submissions; return (
                   <div>
                     <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5"><Users className="w-4 h-4" /> Submissions ({filteredSubs.length}){selectedDepts.length > 0 && <span className="text-xs text-indigo-500 font-normal ml-1">· {selectedDepts.join(", ")}</span>}</h3>
                     {filteredSubs.length === 0 ? (
