@@ -411,7 +411,7 @@ export class AssessmentService {
   async addSubItem(assessmentId: string, data: {
     title: string; type?: string; description?: string;
     scheduleDate?: string; startTime?: string; endTime?: string;
-    is24Hours?: boolean; links?: { title: string; url: string; platform?: string }[];
+    is24Hours?: boolean; departments?: string[]; links?: { title: string; url: string; platform?: string }[];
   }) {
     const assessment = await this.assessmentRepo.findOne({ where: { id: assessmentId } });
     if (!assessment) throw new NotFoundException('Assessment not found');
@@ -431,6 +431,7 @@ export class AssessmentService {
       startTime: data.startTime || null,
       endTime: data.endTime || null,
       is24Hours: data.is24Hours || false,
+      departments: data.departments || [],
       links: data.links || [],
       displayOrder: (maxOrder?.max ?? -1) + 1,
     });
@@ -562,15 +563,60 @@ export class AssessmentService {
     };
   }
 
-  // ─── Upload Credentials (CSV: email, loginId, password) ──
-  async uploadCredentials(assessmentId: string, credentials: { email: string; loginId: string; password: string }[]) {
+  // ─── Preview Credentials ─────────────────────────
+  async previewCredentials(assessmentId: string, credentials: { email: string; loginId: string; password: string }[]) {
     const assessment = await this.assessmentRepo.findOne({ where: { id: assessmentId } });
     if (!assessment) throw new NotFoundException('Assessment not found');
 
-    // Get all unique emails from the CSV
     const emails = [...new Set(credentials.map(c => c.email.trim().toLowerCase()))];
 
-    // Find students by email (via User relation)
+    const students = await this.studentRepo.createQueryBuilder('s')
+      .innerJoin('s.user', 'u')
+      .where('LOWER(u.email) IN (:...emails)', { emails })
+      .select(['s.id', 's.usn', 's.department'])
+      .addSelect('u.email', 'userEmail')
+      .addSelect('u.fullName', 'fullName')
+      .getRawMany();
+
+    const emailMap = new Map<string, { studentId: string; usn: string; department: string; fullName: string }>();
+    for (const s of students) {
+      emailMap.set((s.userEmail || s.u_email || '').toLowerCase(), {
+        studentId: s.s_id, usn: s.s_usn, department: s.s_department, fullName: s.fullName || s.u_full_name || '',
+      });
+    }
+
+    const matched: { email: string; loginId: string; password: string; usn: string; department: string; name: string }[] = [];
+    const notFound: { email: string; loginId: string; password: string }[] = [];
+
+    for (const cred of credentials) {
+      const email = cred.email.trim().toLowerCase();
+      const student = emailMap.get(email);
+      if (student) {
+        matched.push({ email, loginId: cred.loginId, password: cred.password, usn: student.usn, department: student.department, name: student.fullName });
+      } else {
+        notFound.push({ email, loginId: cred.loginId, password: cred.password });
+      }
+    }
+
+    // Check existing credentials count
+    const existingCount = await this.credentialRepo.count({ where: { assessmentId } });
+
+    return { matched, notFound, existingCount, total: credentials.length };
+  }
+
+  // ─── Upload Credentials (replaces all previous) ──
+  async uploadCredentials(assessmentId: string, credentials: { email: string; loginId: string; password: string }[], replaceAll = true) {
+    const assessment = await this.assessmentRepo.findOne({ where: { id: assessmentId } });
+    if (!assessment) throw new NotFoundException('Assessment not found');
+
+    // Delete all existing credentials for this assessment if replaceAll
+    if (replaceAll) {
+      await this.credentialRepo.delete({ assessmentId });
+      this.logger.log(`Deleted existing credentials for assessment ${assessmentId}`);
+    }
+
+    const emails = [...new Set(credentials.map(c => c.email.trim().toLowerCase()))];
+
     const students = await this.studentRepo.createQueryBuilder('s')
       .innerJoin('s.user', 'u')
       .where('LOWER(u.email) IN (:...emails)', { emails })
@@ -585,28 +631,19 @@ export class AssessmentService {
 
     let matched = 0;
     let notFound = 0;
+    const toSave: { assessmentId: string; studentId: string; loginId: string; loginPassword: string }[] = [];
 
     for (const cred of credentials) {
       const email = cred.email.trim().toLowerCase();
       const studentId = emailToStudentId.get(email);
       if (!studentId) { notFound++; continue; }
-
-      // Upsert credential
-      const existing = await this.credentialRepo.findOne({
-        where: { assessmentId, studentId },
-      });
-      if (existing) {
-        existing.loginId = cred.loginId;
-        existing.loginPassword = cred.password;
-        await this.credentialRepo.save(existing);
-      } else {
-        await this.credentialRepo.save({
-          assessmentId, studentId,
-          loginId: cred.loginId,
-          loginPassword: cred.password,
-        });
-      }
+      toSave.push({ assessmentId, studentId, loginId: cred.loginId, loginPassword: cred.password });
       matched++;
+    }
+
+    // Batch insert
+    if (toSave.length > 0) {
+      await this.credentialRepo.save(toSave);
     }
 
     this.logger.log(`Credentials uploaded: ${matched} matched, ${notFound} not found`);
@@ -650,7 +687,9 @@ export class AssessmentService {
         links: isExpired ? [] : (s.assessment?.links || []).map(l => ({
           id: l.id, title: l.title, url: l.url, platform: l.platform, instructions: l.instructions,
         })),
-        subItems: isExpired ? [] : (s.assessment?.subItems || []).map(si => ({
+        subItems: isExpired ? [] : (s.assessment?.subItems || [])
+          .filter(si => !si.departments || si.departments.length === 0 || si.departments.includes(student.department))
+          .map(si => ({
           id: si.id, title: si.title, type: si.type, description: si.description,
           scheduleDate: si.scheduleDate, startTime: si.startTime, endTime: si.endTime,
           is24Hours: si.is24Hours, links: si.links || [],

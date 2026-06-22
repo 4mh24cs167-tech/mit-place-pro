@@ -317,7 +317,9 @@ export const adminApi = {
   removeAssessmentSubItem: (subItemId: string) =>
     apiFetch(`/api/v1/admin/assessments/sub-items/${subItemId}`, { method: 'DELETE' }),
   uploadAssessmentCredentials: (id: string, credentials: { email: string; loginId: string; password: string }[]) =>
-    apiFetch(`/api/v1/admin/assessments/${id}/credentials`, { method: 'POST', body: { credentials } }),
+    apiFetch(`/api/v1/admin/assessments/${id}/credentials`, { method: 'POST', body: { credentials, replaceAll: true } }),
+  previewAssessmentCredentials: (id: string, credentials: { email: string; loginId: string; password: string }[]) =>
+    apiFetch(`/api/v1/admin/assessments/${id}/credentials/preview`, { method: 'POST', body: { credentials } }),
 };
 
 // ─── Student ─────────────────────────────────────

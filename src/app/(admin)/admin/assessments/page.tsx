@@ -78,8 +78,10 @@ export default function AdminAssessmentsPage() {
   const [showAddBatch, setShowAddBatch] = useState(false);
   const [newBatch, setNewBatch] = useState({ batchLabel: "", scheduleDate: "", startTime: "", endTime: "", venue: "", usnStart: "", usnEnd: "" });
   const [showAddSubItem, setShowAddSubItem] = useState(false);
-  const [newSubItem, setNewSubItem] = useState({ title: "", type: "aptitude", description: "", scheduleDate: "", startTime: "", endTime: "", is24Hours: false, links: [{ title: "", url: "", platform: "custom" }] });
-  const [selectedDept, setSelectedDept] = useState<string | null>(null);
+  const [newSubItem, setNewSubItem] = useState({ title: "", type: "aptitude", description: "", scheduleDate: "", startTime: "", endTime: "", is24Hours: false, departments: [] as string[], links: [{ title: "", url: "", platform: "custom" }] });
+  const [selectedDepts, setSelectedDepts] = useState<string[]>([]);
+  const [credPreview, setCredPreview] = useState<{ matched: any[]; notFound: any[]; existingCount: number; total: number; parsedCreds: any[] } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const showToast = (type: "success" | "error", msg: string) => { setToast({ type, msg }); setTimeout(() => setToast(null), 4000); };
 
@@ -254,20 +256,20 @@ export default function AdminAssessmentsPage() {
                     </div>
                   )}
 
-                  {/* Department Tabs */}
+                  {/* Department Tabs (multi-select) */}
                   {detail.departments.length > 0 && (
                     <div>
-                      <p className="text-xs font-semibold text-muted-foreground mb-1.5">Select Department</p>
+                      <p className="text-xs font-semibold text-muted-foreground mb-1.5">Filter by Department <span className="text-[10px] font-normal">(click multiple)</span></p>
                       <div className="flex flex-wrap gap-1.5">
-                        <button onClick={() => setSelectedDept(null)}
+                        <button onClick={() => setSelectedDepts([])}
                           className={cn("px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
-                            selectedDept === null ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-muted-foreground border-border hover:border-indigo-300")}>
+                            selectedDepts.length === 0 ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-muted-foreground border-border hover:border-indigo-300")}>
                           All Depts
                         </button>
                         {detail.departments.map(d => (
-                          <button key={d} onClick={() => setSelectedDept(d)}
+                          <button key={d} onClick={() => setSelectedDepts(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])}
                             className={cn("px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
-                              selectedDept === d ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-muted-foreground border-border hover:border-indigo-300")}>
+                              selectedDepts.includes(d) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-muted-foreground border-border hover:border-indigo-300")}>
                             {d}
                           </button>
                         ))}
@@ -276,25 +278,30 @@ export default function AdminAssessmentsPage() {
                   )}
 
                   {/* Sub-Items */}
+                  {(() => { const filteredSubItems = selectedDepts.length > 0 ? (detail.subItems || []).filter(si => !si.departments || si.departments.length === 0 || si.departments.some(d => selectedDepts.includes(d))) : (detail.subItems || []); return (
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                        <Layers className="w-4 h-4" /> Sub-Assessments ({(detail.subItems || []).length})
+                        <Layers className="w-4 h-4" /> Sub-Assessments ({filteredSubItems.length})
                       </h3>
                       <button onClick={() => setShowAddSubItem(!showAddSubItem)} className="text-xs text-violet-600 font-medium hover:text-violet-700 flex items-center gap-0.5">
                         <Plus className="w-3 h-3" /> Add Sub-Assessment
                       </button>
                     </div>
-                  {(detail.subItems || []).length > 0 && (
+                  {filteredSubItems.length > 0 && (
                     <div>
                       <div className="space-y-2">
-                        {detail.subItems.map(si => (
+                        {filteredSubItems.map(si => (
                           <div key={si.id} className="p-3.5 bg-gradient-to-r from-violet-50/80 to-indigo-50/80 rounded-xl border border-violet-100">
                             <div className="flex items-start justify-between">
                               <div>
-                                <div className="flex items-center gap-2 mb-1">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
                                   <h4 className="text-sm font-bold text-foreground">{si.title}</h4>
                                   <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold border capitalize", TYPE_COLORS[si.type] || TYPE_COLORS.custom)}>{si.type}</span>
+                                  {(si.departments || []).length > 0 && si.departments.map(d => (
+                                    <span key={d} className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-50 text-blue-600 border border-blue-200">{d}</span>
+                                  ))}
+                                  {(si.departments || []).length === 0 && <span className="text-[9px] text-muted-foreground">All Depts</span>}
                                 </div>
                                 {si.description && <p className="text-xs text-muted-foreground mb-1.5">{si.description}</p>}
                                 <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
@@ -328,7 +335,7 @@ export default function AdminAssessmentsPage() {
                       </div>
                     </div>
                   )}
-                    {!showAddSubItem && (detail.subItems || []).length === 0 && <p className="text-sm text-muted-foreground">No sub-assessments — click "Add Sub-Assessment" to add.</p>}
+                    {!showAddSubItem && filteredSubItems.length === 0 && <p className="text-sm text-muted-foreground">No sub-assessments — click "Add Sub-Assessment" to add.</p>}
                     {showAddSubItem && (
                       <div className="p-3 bg-violet-50/40 rounded-xl border border-violet-100 space-y-2 mt-2">
                         <div className="flex items-center gap-2">
@@ -340,6 +347,21 @@ export default function AdminAssessmentsPage() {
                           </select>
                           <button onClick={() => setShowAddSubItem(false)} className="p-1 text-muted-foreground hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
                         </div>
+                        {/* Department selector for sub-assessment */}
+                        {detail.departments.length > 0 && (
+                          <div>
+                            <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-1">Departments <span className="text-[9px] font-normal">(leave empty = all depts)</span></p>
+                            <div className="flex flex-wrap gap-1">
+                              {detail.departments.map(d => (
+                                <button key={d} type="button" onClick={() => setNewSubItem(prev => ({ ...prev, departments: prev.departments.includes(d) ? prev.departments.filter(x => x !== d) : [...prev.departments, d] }))}
+                                  className={cn("px-2 py-1 rounded-md text-[10px] font-medium border transition-all",
+                                    newSubItem.departments.includes(d) ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-muted-foreground border-border hover:border-indigo-300")}>
+                                  {d}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         <input value={newSubItem.description} onChange={e => setNewSubItem({ ...newSubItem, description: e.target.value })} placeholder="Description (optional)"
                           className="w-full px-2.5 py-1.5 bg-white border border-border rounded-lg text-xs focus:outline-none" />
                         <div className="flex items-center gap-2 flex-wrap">
@@ -384,10 +406,11 @@ export default function AdminAssessmentsPage() {
                               startTime: newSubItem.is24Hours ? undefined : (newSubItem.startTime || undefined),
                               endTime: newSubItem.is24Hours ? undefined : (newSubItem.endTime || undefined),
                               is24Hours: newSubItem.is24Hours,
+                              departments: newSubItem.departments.length > 0 ? newSubItem.departments : undefined,
                               links: newSubItem.links.filter(l => l.title.trim() && l.url.trim()),
                             });
                             showToast("success", "Sub-assessment added"); setShowAddSubItem(false);
-                            setNewSubItem({ title: "", type: "aptitude", description: "", scheduleDate: "", startTime: "", endTime: "", is24Hours: false, links: [{ title: "", url: "", platform: "custom" }] });
+                            setNewSubItem({ title: "", type: "aptitude", description: "", scheduleDate: "", startTime: "", endTime: "", is24Hours: false, departments: [], links: [{ title: "", url: "", platform: "custom" }] });
                             fetchDetail(detail.id);
                           } catch { showToast("error", "Failed to add sub-assessment"); }
                         }} className="px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-medium hover:bg-violet-700 transition-colors disabled:opacity-50">
@@ -396,15 +419,16 @@ export default function AdminAssessmentsPage() {
                       </div>
                     )}
                   </div>
+                  ); })()}
 
-                  {(() => { const filteredSchedules = selectedDept ? detail.schedules.filter(s => s.departments.includes(selectedDept)) : detail.schedules; return (
+                  {(() => { const filteredSchedules = selectedDepts.length > 0 ? detail.schedules.filter(s => s.departments.some(d => selectedDepts.includes(d))) : detail.schedules; return (
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4" /> Batch Schedule ({filteredSchedules.length}){selectedDept && <span className="text-xs text-indigo-500 font-normal ml-1">· {selectedDept}</span>}
+                        <Calendar className="w-4 h-4" /> Batch Schedule ({filteredSchedules.length}){selectedDepts.length > 0 && <span className="text-xs text-indigo-500 font-normal ml-1">· {selectedDepts.join(", ")}</span>}
                       </h3>
                       <button onClick={() => setShowAddBatch(!showAddBatch)} className="text-xs text-blue-600 font-medium hover:text-blue-700 flex items-center gap-0.5">
-                        <Plus className="w-3 h-3" /> Add Batch{selectedDept ? ` (${selectedDept})` : ""}
+                        <Plus className="w-3 h-3" /> Add Batch{selectedDepts.length > 0 ? ` (${selectedDepts.join(", ")})` : ""}
                       </button>
                     </div>
                     {filteredSchedules.length > 0 && (
@@ -429,7 +453,7 @@ export default function AdminAssessmentsPage() {
                         ))}
                       </div>
                     )}
-                    {!showAddBatch && filteredSchedules.length === 0 && <p className="text-sm text-muted-foreground">No batch schedules{selectedDept ? ` for ${selectedDept}` : ""} — click "Add Batch" to create.</p>}
+                    {!showAddBatch && filteredSchedules.length === 0 && <p className="text-sm text-muted-foreground">No batch schedules{selectedDepts.length > 0 ? ` for ${selectedDepts.join(", ")}` : ""} — click "Add Batch" to create.</p>}
                     {showAddBatch && (
                       <div className="p-3 bg-blue-50/40 rounded-xl border border-blue-100 space-y-2 mt-2">
                         <div className="flex items-center gap-2">
@@ -458,7 +482,7 @@ export default function AdminAssessmentsPage() {
                         <button disabled={!newBatch.batchLabel.trim() || !newBatch.scheduleDate} onClick={async () => {
                           try {
                             await adminApi.addAssessmentSchedule(detail.id, {
-                              batchLabel: newBatch.batchLabel, departments: selectedDept ? [selectedDept] : detail.departments,
+                              batchLabel: newBatch.batchLabel, departments: selectedDepts.length > 0 ? selectedDepts : detail.departments,
                               scheduleDate: newBatch.scheduleDate, startTime: newBatch.startTime || undefined,
                               endTime: newBatch.endTime || undefined, venue: newBatch.venue || undefined,
                               usnStart: newBatch.usnStart ? parseInt(newBatch.usnStart) : undefined,
@@ -547,12 +571,12 @@ export default function AdminAssessmentsPage() {
                   {/* Upload Test Credentials */}
                   <div className="p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl border border-amber-100">
                     <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-1.5"><KeyRound className="w-4 h-4 text-amber-600" /> Upload Test Credentials</h3>
-                    <p className="text-[11px] text-muted-foreground mb-3">Upload <strong>.xlsx or .csv</strong> with columns: <strong>Email, Password</strong> (LoginID optional — defaults to Email). Matched by student email.</p>
+                    <p className="text-[11px] text-muted-foreground mb-3">Upload <strong>.xlsx or .csv</strong> with columns: <strong>Email, Password</strong> (LoginID optional). Re-uploading <strong>replaces</strong> all previous credentials.</p>
                     <input ref={credFileRef} type="file" accept=".csv,.txt,.xlsx,.xls" className="hidden"
                       onChange={async e => {
                         if (!e.target.files?.[0]) return;
                         const file = e.target.files[0];
-                        setUploadingCreds(true);
+                        setPreviewLoading(true);
                         try {
                           let rows: Record<string, string>[] = [];
                           const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
@@ -569,7 +593,7 @@ export default function AdminAssessmentsPage() {
                           } else {
                             const text = await file.text();
                             const lines = text.split('\n').filter(l => l.trim());
-                            if (lines.length < 2) { showToast('error', 'File must have header + data rows'); setUploadingCreds(false); return; }
+                            if (lines.length < 2) { showToast('error', 'File must have header + data rows'); setPreviewLoading(false); return; }
                             const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
                             rows = lines.slice(1).map(line => {
                               const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
@@ -578,34 +602,106 @@ export default function AdminAssessmentsPage() {
                               return obj;
                             });
                           }
-                          if (rows.length === 0) { showToast('error', 'No data rows found'); setUploadingCreds(false); return; }
+                          if (rows.length === 0) { showToast('error', 'No data rows found'); setPreviewLoading(false); return; }
                           const keys = Object.keys(rows[0]);
                           const emailKey = keys.find(k => ['email', 'mail', 'student_email'].includes(k));
                           const loginKey = keys.find(k => ['loginid', 'login_id', 'id', 'username', 'user_id'].includes(k));
                           const passKey = keys.find(k => ['password', 'pass', 'pwd', 'login_password'].includes(k));
                           if (!emailKey || !passKey) {
-                            showToast('error', 'File must have Email and Password columns'); setUploadingCreds(false); return;
+                            showToast('error', 'File must have Email and Password columns'); setPreviewLoading(false); return;
                           }
                           const creds = rows.map(r => ({
                             email: r[emailKey] || '', loginId: loginKey ? (r[loginKey] || r[emailKey] || '') : (r[emailKey] || ''), password: r[passKey] || '',
                           })).filter(c => c.email && c.password);
-                          const res = await adminApi.uploadAssessmentCredentials(detail.id, creds) as any;
-                          showToast('success', `Credentials: ${res?.data?.matched || 0} matched, ${res?.data?.notFound || 0} not found`);
-                        } catch { showToast('error', 'Credential upload failed'); } finally { setUploadingCreds(false); e.target.value = ''; }
+                          const res = await adminApi.previewAssessmentCredentials(detail.id, creds) as any;
+                          setCredPreview({ ...res.data, parsedCreds: creds });
+                        } catch { showToast('error', 'Failed to parse file'); } finally { setPreviewLoading(false); e.target.value = ''; }
                       }} />
-                    <button onClick={() => credFileRef.current?.click()} disabled={uploadingCreds}
-                      className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg text-sm font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50">
-                      {uploadingCreds ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
-                      {uploadingCreds ? "Uploading..." : "Upload Credentials (.xlsx / .csv)"}
-                    </button>
+                    {!credPreview && (
+                      <button onClick={() => credFileRef.current?.click()} disabled={previewLoading}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg text-sm font-medium shadow-md hover:shadow-lg transition-all disabled:opacity-50">
+                        {previewLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+                        {previewLoading ? "Parsing..." : "Upload Credentials (.xlsx / .csv)"}
+                      </button>
+                    )}
+                    {credPreview && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-700">{credPreview.matched.length} Matched</span>
+                          <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-red-100 text-red-600">{credPreview.notFound.length} Not Found</span>
+                          <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-600">{credPreview.total} Total</span>
+                          {credPreview.existingCount > 0 && (
+                            <span className="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-100 text-amber-700">⚠ {credPreview.existingCount} existing will be replaced</span>
+                          )}
+                        </div>
+                        {credPreview.matched.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-emerald-700 mb-1">✓ Matched Students (first 20)</p>
+                            <div className="overflow-x-auto max-h-48 overflow-y-auto rounded-lg border border-emerald-100">
+                              <table className="w-full text-xs">
+                                <thead className="bg-emerald-50 sticky top-0"><tr>
+                                  <th className="text-left px-2 py-1.5 font-semibold">USN</th>
+                                  <th className="text-left px-2 py-1.5 font-semibold">Name</th>
+                                  <th className="text-left px-2 py-1.5 font-semibold">Dept</th>
+                                  <th className="text-left px-2 py-1.5 font-semibold">Password</th>
+                                </tr></thead>
+                                <tbody>{credPreview.matched.slice(0, 20).map((m: any, i: number) => (
+                                  <tr key={i} className="border-t border-emerald-50">
+                                    <td className="px-2 py-1 font-mono text-[11px]">{m.usn}</td>
+                                    <td className="px-2 py-1 truncate max-w-[120px]">{m.name}</td>
+                                    <td className="px-2 py-1">{m.department}</td>
+                                    <td className="px-2 py-1 font-mono text-[11px]">{m.password}</td>
+                                  </tr>
+                                ))}</tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                        {credPreview.notFound.length > 0 && (
+                          <div>
+                            <p className="text-xs font-semibold text-red-600 mb-1">✗ Not Found (first 10)</p>
+                            <div className="overflow-x-auto max-h-32 overflow-y-auto rounded-lg border border-red-100">
+                              <table className="w-full text-xs">
+                                <thead className="bg-red-50 sticky top-0"><tr>
+                                  <th className="text-left px-2 py-1.5 font-semibold">Email</th>
+                                  <th className="text-left px-2 py-1.5 font-semibold">Password</th>
+                                </tr></thead>
+                                <tbody>{credPreview.notFound.slice(0, 10).map((m: any, i: number) => (
+                                  <tr key={i} className="border-t border-red-50">
+                                    <td className="px-2 py-1 text-[11px]">{m.email}</td>
+                                    <td className="px-2 py-1 font-mono text-[11px]">{m.password}</td>
+                                  </tr>
+                                ))}</tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 pt-1">
+                          <button disabled={uploadingCreds || credPreview.matched.length === 0} onClick={async () => {
+                            setUploadingCreds(true);
+                            try {
+                              const res = await adminApi.uploadAssessmentCredentials(detail.id, credPreview.parsedCreds) as any;
+                              showToast('success', `Saved: ${res?.data?.matched || 0} credentials (previous erased)`);
+                              setCredPreview(null);
+                            } catch { showToast('error', 'Failed to save credentials'); } finally { setUploadingCreds(false); }
+                          }} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-1.5">
+                            {uploadingCreds ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                            {uploadingCreds ? "Saving..." : `Confirm & Save ${credPreview.matched.length} Credentials`}
+                          </button>
+                          <button onClick={() => setCredPreview(null)} className="px-4 py-2 bg-white text-muted-foreground rounded-lg text-xs font-semibold border hover:bg-slate-50 transition-colors">
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Submissions Table */}
-                  {(() => { const filteredSubs = selectedDept ? detail.submissions.filter(s => s.department === selectedDept) : detail.submissions; return (
+                  {(() => { const filteredSubs = selectedDepts.length > 0 ? detail.submissions.filter(s => selectedDepts.includes(s.department)) : detail.submissions; return (
                   <div>
-                    <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5"><Users className="w-4 h-4" /> Submissions ({filteredSubs.length}){selectedDept && <span className="text-xs text-indigo-500 font-normal ml-1">· {selectedDept}</span>}</h3>
+                    <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5"><Users className="w-4 h-4" /> Submissions ({filteredSubs.length}){selectedDepts.length > 0 && <span className="text-xs text-indigo-500 font-normal ml-1">· {selectedDepts.join(", ")}</span>}</h3>
                     {filteredSubs.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No students{selectedDept ? ` in ${selectedDept}` : ""}. Publish to assign.</p>
+                      <p className="text-sm text-muted-foreground">No students{selectedDepts.length > 0 ? ` in ${selectedDepts.join(", ")}` : ""}. Publish to assign.</p>
                     ) : (
                       <div className="overflow-x-auto -mx-1">
                         <table className="w-full text-sm">

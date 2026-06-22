@@ -509,9 +509,18 @@ export class AdminController {
   @Post('assessments/:id/credentials')
   async uploadAssessmentCredentials(
     @Param('id') id: string,
+    @Body() body: { credentials: { email: string; loginId: string; password: string }[]; replaceAll?: boolean },
+  ) {
+    const data = await this.assessmentService.uploadCredentials(id, body.credentials, body.replaceAll !== false);
+    return { success: true, data };
+  }
+
+  @Post('assessments/:id/credentials/preview')
+  async previewAssessmentCredentials(
+    @Param('id') id: string,
     @Body() body: { credentials: { email: string; loginId: string; password: string }[] },
   ) {
-    const data = await this.assessmentService.uploadCredentials(id, body.credentials);
+    const data = await this.assessmentService.previewCredentials(id, body.credentials);
     return { success: true, data };
   }
 }

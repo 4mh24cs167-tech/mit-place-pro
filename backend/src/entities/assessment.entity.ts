@@ -112,6 +112,10 @@ export class AssessmentSubItem {
   @Column({ type: 'jsonb', default: '[]' })
   links: { title: string; url: string; platform?: string }[];
 
+  /** Which departments this sub-item applies to (empty = all) */
+  @Column({ type: 'text', array: true, default: '{}' })
+  departments: string[];
+
   @Column({ type: 'smallint', default: 0, name: 'display_order' })
   displayOrder: number;
 
