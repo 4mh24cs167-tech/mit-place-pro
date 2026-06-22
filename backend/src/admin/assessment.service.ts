@@ -246,7 +246,7 @@ export class AssessmentService {
       subItems: (assessment.subItems || []).map(si => ({
         id: si.id, title: si.title, type: si.type, description: si.description,
         scheduleDate: si.scheduleDate, startTime: si.startTime, endTime: si.endTime,
-        is24Hours: si.is24Hours, links: si.links || [], displayOrder: si.displayOrder,
+        is24Hours: si.is24Hours, departments: si.departments || [], links: si.links || [], displayOrder: si.displayOrder,
       })),
       schedules: (assessment.schedules || []).map(s => ({
         id: s.id, batchLabel: s.batchLabel, departments: s.departments,
