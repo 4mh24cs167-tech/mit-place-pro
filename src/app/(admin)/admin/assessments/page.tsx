@@ -25,7 +25,7 @@ interface LinkItem { id: string; title: string; url: string; platform: string; d
 interface SubItemData {
   id: string; title: string; type: string; description: string | null;
   scheduleDate: string | null; startTime: string | null; endTime: string | null;
-  is24Hours: boolean; links: { title: string; url: string; platform?: string }[];
+  is24Hours: boolean; departments: string[]; links: { title: string; url: string; platform?: string }[];
   displayOrder: number;
 }
 interface ScheduleItem { id: string; batchLabel: string; departments: string[]; scheduleDate: string; startTime: string | null; endTime: string | null; venue: string | null; usnStart: number | null; usnEnd: number | null; }
