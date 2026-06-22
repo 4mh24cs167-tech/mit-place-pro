@@ -230,12 +230,27 @@ export class AssessmentService {
 
   // ─── Get Assessment Detail ────────────────────────
   async getAssessment(id: string) {
+    // Load assessment with lightweight relations only (no submissions - those are heavy)
     const assessment = await this.assessmentRepo.findOne({
       where: { id },
-      relations: ['links', 'subItems', 'schedules', 'submissions', 'submissions.student', 'submissions.schedule'],
+      relations: ['links', 'subItems', 'schedules'],
       order: { links: { displayOrder: 'ASC' }, subItems: { displayOrder: 'ASC' }, schedules: { scheduleDate: 'ASC' } },
     });
     if (!assessment) throw new NotFoundException('Assessment not found');
+
+    // Load submissions separately with a lean query (only needed columns)
+    const submissions = await this.submissionRepo.createQueryBuilder('sub')
+      .leftJoin('sub.student', 'st')
+      .leftJoin('sub.schedule', 'sch')
+      .where('sub.assessment_id = :id', { id })
+      .select([
+        'sub.id', 'sub.studentId', 'sub.status', 'sub.score', 'sub.remarks',
+        'sub.attemptedAt', 'sub.gradedAt', 'sub.scheduleId',
+        'st.fullName', 'st.usn', 'st.department',
+        'sch.batchLabel', 'sch.scheduleDate', 'sch.startTime', 'sch.endTime',
+      ])
+      .orderBy('st.usn', 'ASC')
+      .getMany();
 
     return {
       ...assessment,
@@ -253,7 +268,7 @@ export class AssessmentService {
         scheduleDate: s.scheduleDate, startTime: s.startTime, endTime: s.endTime, venue: s.venue,
         usnStart: s.usnStart, usnEnd: s.usnEnd,
       })),
-      submissions: (assessment.submissions || []).map(s => ({
+      submissions: submissions.map(s => ({
         id: s.id, studentId: s.studentId,
         studentName: s.student?.fullName || null,
         usn: s.student?.usn || null,
@@ -265,7 +280,7 @@ export class AssessmentService {
         scheduleDate: s.schedule?.scheduleDate || null,
         startTime: s.schedule?.startTime || null,
         endTime: s.schedule?.endTime || null,
-      })).sort((a, b) => (a.usn || '').localeCompare(b.usn || '', undefined, { numeric: true })),
+      })),
     };
   }
 
