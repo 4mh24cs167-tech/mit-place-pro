@@ -12,7 +12,7 @@
 [![Deployed on Vercel](https://img.shields.io/badge/Frontend-Vercel-000?logo=vercel)](https://mitm-placepro.vercel.app)
 [![Deployed on Render](https://img.shields.io/badge/Backend-Render-46E3B7?logo=render)](https://mitm-placepro.onrender.com)
 
-**A full-stack, multi-role placement management platform built for MITM (Mangalore Institute of Technology & Management) to streamline campus placements, assessments, and recruitment workflows.**
+**A full-stack, multi-role placement management platform built for MITM (Maharaja Institute of Technology Mysore) to streamline campus placements, assessments, and recruitment workflows.**
 
 [Live Demo](https://mitm-placepro.vercel.app) · [Architecture](ARCHITECTURE.md) · [Security](SECURITY.md)
 
