@@ -17,3 +17,4 @@ export { RoundMeeting, MeetingGroup, MeetingAssignment } from './round-meeting.e
 export { EmailLog } from './email-log.entity';
 export { StudentDriveFeedback, CompanyDriveFeedback } from './feedback.entity';
 export { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule, AssessmentSubItem, AssessmentCredential } from './assessment.entity';
+export { InternshipPermission } from './internship-permission.entity';

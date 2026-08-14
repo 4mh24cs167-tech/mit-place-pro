@@ -6,6 +6,7 @@ import { BulkUploadService } from './bulk-upload.service';
 import { DriveService } from './drive.service';
 import { FeedbackService } from './feedback.service';
 import { AssessmentService } from './assessment.service';
+import { InternshipService } from './internship.service';
 import { Auth, CurrentUser } from '../auth/auth.decorators';
 import { UserRole } from '../entities/user.entity';
 import { CreateCompanyDto, CreateStudentDto, BulkApproveDto, UpdateStudentDto, PaginationDto } from './dto/admin.dto';
@@ -19,6 +20,7 @@ export class AdminController {
     private readonly driveService: DriveService,
     private readonly feedbackService: FeedbackService,
     private readonly assessmentService: AssessmentService,
+    private readonly internshipService: InternshipService,
   ) {}
 
   // ─── Dashboard ──────────────────────────────────
@@ -521,6 +523,19 @@ export class AdminController {
     @Body() body: { credentials: { email: string; loginId: string; password: string }[] },
   ) {
     const data = await this.assessmentService.previewCredentials(id, body.credentials);
+    return { success: true, data };
+  }
+
+  // ─── Internship Permissions ──────────────────────
+  @Get('internship-permissions')
+  async listInternshipPermissions() {
+    const data = await this.internshipService.listAllForms();
+    return { success: true, data };
+  }
+
+  @Get('internship-permissions/:id')
+  async getInternshipPermission(@Param('id') id: string) {
+    const data = await this.internshipService.getFormById(id);
     return { success: true, data };
   }
 }

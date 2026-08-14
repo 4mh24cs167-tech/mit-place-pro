@@ -19,8 +19,10 @@ import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
 import { EmailLog } from '../entities/email-log.entity';
 import { StudentDriveFeedback, CompanyDriveFeedback } from '../entities/feedback.entity';
 import { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule, AssessmentSubItem, AssessmentCredential } from '../entities/assessment.entity';
+import { InternshipPermission } from '../entities/internship-permission.entity';
 import { FeedbackService } from './feedback.service';
 import { AssessmentService } from './assessment.service';
+import { InternshipService } from './internship.service';
 
 @Module({
   imports: [
@@ -47,10 +49,11 @@ import { AssessmentService } from './assessment.service';
       AssessmentSchedule,
       AssessmentSubItem,
       AssessmentCredential,
+      InternshipPermission,
     ]),
   ],
   controllers: [AdminController],
-  providers: [AdminService, BulkUploadService, DriveService, EmailService, FeedbackService, AssessmentService],
-  exports: [EmailService, FeedbackService, AssessmentService],
+  providers: [AdminService, BulkUploadService, DriveService, EmailService, FeedbackService, AssessmentService, InternshipService],
+  exports: [EmailService, FeedbackService, AssessmentService, InternshipService],
 })
 export class AdminModule {}

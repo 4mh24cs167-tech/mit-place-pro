@@ -14,6 +14,7 @@ import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
 import { MeetingAssignment } from '../entities/round-meeting.entity';
 import { StudentDriveFeedback, CompanyDriveFeedback } from '../entities/feedback.entity';
 import { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule, AssessmentSubItem } from '../entities/assessment.entity';
+import { InternshipPermission } from '../entities/internship-permission.entity';
 import { AdminModule } from '../admin/admin.module';
 
 @Module({
@@ -37,6 +38,7 @@ import { AdminModule } from '../admin/admin.module';
       AssessmentSubmission,
       AssessmentSchedule,
       AssessmentSubItem,
+      InternshipPermission,
     ]),
     UploadModule,
     AdminModule,

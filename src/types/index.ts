@@ -281,3 +281,51 @@ export interface NavItem {
   icon: string;
   badge?: number;
 }
+
+export type InternshipPermissionStatus = 'pending' | 'approved' | 'not-approved';
+
+export type InternshipMode = 'on-site' | 'remote' | 'hybrid';
+
+export type OpportunitySource = 'on-campus' | 'off-campus' | 'faculty' | 'alumni' | 'self' | 'portal' | 'other';
+
+export interface InternshipPermission {
+  id: string;
+  studentId: string;
+  student?: Student;
+  mentorName: string | null;
+  // Section B
+  companyName: string;
+  companyWebsite: string | null;
+  companyAddress: string | null;
+  internshipDomain: string;
+  internshipRole: string;
+  projectTitle: string | null;
+  startDate: string;
+  endDate: string;
+  totalDuration: string;
+  mode: InternshipMode;
+  workLocation: string | null;
+  workingHours: string | null;
+  isRelatedToBranch: 'yes' | 'no' | 'partially';
+  // Section C
+  opportunitySource: OpportunitySource;
+  facilitatedByCollege: boolean;
+  sourcePerson: string | null;
+  stipendProvided: boolean;
+  stipendAmount: string | null;
+  otherBenefits: string | null;
+  ppoPossible: 'yes' | 'no' | 'not-confirmed';
+  ppoDetails: string | null;
+  // Section D
+  hrName: string | null;
+  hrDesignation: string | null;
+  hrEmail: string | null;
+  hrPhone: string | null;
+  // Section E & F
+  documentsChecklist: boolean[];
+  declarationAccepted: boolean;
+  // Timestamps
+  createdAt: string;
+  updatedAt: string;
+}
+

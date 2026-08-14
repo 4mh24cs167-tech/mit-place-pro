@@ -7,6 +7,7 @@ import { UserRole } from '../entities/user.entity';
 import { UpdateProfileDto, ApplyJobDto } from './dto/student.dto';
 import { FeedbackService } from '../admin/feedback.service';
 import { AssessmentService } from '../admin/assessment.service';
+import { InternshipService } from '../admin/internship.service';
 
 @Controller('api/v1/student')
 @Auth(UserRole.STUDENT)
@@ -16,6 +17,7 @@ export class StudentController {
     private readonly uploadService: UploadService,
     private readonly feedbackService: FeedbackService,
     private readonly assessmentService: AssessmentService,
+    private readonly internshipService: InternshipService,
   ) {}
 
   // ─── Profile ────────────────────────────────────
@@ -168,6 +170,30 @@ export class StudentController {
   @Get('assessments')
   async getMyAssessments(@CurrentUser('id') userId: string) {
     const data = await this.assessmentService.getStudentAssessments(userId);
+    return { success: true, data };
+  }
+
+  // ─── Internship Permission ─────────────────────
+  @Post('internship-permission')
+  async submitInternshipPermission(
+    @CurrentUser('id') userId: string,
+    @Body() body: Record<string, unknown>,
+  ) {
+    const data = await this.internshipService.submitForm(userId, body);
+    return { success: true, data };
+  }
+
+  @Get('internship-permissions')
+  async getMyInternshipPermissions(@CurrentUser('id') userId: string) {
+    const data = await this.internshipService.getStudentForms(userId);
+    return { success: true, data };
+  }
+
+  @Get('internship-permissions/:id')
+  async getInternshipPermission(
+    @Param('id') id: string,
+  ) {
+    const data = await this.internshipService.getFormById(id);
     return { success: true, data };
   }
 }
