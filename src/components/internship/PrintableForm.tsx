@@ -57,24 +57,32 @@ export default function PrintableForm({ form }: PrintableFormProps) {
           scrollY: 0,
           backgroundColor: '#ffffff',
           onclone: (clonedDoc: Document) => {
-            // Fix: html2canvas can't parse modern CSS lab() colors
-            const allEls = clonedDoc.querySelectorAll('*');
-            allEls.forEach((el: Element) => {
-              const htmlEl = el as HTMLElement;
-              const cs = clonedDoc.defaultView?.getComputedStyle(htmlEl);
-              if (!cs) return;
-              ['color', 'background-color', 'border-color', 'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color'].forEach(prop => {
-                const val = cs.getPropertyValue(prop);
-                if (val && (val.includes('lab(') || val.includes('lch(') || val.includes('oklch(') || val.includes('oklab('))) {
-                  // Convert via canvas 2d context
-                  const ctx = document.createElement('canvas').getContext('2d');
-                  if (ctx) {
-                    ctx.fillStyle = val;
-                    htmlEl.style.setProperty(prop, ctx.fillStyle);
-                  }
-                }
-              });
-            });
+            // Fix: html2canvas can't parse oklch/lab CSS colors from globals.css
+            // Override all oklch CSS variables with hex equivalents
+            const style = clonedDoc.createElement('style');
+            style.textContent = `
+              :root, *, *::before, *::after {
+                --color-background: #eeedf5 !important;
+                --color-foreground: #1a1730 !important;
+                --color-card: #f8f7fc !important;
+                --color-card-foreground: #1a1730 !important;
+                --color-primary: #3b2299 !important;
+                --color-primary-foreground: #fafafa !important;
+                --color-secondary: #e8e5f0 !important;
+                --color-secondary-foreground: #2d2950 !important;
+                --color-muted: #e8e6f0 !important;
+                --color-muted-foreground: #6b6680 !important;
+                --color-accent-green: #80d990 !important;
+                --color-accent-purple: #c4b0e8 !important;
+                --color-accent-yellow: #e8d080 !important;
+                --color-border: #ddd9e8 !important;
+                --color-input: #e8e6f0 !important;
+                --color-ring: #3b2299 !important;
+                --color-sidebar-bg: #f0eef5 !important;
+                --color-dark: #1e1a33 !important;
+              }
+            `;
+            clonedDoc.head.appendChild(style);
           },
         });
 
