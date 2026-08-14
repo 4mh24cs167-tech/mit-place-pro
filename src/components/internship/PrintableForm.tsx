@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { InternshipPermission } from '@/types';
-import { Printer, Download, Loader2, X, AlertTriangle } from 'lucide-react';
+import { Download, Loader2, X, AlertTriangle } from 'lucide-react';
 
 interface PrintableFormProps {
   form: InternshipPermission;
@@ -15,7 +15,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
 
   useEffect(() => { setShowInstruction(true); }, []);
 
-  const handlePrint = () => { window.print(); };
+
 
   const handleDownload = useCallback(async () => {
     if (!printRef.current || downloading) return;
@@ -35,9 +35,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
       }).from(printRef.current).save();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown';
-      if (confirm(`PDF failed (${msg}). Use Print dialog → Save as PDF instead?`)) {
-        window.print();
-      }
+      alert(`PDF generation failed: ${msg}. Please try again.`);
     } finally {
       setDownloading(false);
       document.querySelectorAll('.html2pdf__overlay').forEach(el => el.remove());
@@ -130,9 +128,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
             {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
             {downloading ? 'Wait...' : 'PDF'}
           </button>
-          <button onClick={handlePrint} style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#2563eb', color: '#fff', padding: '8px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-            <Printer size={14} /> Print
-          </button>
+
         </div>
       </div>
 
