@@ -15,8 +15,6 @@ export default function PrintableForm({ form }: PrintableFormProps) {
 
   useEffect(() => { setShowInstruction(true); }, []);
 
-
-
   const handleDownload = useCallback(async () => {
     if (!printRef.current || downloading) return;
     setDownloading(true);
@@ -26,16 +24,16 @@ export default function PrintableForm({ form }: PrintableFormProps) {
       const name = (form.student?.fullName || 'Student').replace(/\s+/g, '_');
       const company = form.companyName.replace(/\s+/g, '_');
       await html2pdf().set({
-        margin: [4, 6, 4, 6],
+        margin: 0,
         filename: `Internship_Permission_${name}_${company}.pdf`,
-        image: { type: 'jpeg', quality: 0.95 },
+        image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 794 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
         pagebreak: { mode: ['css'] },
       }).from(printRef.current).save();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown';
-      alert(`PDF generation failed: ${msg}. Please try again.`);
+      alert(`PDF failed: ${msg}. Please try again.`);
     } finally {
       setDownloading(false);
       document.querySelectorAll('.html2pdf__overlay').forEach(el => el.remove());
@@ -43,33 +41,24 @@ export default function PrintableForm({ form }: PrintableFormProps) {
     }
   }, [downloading, form]);
 
-  const CB = ({ checked, label }: { checked: boolean; label: string }) => (
-    <span style={{ marginRight: 6, whiteSpace: 'nowrap' }}>
-      {checked ? '☑' : '☐'} {label}
-    </span>
-  );
-
-  const docs = form.documentsChecklist || [];
-  const docLabels = [
-    'Offer Letter / Appointment Letter',
-    'Confirmation Email / Screenshot',
-    'Job Description / Role Description',
-    'Joining Instructions',
-    'NOC / Permission document',
-    'Other supporting document',
-  ];
-
-  // Styles — tuned to fill exactly one A4 page
-  const S = {
-    th: { padding: '3px 6px', border: '1px solid #999', fontWeight: 700, width: '36%', verticalAlign: 'top' } as React.CSSProperties,
-    td: { padding: '3px 6px', border: '1px solid #999', wordBreak: 'break-word' as const } as React.CSSProperties,
-    sec: { fontSize: 10, fontWeight: 'bold' as const, background: '#ccc', padding: '3px 6px', margin: '0 0 1px', textTransform: 'uppercase' as const, borderBottom: '1px solid #999' } as React.CSSProperties,
-    tbl: { width: '100%', borderCollapse: 'collapse' as const, fontSize: 10 } as React.CSSProperties,
+  // Colors
+  const C = {
+    navy: '#1e1b4b',
+    purple: '#6d28d9',
+    purpleLight: '#ede9fe',
+    purpleMid: '#8b5cf6',
+    bg: '#f8f7ff',
+    card: '#ffffff',
+    text: '#1e1b4b',
+    muted: '#6b7280',
+    border: '#e5e7eb',
   };
 
+  const s = form.student;
+  const duration = form.totalDuration || '–';
+
   return (
-    <div style={{ background: '#fff', minHeight: '100vh' }}>
-      {/* Print styles — margin 0 removes browser headers/footers (date, URL, title) */}
+    <div style={{ background: '#f3f4f6', minHeight: '100vh' }}>
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           @page { size: A4; margin: 0; }
@@ -79,7 +68,6 @@ export default function PrintableForm({ form }: PrintableFormProps) {
           #printable-form { position: absolute; left: 0; top: 0; width: 100%; }
           .no-print { display: none !important; }
           .page-break { page-break-before: always; }
-          .print-page { padding: 10mm 12mm 8mm !important; }
         }
         @media screen and (max-width: 640px) {
           .action-bar { flex-direction: column !important; gap: 8px !important; }
@@ -88,17 +76,13 @@ export default function PrintableForm({ form }: PrintableFormProps) {
         }
       `}} />
 
-      {/* POPUP INSTRUCTIONS */}
+      {/* POPUP */}
       {showInstruction && (
         <div className="no-print" style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', padding: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 16, padding: '24px', maxWidth: 400, width: '100%', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', position: 'relative' }}>
-            <button onClick={() => setShowInstruction(false)} style={{ position: 'absolute', top: 12, right: 12, background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}>
-              <X size={18} />
-            </button>
+          <div style={{ background: '#fff', borderRadius: 16, padding: 24, maxWidth: 400, width: '100%', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', position: 'relative' }}>
+            <button onClick={() => setShowInstruction(false)} style={{ position: 'absolute', top: 12, right: 12, background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}><X size={18} /></button>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-              <div style={{ background: '#fef3c7', borderRadius: 10, padding: 8, flexShrink: 0 }}>
-                <AlertTriangle size={20} style={{ color: '#d97706' }} />
-              </div>
+              <div style={{ background: '#fef3c7', borderRadius: 10, padding: 8, flexShrink: 0 }}><AlertTriangle size={20} style={{ color: '#d97706' }} /></div>
               <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>Print Instructions</h3>
             </div>
             <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '10px 12px', marginBottom: 16 }}>
@@ -106,188 +90,315 @@ export default function PrintableForm({ form }: PrintableFormProps) {
                 <li>Print in <strong>COLOUR</strong></li>
                 <li>Single sheet — <strong>front & back</strong></li>
                 <li>Use <strong>duplex printing</strong></li>
-                <li>Uncheck <strong>&quot;Headers and footers&quot;</strong></li>
                 <li>Check <strong>&quot;Background graphics&quot;</strong></li>
               </ul>
             </div>
-            <button onClick={() => setShowInstruction(false)} style={{ width: '100%', padding: '10px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-              Got it
-            </button>
+            <button onClick={() => setShowInstruction(false)} style={{ width: '100%', padding: 10, background: C.purple, color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>Got it</button>
           </div>
         </div>
       )}
 
       {/* ACTION BAR */}
-      <div className="no-print action-bar" style={{ padding: '10px 16px', background: '#f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #ddd' }}>
+      <div className="no-print action-bar" style={{ padding: '10px 16px', background: '#fff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #ddd' }}>
         <h2 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Print Preview</h2>
         <div className="action-buttons" style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => setShowInstruction(true)} style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#f59e0b', color: '#fff', padding: '8px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
-            <AlertTriangle size={14} /> Info
-          </button>
-          <button onClick={handleDownload} disabled={downloading} style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#059669', color: '#fff', padding: '8px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, opacity: downloading ? 0.6 : 1 }}>
+          <button onClick={() => setShowInstruction(true)} style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#f59e0b', color: '#fff', padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}><AlertTriangle size={14} /> Info</button>
+          <button onClick={handleDownload} disabled={downloading} style={{ display: 'flex', alignItems: 'center', gap: 4, background: C.purple, color: '#fff', padding: '8px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600, opacity: downloading ? 0.6 : 1 }}>
             {downloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-            {downloading ? 'Wait...' : 'PDF'}
+            {downloading ? 'Generating...' : 'Download PDF'}
           </button>
-
         </div>
       </div>
 
-      {/* ═══════════ PRINTABLE DOCUMENT ═══════════ */}
-      <div id="printable-form" ref={printRef} style={{ maxWidth: 794, margin: '0 auto', fontFamily: "'Times New Roman', Times, serif", color: '#000', background: '#fff', lineHeight: 1.25 }}>
+      {/* ═══════ PRINTABLE DOCUMENT ═══════ */}
+      <div id="printable-form" ref={printRef} style={{ maxWidth: 794, margin: '0 auto', fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif", color: C.text, background: '#fff' }}>
 
-        {/* ═══ PAGE 1 — FRONT ═══ */}
-        <div className="print-page" style={{ padding: '14px 20px 8px', fontSize: 10 }}>
+        {/* ═══ PAGE 1 ═══ */}
+        <div style={{ minHeight: 1122, position: 'relative', overflow: 'hidden' }}>
 
-          {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10, borderBottom: '2px solid #000', paddingBottom: 6 }}>
-            <img src="/mitm-logo.png" alt="MIT Mysore" style={{ width: 60, height: 60, objectFit: 'contain', marginRight: 12, flexShrink: 0 }} />
-            <div style={{ textAlign: 'center', flex: 1 }}>
-              <h1 style={{ fontSize: 15, fontWeight: 'bold', textTransform: 'uppercase', margin: 0, letterSpacing: 1 }}>Maharaja Institute of Technology Mysore</h1>
-              <p style={{ fontSize: 9, margin: '2px 0 0', color: '#333' }}>Belawadi, Srirangapatna Taluk, Mandya District, Karnataka – 571477</p>
-              <p style={{ fontSize: 8, margin: '1px 0 0', color: '#555' }}>(An Autonomous Institution | Affiliated to VTU, Belagavi | Approved by AICTE, New Delhi)</p>
-              <h2 style={{ fontSize: 11.5, fontWeight: 'bold', margin: '5px 0 0', textTransform: 'uppercase' }}>External Internship Permission & Registration Form</h2>
-              <p style={{ fontSize: 8, fontStyle: 'italic', margin: '2px 0 0' }}>(To be submitted by Final Year Students BEFORE joining an external internship)</p>
+          {/* HEADER — Dark navy */}
+          <div style={{ background: `linear-gradient(135deg, ${C.navy} 0%, #312e81 50%, ${C.purple} 100%)`, color: '#fff', padding: '20px 28px 18px', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: 0, right: 0, width: 200, height: 200, background: 'rgba(255,255,255,0.03)', borderRadius: '0 0 0 200px' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <img src="/mitm-logo.png" alt="MIT" style={{ width: 42, height: 42, borderRadius: 99, border: '2px solid rgba(255,255,255,0.3)', objectFit: 'contain', background: '#fff' }} />
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: 0.5 }}>MITM PlacePro</div>
+                  <div style={{ fontSize: 8.5, opacity: 0.7, marginTop: 1 }}>Campus Placement Portal</div>
+                </div>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: '8px 14px', textAlign: 'center', backdropFilter: 'blur(4px)' }}>
+                <div style={{ fontSize: 8, opacity: 0.8 }}>Internship Duration</div>
+                <div style={{ fontSize: 15, fontWeight: 800, marginTop: 1 }}>{duration}</div>
+              </div>
+            </div>
+            <h1 style={{ fontSize: 26, fontWeight: 800, margin: '14px 0 2px', lineHeight: 1.1 }}>Internship <span style={{ color: '#c4b5fd' }}>Registration</span></h1>
+            <p style={{ fontSize: 12, opacity: 0.8, margin: 0 }}>Industry Experience Opportunity</p>
+            <p style={{ fontSize: 9.5, marginTop: 6, opacity: 0.6 }}>Student Internship Approval & Registration Details</p>
+          </div>
+
+          {/* BODY */}
+          <div style={{ padding: '12px 22px 10px', background: C.bg }}>
+
+            {/* Journey Banner */}
+            <div style={{ background: '#fff', borderRadius: 10, padding: '10px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12, border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: C.purpleLight, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <span style={{ fontSize: 18 }}>🎓</span>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: C.purple, textTransform: 'uppercase', letterSpacing: 1 }}>Internship Journey</div>
+                <div style={{ fontSize: 8.5, color: C.muted, marginTop: 1 }}>Empowering students with real-world industry exposure through structured internship opportunities.</div>
+              </div>
+            </div>
+
+            {/* TWO COLUMNS — Student + Internship */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+
+              {/* Student Profile */}
+              <div style={{ background: '#fff', borderRadius: 10, padding: '12px 14px', border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: '#fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 14 }}>👤</span></div>
+                  <div style={{ fontSize: 11, fontWeight: 700 }}>Student Profile</div>
+                </div>
+                {[
+                  ['👤', 'Name', s?.fullName || '–'],
+                  ['🆔', 'USN', s?.usn || '–'],
+                  ['🏛️', 'Department', s?.department || '–'],
+                  ['📱', 'Phone', s?.phone || '–'],
+                  ['📧', 'Email', s?.email || '–'],
+                  ['👨‍🏫', 'Faculty Mentor', form.mentorName || '–'],
+                ].map(([icon, label, val], i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', borderBottom: i < 5 ? `1px solid ${C.border}` : 'none' }}>
+                    <span style={{ fontSize: 10, width: 16, textAlign: 'center' }}>{icon}</span>
+                    <span style={{ fontSize: 8.5, color: C.muted, width: 70, flexShrink: 0 }}>{label}</span>
+                    <span style={{ fontSize: 9, fontWeight: 600, flex: 1 }}>{val}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Internship Info */}
+              <div style={{ background: '#fff', borderRadius: 10, padding: '12px 14px', border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: C.purpleLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 14 }}>💼</span></div>
+                  <div style={{ fontSize: 11, fontWeight: 700 }}>Internship Information</div>
+                </div>
+                {[
+                  ['🏢', 'Organization', form.companyName],
+                  ['💻', 'Domain', form.internshipDomain],
+                  ['🎯', 'Role', form.internshipRole],
+                  ['📍', 'Mode', form.mode || '–'],
+                  ['📌', 'Location', form.workLocation || '–'],
+                  ['📅', 'Start Date', form.startDate],
+                  ['📅', 'End Date', form.endDate],
+                  ['⏰', 'Working Hours', form.workingHours || '–'],
+                ].map(([icon, label, val], i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3.5px 0', borderBottom: i < 7 ? `1px solid ${C.border}` : 'none' }}>
+                    <span style={{ fontSize: 10, width: 16, textAlign: 'center' }}>{icon}</span>
+                    <span style={{ fontSize: 8.5, color: C.muted, width: 76, flexShrink: 0 }}>{label}</span>
+                    <span style={{ fontSize: 9, fontWeight: 600, flex: 1 }}>{val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* THREE HIGHLIGHT CARDS */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
+              {[
+                ['🔍', 'Opportunity Source', form.opportunitySource || '–', C.purpleLight],
+                ['₹', 'Monthly Stipend', form.stipendProvided ? `₹${form.stipendAmount || '–'}` : 'No Stipend', '#fef3c7'],
+                ['📍', 'Work Location', form.workLocation || '–', '#dbeafe'],
+              ].map(([icon, label, val, bg], i) => (
+                <div key={i} style={{ background: '#fff', borderRadius: 10, padding: '10px 12px', border: `1px solid ${C.border}`, textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 99, background: bg as string, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
+                    <span style={{ fontSize: icon === '₹' ? 16 : 13, fontWeight: 700, color: C.purple }}>{icon}</span>
+                  </div>
+                  <div style={{ fontSize: 7.5, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, marginTop: 1, textTransform: 'capitalize' }}>{val}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* TWO CARDS — HR + Company */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+              {/* HR Details */}
+              <div style={{ background: '#fff', borderRadius: 10, padding: '12px 14px', border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 6, background: '#fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 12 }}>🏢</span></div>
+                  <div style={{ fontSize: 10, fontWeight: 700 }}>HR / Supervisor Details</div>
+                </div>
+                {[
+                  ['👤', 'Contact', form.hrName || '–'],
+                  ['📧', 'Email', form.hrEmail || '–'],
+                  ['📱', 'Phone', form.hrPhone || '–'],
+                  ['💼', 'Designation', form.hrDesignation || '–'],
+                ].map(([icon, label, val], i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0', borderBottom: i < 3 ? `1px solid ${C.border}` : 'none' }}>
+                    <span style={{ fontSize: 9, width: 14 }}>{icon}</span>
+                    <span style={{ fontSize: 8, color: C.muted, width: 55 }}>{label}</span>
+                    <span style={{ fontSize: 8.5, fontWeight: 600, flex: 1, wordBreak: 'break-all' }}>{val}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Company + Additional */}
+              <div style={{ background: '#fff', borderRadius: 10, padding: '12px 14px', border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 6, background: C.purpleLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 12 }}>📋</span></div>
+                  <div style={{ fontSize: 10, fontWeight: 700 }}>Additional Details</div>
+                </div>
+                {[
+                  ['🌐', 'Website', form.companyWebsite || '–'],
+                  ['📍', 'Address', form.companyAddress || '–'],
+                  ['🎓', 'Related to branch', form.isRelatedToBranch || '–'],
+                  ['🤝', 'PPO possible', form.ppoPossible || '–'],
+                ].map(([icon, label, val], i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0', borderBottom: i < 3 ? `1px solid ${C.border}` : 'none' }}>
+                    <span style={{ fontSize: 9, width: 14 }}>{icon}</span>
+                    <span style={{ fontSize: 8, color: C.muted, width: 75 }}>{label}</span>
+                    <span style={{ fontSize: 8.5, fontWeight: 600, flex: 1, wordBreak: 'break-all' }}>{val}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* DECLARATION */}
+            <div style={{ background: '#fff', borderRadius: 10, padding: '10px 14px', border: `1px solid ${C.border}`, marginBottom: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <div style={{ width: 24, height: 24, borderRadius: 6, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 12 }}>✅</span></div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#166534' }}>Student Declaration</div>
+              </div>
+              <p style={{ fontSize: 7.5, color: C.muted, margin: 0, lineHeight: 1.4 }}>
+                The student confirms that all internship information submitted is accurate and agrees to comply with institutional policies, academic requirements, and organizational guidelines throughout the internship period.
+              </p>
+              <div style={{ textAlign: 'right', marginTop: 6 }}>
+                <div style={{ display: 'inline-block', borderBottom: '1px solid #000', width: 120, height: 20 }} />
+                <div style={{ fontSize: 7, color: C.muted, marginTop: 1 }}>Student Signature</div>
+              </div>
             </div>
           </div>
 
-          {/* A */}
-          <h3 style={S.sec}>A. Student Basic Details</h3>
-          <table style={S.tbl}><tbody>
-            <tr><td style={S.th}>Name</td><td style={S.td}>{form.student?.fullName || ''}</td></tr>
-            <tr><td style={S.th}>USN</td><td style={S.td}>{form.student?.usn || ''}</td></tr>
-            <tr><td style={S.th}>Branch</td><td style={S.td}>{form.student?.department || ''}</td></tr>
-            <tr><td style={S.th}>Student Mobile Number</td><td style={S.td}>{form.student?.phone || ''}</td></tr>
-            <tr><td style={S.th}>Personal Email ID</td><td style={S.td}>{form.student?.email || ''}</td></tr>
-            <tr><td style={S.th}>Mentor Name</td><td style={S.td}>{form.mentorName || ''}</td></tr>
-          </tbody></table>
-
-          {/* B */}
-          <h3 style={{...S.sec, marginTop: 8}}>B. External Internship Details</h3>
-          <table style={S.tbl}><tbody>
-            <tr><td style={S.th}>Company / Organization</td><td style={S.td}>{form.companyName}</td></tr>
-            <tr><td style={S.th}>Company Website</td><td style={S.td}>{form.companyWebsite || ''}</td></tr>
-            <tr><td style={S.th}>Company Address</td><td style={S.td}>{form.companyAddress || ''}</td></tr>
-            <tr><td style={S.th}>Internship Domain / Area</td><td style={S.td}>{form.internshipDomain}</td></tr>
-            <tr><td style={S.th}>Internship Role / Designation</td><td style={S.td}>{form.internshipRole}</td></tr>
-            <tr><td style={S.th}>Project / Work Title</td><td style={S.td}>{form.projectTitle || ''}</td></tr>
-            <tr><td style={S.th}>Start Date</td><td style={S.td}>{form.startDate}</td></tr>
-            <tr><td style={S.th}>End Date</td><td style={S.td}>{form.endDate}</td></tr>
-            <tr><td style={S.th}>Total Duration</td><td style={S.td}>{form.totalDuration}</td></tr>
-            <tr><td style={S.th}>Mode of Internship</td><td style={S.td}><CB checked={form.mode==='on-site'} label="On-site" /><CB checked={form.mode==='remote'} label="Remote" /><CB checked={form.mode==='hybrid'} label="Hybrid" /></td></tr>
-            <tr><td style={S.th}>Work Location</td><td style={S.td}>{form.workLocation || ''}</td></tr>
-            <tr><td style={S.th}>Working Hours</td><td style={S.td}>{form.workingHours || ''}</td></tr>
-            <tr><td style={S.th}>Related to branch?</td><td style={S.td}><CB checked={form.isRelatedToBranch==='yes'} label="Yes" /><CB checked={form.isRelatedToBranch==='no'} label="No" /><CB checked={form.isRelatedToBranch==='partially'} label="Partially" /></td></tr>
-          </tbody></table>
-
-          {/* C */}
-          <h3 style={{...S.sec, marginTop: 8}}>C. Internship Opportunity Details</h3>
-          <table style={S.tbl}><tbody>
-            <tr><td style={S.th}>Opportunity obtained via?</td><td style={S.td}><CB checked={form.opportunitySource==='on-campus'} label="On-Campus" /><CB checked={form.opportunitySource==='off-campus'} label="Off-Campus" /><CB checked={form.opportunitySource==='faculty'} label="Faculty" /><CB checked={form.opportunitySource==='alumni'} label="Alumni" /><CB checked={form.opportunitySource==='self'} label="Self" /><CB checked={form.opportunitySource==='portal'} label="Portal" /><CB checked={form.opportunitySource==='other'} label="Other" /></td></tr>
-            <tr><td style={S.th}>College facilitated?</td><td style={S.td}><CB checked={form.facilitatedByCollege===true} label="Yes" /><CB checked={form.facilitatedByCollege===false} label="No" /></td></tr>
-            <tr><td style={S.th}>Source / reference</td><td style={S.td}>{form.sourcePerson || ''}</td></tr>
-            <tr><td style={S.th}>Stipend provided?</td><td style={S.td}><CB checked={form.stipendProvided===true} label="Yes" /><CB checked={form.stipendProvided===false} label="No" /></td></tr>
-            <tr><td style={S.th}>Stipend Amount / Month</td><td style={S.td}>{form.stipendAmount || ''}</td></tr>
-            <tr><td style={S.th}>Other benefits</td><td style={S.td}>{form.otherBenefits || ''}</td></tr>
-            <tr><td style={S.th}>PPO possible?</td><td style={S.td}><CB checked={form.ppoPossible==='yes'} label="Yes" /><CB checked={form.ppoPossible==='no'} label="No" /><CB checked={form.ppoPossible==='not-confirmed'} label="Not Confirmed" /></td></tr>
-            <tr><td style={S.th}>PPO details</td><td style={S.td}>{form.ppoDetails || ''}</td></tr>
-          </tbody></table>
-
-          {/* D */}
-          <h3 style={{...S.sec, marginTop: 8}}>D. Company / HR / Supervisor Details</h3>
-          <table style={S.tbl}><tbody>
-            <tr><td style={S.th}>HR / Contact Name</td><td style={S.td}>{form.hrName || ''}</td></tr>
-            <tr><td style={S.th}>HR Designation</td><td style={S.td}>{form.hrDesignation || ''}</td></tr>
-            <tr><td style={S.th}>HR Email</td><td style={S.td}>{form.hrEmail || ''}</td></tr>
-            <tr><td style={S.th}>HR Phone</td><td style={S.td}>{form.hrPhone || ''}</td></tr>
-          </tbody></table>
-
-          {/* E */}
-          <h3 style={{...S.sec, marginTop: 8}}>E. Documents to Submit</h3>
-          <div style={{ fontSize: 9.5, paddingLeft: 4, lineHeight: 1.6 }}>
-            {docLabels.map((l, i) => <div key={i}>{docs[i] ? '☑' : '☐'} {l}</div>)}
+          {/* FOOTER */}
+          <div style={{ background: C.navy, color: '#fff', padding: '8px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <img src="/mitm-logo.png" alt="MIT" style={{ width: 22, height: 22, borderRadius: 99, objectFit: 'contain', background: '#fff' }} />
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 700 }}>MITM PlacePro</div>
+                <div style={{ fontSize: 7, opacity: 0.6 }}>Campus Placement Portal</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 7, opacity: 0.6, textAlign: 'right' }}>
+              <div style={{ fontWeight: 600, opacity: 0.8 }}>Maharaja Institute of Technology Mysore</div>
+              <div>Belawadi, Srirangapatna Taluk, Mandya, Karnataka – 571477</div>
+            </div>
           </div>
-          <p style={{ fontSize: 8, fontStyle: 'italic', margin: '3px 0 0', padding: '2px 4px', background: '#eee', border: '1px solid #ccc' }}><strong>Note:</strong> Submit clear, authentic copies. Offer letter should establish company, role, period & student identity.</p>
-
-          {/* F */}
-          <h3 style={{...S.sec, marginTop: 6}}>F. Student Undertaking / Declaration</h3>
-          <ol style={{ paddingLeft: 16, fontSize: 8.5, margin: '2px 0 3px', lineHeight: 1.4 }}>
-            <li>I declare information furnished and documents submitted are true, complete and authentic.</li>
-            <li>Internship is subject to verification; submission does not constitute automatic permission.</li>
-            <li>I will follow rules and code of conduct of both College and Company.</li>
-            <li>I will maintain regular attendance. Any changes will be informed to the Department.</li>
-            <li>College may contact Company to verify details and performance.</li>
-            <li>After completion, I will submit the Internship Completion Certificate.</li>
-            <li>I will submit internship report, feedback, evaluation within stipulated time.</li>
-            <li>Failure to submit documents or false information may result in action per institutional rules.</li>
-          </ol>
-          <p style={{ fontSize: 9.5, paddingLeft: 4, margin: '2px 0' }}><strong>Declaration:</strong> {form.declarationAccepted ? '☑' : '☐'} I have read, understood and agree to the above.</p>
-
-          {/* G */}
-          <h3 style={{...S.sec, marginTop: 6}}>G. Request for Permission</h3>
-          <p style={{ fontSize: 9, paddingLeft: 4, margin: '2px 0' }}>I request the Department to grant permission for the above external internship. I will comply with all academic, attendance and institutional requirements.</p>
-
-          <div style={{ textAlign: 'center', fontSize: 7.5, color: '#999', borderTop: '1px solid #ddd', paddingTop: 3, marginTop: 8 }}>Page 1 of 2 — Front</div>
         </div>
 
         {/* ═══ PAGE 2 — BACK ═══ */}
-        <div className="page-break print-page" style={{ padding: '14px 20px 8px', fontSize: 10 }}>
+        <div className="page-break" style={{ minHeight: 1122, position: 'relative', background: C.bg }}>
 
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8, borderBottom: '1.5px solid #000', paddingBottom: 5 }}>
-            <img src="/mitm-logo.png" alt="MIT Mysore" style={{ width: 50, height: 50, objectFit: 'contain', marginRight: 10, flexShrink: 0 }} />
-            <div style={{ textAlign: 'center', flex: 1 }}>
-              <h1 style={{ fontSize: 13, fontWeight: 'bold', textTransform: 'uppercase', margin: 0 }}>Maharaja Institute of Technology Mysore</h1>
-              <p style={{ fontSize: 8, margin: '1px 0 0', color: '#333' }}>External Internship Permission & Registration Form — <em>Page 2 (Back)</em></p>
+          {/* Mini Header */}
+          <div style={{ background: `linear-gradient(135deg, ${C.navy}, ${C.purple})`, color: '#fff', padding: '14px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <img src="/mitm-logo.png" alt="MIT" style={{ width: 30, height: 30, borderRadius: 99, objectFit: 'contain', background: '#fff' }} />
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 700 }}>Department Verification</div>
+                <div style={{ fontSize: 8, opacity: 0.7 }}>Office Use Only — Page 2</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 8, opacity: 0.6 }}>{s?.fullName} | {s?.usn}</div>
+          </div>
+
+          <div style={{ padding: '14px 22px' }}>
+
+            {/* H — Verification */}
+            <div style={{ background: '#fff', borderRadius: 10, padding: '14px 16px', marginBottom: 14, border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 14 }}>📋</span> Department Verification & Approval
+              </div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9 }}>
+                <tbody>
+                  {[
+                    ['Documents Verified', '☐ Yes  ☐ No  ☐ Pending'],
+                    ['Offer Letter Verified', '☐ Yes  ☐ No  ☐ Pending'],
+                    ['Confirmation Verified', '☐ Yes  ☐ No  ☐ Pending'],
+                    ['Company / HR Verified', '☐ Yes  ☐ No  ☐ Pending'],
+                    ['Internship Details Verified', '☐ Yes  ☐ No  ☐ Pending'],
+                    ['Faculty Recommendation', '☐ Recommended  ☐ Not Recommended  ☐ Pending'],
+                    ['HOD Approval', '☐ Approved  ☐ Not Approved  ☐ Pending'],
+                    ['NOC Requested / Issued', '☐ Yes  ☐ No  ☐ Pending  ☐ N/A'],
+                    ['Final Approval', '☐ Approved  ☐ Not Approved  ☐ Pending'],
+                  ].map(([label, val], i) => (
+                    <tr key={i}>
+                      <td style={{ padding: '5px 8px', borderBottom: `1px solid ${C.border}`, fontWeight: 600, width: '35%', color: C.navy }}>{label}</td>
+                      <td style={{ padding: '5px 8px', borderBottom: `1px solid ${C.border}`, color: C.muted }}>{val}</td>
+                    </tr>
+                  ))}
+                  <tr>
+                    <td style={{ padding: '5px 8px', fontWeight: 600, color: C.navy }}>Remarks</td>
+                    <td style={{ padding: '5px 8px', height: 40 }} />
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* I — Signatures */}
+            <div style={{ background: '#fff', borderRadius: 10, padding: '14px 16px', marginBottom: 14, border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 14 }}>✍️</span> Signatures & Authorization
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                {['Student Name & Signature', 'Faculty Coordinator', 'Head of Department (HOD)', 'Placement / Training Officer'].map((title) => (
+                  <div key={title} style={{ textAlign: 'center' }}>
+                    <div style={{ height: 50, border: `1px dashed ${C.border}`, borderRadius: 8, marginBottom: 4, background: '#fafafa' }} />
+                    <div style={{ fontSize: 8.5, fontWeight: 600, color: C.navy }}>{title}</div>
+                    <div style={{ fontSize: 7.5, color: C.muted }}>Date: _______________</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* J — Post Internship */}
+            <div style={{ background: '#fff', borderRadius: 10, padding: '14px 16px', marginBottom: 14, border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 14 }}>📝</span> Post-Internship Requirements
+              </div>
+              <div style={{ fontSize: 9 }}>
+                {['Internship Completion Certificate', 'Proof of attendance / completion', 'Internship Report', 'Company Evaluation (if required)', 'Student Feedback Form', 'Any other prescribed document'].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', borderBottom: i < 5 ? `1px solid ${C.border}` : 'none' }}>
+                    <span style={{ width: 18, height: 18, borderRadius: 4, border: `1.5px solid ${C.border}`, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }} />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Documents submitted */}
+            <div style={{ background: '#fff', borderRadius: 10, padding: '12px 16px', border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 12 }}>📎</span> Documents Submitted by Student
+              </div>
+              <div style={{ fontSize: 8.5 }}>
+                {['Offer Letter / Appointment Letter', 'Confirmation Email / Screenshot', 'Job Description / Role Description', 'Joining Instructions', 'NOC / Permission document', 'Other supporting document'].map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2.5px 0' }}>
+                    <span style={{ fontSize: 10, color: (form.documentsChecklist || [])[i] ? '#22c55e' : C.muted }}>{(form.documentsChecklist || [])[i] ? '☑' : '☐'}</span>
+                    <span style={{ color: (form.documentsChecklist || [])[i] ? C.text : C.muted }}>{item}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* H */}
-          <h3 style={S.sec}>H. Department Verification & Approval – Office Use Only</h3>
-          <table style={S.tbl}><tbody>
-            <tr><td style={S.th}>Documents Verified</td><td style={S.td}>☐ Yes  ☐ No  ☐ Pending</td></tr>
-            <tr><td style={S.th}>Offer Letter Verified</td><td style={S.td}>☐ Yes  ☐ No  ☐ Pending</td></tr>
-            <tr><td style={S.th}>Confirmation Verified</td><td style={S.td}>☐ Yes  ☐ No  ☐ Pending</td></tr>
-            <tr><td style={S.th}>Company / HR Verified</td><td style={S.td}>☐ Yes  ☐ No  ☐ Pending</td></tr>
-            <tr><td style={S.th}>Internship Details Verified</td><td style={S.td}>☐ Yes  ☐ No  ☐ Pending</td></tr>
-            <tr><td style={S.th}>Faculty Mentor Recommendation</td><td style={S.td}>☐ Recommended  ☐ Not Recommended  ☐ Pending</td></tr>
-            <tr><td style={S.th}>HOD Approval</td><td style={S.td}>☐ Approved  ☐ Not Approved  ☐ Pending</td></tr>
-            <tr><td style={S.th}>NOC Requested</td><td style={S.td}>☐ Yes  ☐ No</td></tr>
-            <tr><td style={S.th}>NOC Issued</td><td style={S.td}>☐ Yes  ☐ No  ☐ Pending  ☐ N/A</td></tr>
-            <tr><td style={S.th}>Attendance / Academic Remarks</td><td style={{...S.td, height: 22}}></td></tr>
-            <tr><td style={S.th}>Placement / Training Remarks</td><td style={{...S.td, height: 22}}></td></tr>
-            <tr><td style={S.th}>Final Approval Status</td><td style={S.td}>☐ Approved  ☐ Not Approved  ☐ Pending</td></tr>
-          </tbody></table>
-
-          {/* I */}
-          <h3 style={{...S.sec, marginTop: 6}}>I. Signatures & Authorization</h3>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}><tbody>
-            <tr>
-              <td style={{ border: '1px solid #999', padding: 3, width: '50%', height: 50, verticalAlign: 'bottom' }}>
-                <div style={{ borderTop: '1px solid #000', paddingTop: 1, fontSize: 8 }}><strong>Student Name & Signature</strong><br/>Date: ___________</div>
-              </td>
-              <td style={{ border: '1px solid #999', padding: 3, width: '50%', height: 50, verticalAlign: 'bottom' }}>
-                <div style={{ borderTop: '1px solid #000', paddingTop: 1, fontSize: 8 }}><strong>Faculty Coordinator</strong><br/>Date: ___________</div>
-              </td>
-            </tr>
-            <tr>
-              <td style={{ border: '1px solid #999', padding: 3, width: '50%', height: 50, verticalAlign: 'bottom' }}>
-                <div style={{ borderTop: '1px solid #000', paddingTop: 1, fontSize: 8 }}><strong>HOD</strong><br/>Date: ___________</div>
-              </td>
-              <td style={{ border: '1px solid #999', padding: 3, width: '50%', height: 50, verticalAlign: 'bottom' }}>
-                <div style={{ borderTop: '1px solid #000', paddingTop: 1, fontSize: 8 }}><strong>Placement / Training Officer</strong><br/>Date: ___________</div>
-              </td>
-            </tr>
-          </tbody></table>
-
-          {/* J */}
-          <h3 style={{...S.sec, marginTop: 6}}>J. Post-Internship Requirement</h3>
-          <p style={{ fontSize: 8, paddingLeft: 3, margin: '1px 0 2px' }}>Before official completion, the student must submit:</p>
-          <div style={{ fontSize: 8.5, paddingLeft: 3 }}>
-            {['Internship Completion Certificate', 'Proof of attendance / completion', 'Internship Report', 'Company Evaluation (if required)', 'Student Feedback Form', 'Any other prescribed document'].map((item, i) => (
-              <div key={i}>☐ {item}</div>
-            ))}
+          {/* Footer */}
+          <div style={{ background: C.navy, color: '#fff', padding: '8px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <img src="/mitm-logo.png" alt="MIT" style={{ width: 22, height: 22, borderRadius: 99, objectFit: 'contain', background: '#fff' }} />
+              <div><div style={{ fontSize: 9, fontWeight: 700 }}>MITM PlacePro</div><div style={{ fontSize: 7, opacity: 0.6 }}>Campus Placement Portal</div></div>
+            </div>
+            <div style={{ fontSize: 7, opacity: 0.6, textAlign: 'right' }}>
+              <div style={{ fontWeight: 600, opacity: 0.8 }}>Maharaja Institute of Technology Mysore</div>
+              <div>Belawadi, Srirangapatna Taluk, Mandya, Karnataka – 571477</div>
+            </div>
           </div>
-
-          <div style={{ textAlign: 'center', fontSize: 7, color: '#999', borderTop: '1px solid #ddd', paddingTop: 2, marginTop: 6 }}>Page 2 of 2 — Back</div>
         </div>
       </div>
     </div>
