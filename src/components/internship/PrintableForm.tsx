@@ -15,31 +15,46 @@ export default function PrintableForm({ form }: PrintableFormProps) {
 
   useEffect(() => { setShowInstruction(true); }, []);
 
+  // Load html2pdf from CDN (dynamic import breaks on Vercel)
+  const loadHtml2Pdf = useCallback((): Promise<typeof window & { html2pdf: any }> => {
+    return new Promise((resolve, reject) => {
+      if ((window as any).html2pdf) {
+        resolve(window as any);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js';
+      script.onload = () => resolve(window as any);
+      script.onerror = () => reject(new Error('Failed to load PDF library'));
+      document.head.appendChild(script);
+    });
+  }, []);
+
   const handleDownload = useCallback(async () => {
     if (!printRef.current || downloading) return;
     setDownloading(true);
     try {
-      const module = await import('html2pdf.js');
-      const html2pdf = module.default || module;
+      const win = await loadHtml2Pdf();
+      const html2pdf = win.html2pdf;
       const name = (form.student?.fullName || 'Student').replace(/\s+/g, '_');
       const company = form.companyName.replace(/\s+/g, '_');
       await html2pdf().set({
         margin: 0,
         filename: `Internship_Permission_${name}_${company}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 794 },
+        html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 794, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
         pagebreak: { mode: ['css'] },
       }).from(printRef.current).save();
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Unknown';
-      alert(`PDF failed: ${msg}. Please try again.`);
+      alert(`PDF generation failed: ${msg}. Please try again.`);
     } finally {
       setDownloading(false);
       document.querySelectorAll('.html2pdf__overlay').forEach(el => el.remove());
       document.body.style.overflow = '';
     }
-  }, [downloading, form]);
+  }, [downloading, form, loadHtml2Pdf]);
 
   // Colors
   const C = {
