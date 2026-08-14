@@ -59,12 +59,12 @@ export default function PrintableForm({ form }: PrintableFormProps) {
     'Other supporting document',
   ];
 
-  // Ultra-compact styles
+  // Styles — tuned to fill exactly one A4 page
   const S = {
-    th: { padding: '1.5px 4px', border: '1px solid #999', fontWeight: 700, width: '36%', verticalAlign: 'top' } as React.CSSProperties,
-    td: { padding: '1.5px 4px', border: '1px solid #999', wordBreak: 'break-word' as const } as React.CSSProperties,
-    sec: { fontSize: 9, fontWeight: 'bold' as const, background: '#ccc', padding: '1.5px 4px', margin: '0 0 1px', textTransform: 'uppercase' as const, borderBottom: '1px solid #999' } as React.CSSProperties,
-    tbl: { width: '100%', borderCollapse: 'collapse' as const, fontSize: 9 } as React.CSSProperties,
+    th: { padding: '3px 6px', border: '1px solid #999', fontWeight: 700, width: '36%', verticalAlign: 'top' } as React.CSSProperties,
+    td: { padding: '3px 6px', border: '1px solid #999', wordBreak: 'break-word' as const } as React.CSSProperties,
+    sec: { fontSize: 10, fontWeight: 'bold' as const, background: '#ccc', padding: '3px 6px', margin: '0 0 1px', textTransform: 'uppercase' as const, borderBottom: '1px solid #999' } as React.CSSProperties,
+    tbl: { width: '100%', borderCollapse: 'collapse' as const, fontSize: 10 } as React.CSSProperties,
   };
 
   return (
@@ -136,15 +136,18 @@ export default function PrintableForm({ form }: PrintableFormProps) {
       <div id="printable-form" ref={printRef} style={{ maxWidth: 794, margin: '0 auto', fontFamily: "'Times New Roman', Times, serif", color: '#000', background: '#fff', lineHeight: 1.25 }}>
 
         {/* ═══ PAGE 1 — FRONT ═══ */}
-        <div className="print-page" style={{ padding: '10px 18px 6px', fontSize: 9 }}>
+        <div className="print-page" style={{ padding: '14px 20px 8px', fontSize: 10 }}>
 
           {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: 5, borderBottom: '2px solid #000', paddingBottom: 4 }}>
-            <h1 style={{ fontSize: 13, fontWeight: 'bold', textTransform: 'uppercase', margin: 0, letterSpacing: 1 }}>Maharaja Institute of Technology Mysore</h1>
-            <p style={{ fontSize: 8, margin: 0, color: '#333' }}>Belawadi, Srirangapatna Taluk, Mandya District, Karnataka – 571477</p>
-            <p style={{ fontSize: 7.5, margin: 0, color: '#555' }}>(An Autonomous Institution | Affiliated to VTU, Belagavi | Approved by AICTE, New Delhi)</p>
-            <h2 style={{ fontSize: 10, fontWeight: 'bold', margin: '3px 0 0', textTransform: 'uppercase' }}>External Internship Permission & Registration Form</h2>
-            <p style={{ fontSize: 7, fontStyle: 'italic', margin: 0 }}>(To be submitted by Final Year Students BEFORE joining an external internship)</p>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10, borderBottom: '2px solid #000', paddingBottom: 6 }}>
+            <img src="/mitm-logo.png" alt="MIT Mysore" style={{ width: 60, height: 60, objectFit: 'contain', marginRight: 12, flexShrink: 0 }} />
+            <div style={{ textAlign: 'center', flex: 1 }}>
+              <h1 style={{ fontSize: 15, fontWeight: 'bold', textTransform: 'uppercase', margin: 0, letterSpacing: 1 }}>Maharaja Institute of Technology Mysore</h1>
+              <p style={{ fontSize: 9, margin: '2px 0 0', color: '#333' }}>Belawadi, Srirangapatna Taluk, Mandya District, Karnataka – 571477</p>
+              <p style={{ fontSize: 8, margin: '1px 0 0', color: '#555' }}>(An Autonomous Institution | Affiliated to VTU, Belagavi | Approved by AICTE, New Delhi)</p>
+              <h2 style={{ fontSize: 11.5, fontWeight: 'bold', margin: '5px 0 0', textTransform: 'uppercase' }}>External Internship Permission & Registration Form</h2>
+              <p style={{ fontSize: 8, fontStyle: 'italic', margin: '2px 0 0' }}>(To be submitted by Final Year Students BEFORE joining an external internship)</p>
+            </div>
           </div>
 
           {/* A */}
@@ -159,7 +162,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
           </tbody></table>
 
           {/* B */}
-          <h3 style={{...S.sec, marginTop: 4}}>B. External Internship Details</h3>
+          <h3 style={{...S.sec, marginTop: 8}}>B. External Internship Details</h3>
           <table style={S.tbl}><tbody>
             <tr><td style={S.th}>Company / Organization</td><td style={S.td}>{form.companyName}</td></tr>
             <tr><td style={S.th}>Company Website</td><td style={S.td}>{form.companyWebsite || ''}</td></tr>
@@ -177,7 +180,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
           </tbody></table>
 
           {/* C */}
-          <h3 style={{...S.sec, marginTop: 4}}>C. Internship Opportunity Details</h3>
+          <h3 style={{...S.sec, marginTop: 8}}>C. Internship Opportunity Details</h3>
           <table style={S.tbl}><tbody>
             <tr><td style={S.th}>Opportunity obtained via?</td><td style={S.td}><CB checked={form.opportunitySource==='on-campus'} label="On-Campus" /><CB checked={form.opportunitySource==='off-campus'} label="Off-Campus" /><CB checked={form.opportunitySource==='faculty'} label="Faculty" /><CB checked={form.opportunitySource==='alumni'} label="Alumni" /><CB checked={form.opportunitySource==='self'} label="Self" /><CB checked={form.opportunitySource==='portal'} label="Portal" /><CB checked={form.opportunitySource==='other'} label="Other" /></td></tr>
             <tr><td style={S.th}>College facilitated?</td><td style={S.td}><CB checked={form.facilitatedByCollege===true} label="Yes" /><CB checked={form.facilitatedByCollege===false} label="No" /></td></tr>
@@ -190,7 +193,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
           </tbody></table>
 
           {/* D */}
-          <h3 style={{...S.sec, marginTop: 4}}>D. Company / HR / Supervisor Details</h3>
+          <h3 style={{...S.sec, marginTop: 8}}>D. Company / HR / Supervisor Details</h3>
           <table style={S.tbl}><tbody>
             <tr><td style={S.th}>HR / Contact Name</td><td style={S.td}>{form.hrName || ''}</td></tr>
             <tr><td style={S.th}>HR Designation</td><td style={S.td}>{form.hrDesignation || ''}</td></tr>
@@ -199,15 +202,15 @@ export default function PrintableForm({ form }: PrintableFormProps) {
           </tbody></table>
 
           {/* E */}
-          <h3 style={{...S.sec, marginTop: 4}}>E. Documents to Submit</h3>
-          <div style={{ fontSize: 8.5, paddingLeft: 3 }}>
-            {docLabels.map((l, i) => <span key={i} style={{ display: 'inline-block', marginRight: 4 }}>{docs[i] ? '☑' : '☐'} {l}{i < 5 ? ' |' : ''}</span>)}
+          <h3 style={{...S.sec, marginTop: 8}}>E. Documents to Submit</h3>
+          <div style={{ fontSize: 9.5, paddingLeft: 4, lineHeight: 1.6 }}>
+            {docLabels.map((l, i) => <div key={i}>{docs[i] ? '☑' : '☐'} {l}</div>)}
           </div>
-          <p style={{ fontSize: 7, fontStyle: 'italic', margin: '1px 0 0', padding: '1px 3px', background: '#eee', border: '1px solid #ccc' }}><strong>Note:</strong> Submit clear, authentic copies. Offer letter should establish company, role, period & student identity.</p>
+          <p style={{ fontSize: 8, fontStyle: 'italic', margin: '3px 0 0', padding: '2px 4px', background: '#eee', border: '1px solid #ccc' }}><strong>Note:</strong> Submit clear, authentic copies. Offer letter should establish company, role, period & student identity.</p>
 
           {/* F */}
-          <h3 style={{...S.sec, marginTop: 3}}>F. Student Undertaking / Declaration</h3>
-          <ol style={{ paddingLeft: 14, fontSize: 7.5, margin: '0 0 1px', lineHeight: 1.2 }}>
+          <h3 style={{...S.sec, marginTop: 6}}>F. Student Undertaking / Declaration</h3>
+          <ol style={{ paddingLeft: 16, fontSize: 8.5, margin: '2px 0 3px', lineHeight: 1.4 }}>
             <li>I declare information furnished and documents submitted are true, complete and authentic.</li>
             <li>Internship is subject to verification; submission does not constitute automatic permission.</li>
             <li>I will follow rules and code of conduct of both College and Company.</li>
@@ -217,21 +220,24 @@ export default function PrintableForm({ form }: PrintableFormProps) {
             <li>I will submit internship report, feedback, evaluation within stipulated time.</li>
             <li>Failure to submit documents or false information may result in action per institutional rules.</li>
           </ol>
-          <p style={{ fontSize: 8.5, paddingLeft: 3, margin: '1px 0' }}><strong>Declaration:</strong> {form.declarationAccepted ? '☑' : '☐'} I have read, understood and agree to the above.</p>
+          <p style={{ fontSize: 9.5, paddingLeft: 4, margin: '2px 0' }}><strong>Declaration:</strong> {form.declarationAccepted ? '☑' : '☐'} I have read, understood and agree to the above.</p>
 
           {/* G */}
-          <h3 style={{...S.sec, marginTop: 3}}>G. Request for Permission</h3>
-          <p style={{ fontSize: 8, paddingLeft: 3, margin: '1px 0' }}>I request the Department to grant permission for the above external internship. I will comply with all academic, attendance and institutional requirements.</p>
+          <h3 style={{...S.sec, marginTop: 6}}>G. Request for Permission</h3>
+          <p style={{ fontSize: 9, paddingLeft: 4, margin: '2px 0' }}>I request the Department to grant permission for the above external internship. I will comply with all academic, attendance and institutional requirements.</p>
 
-          <div style={{ textAlign: 'center', fontSize: 7, color: '#999', borderTop: '1px solid #ddd', paddingTop: 2, marginTop: 3 }}>Page 1 of 2 — Front</div>
+          <div style={{ textAlign: 'center', fontSize: 7.5, color: '#999', borderTop: '1px solid #ddd', paddingTop: 3, marginTop: 8 }}>Page 1 of 2 — Front</div>
         </div>
 
         {/* ═══ PAGE 2 — BACK ═══ */}
-        <div className="page-break print-page" style={{ padding: '10px 18px 6px', fontSize: 9 }}>
+        <div className="page-break print-page" style={{ padding: '14px 20px 8px', fontSize: 10 }}>
 
-          <div style={{ textAlign: 'center', marginBottom: 5, borderBottom: '1.5px solid #000', paddingBottom: 3 }}>
-            <h1 style={{ fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase', margin: 0 }}>Maharaja Institute of Technology Mysore</h1>
-            <p style={{ fontSize: 8, margin: 0, color: '#333' }}>External Internship Permission & Registration Form — <em>Page 2 (Back)</em></p>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8, borderBottom: '1.5px solid #000', paddingBottom: 5 }}>
+            <img src="/mitm-logo.png" alt="MIT Mysore" style={{ width: 50, height: 50, objectFit: 'contain', marginRight: 10, flexShrink: 0 }} />
+            <div style={{ textAlign: 'center', flex: 1 }}>
+              <h1 style={{ fontSize: 13, fontWeight: 'bold', textTransform: 'uppercase', margin: 0 }}>Maharaja Institute of Technology Mysore</h1>
+              <p style={{ fontSize: 8, margin: '1px 0 0', color: '#333' }}>External Internship Permission & Registration Form — <em>Page 2 (Back)</em></p>
+            </div>
           </div>
 
           {/* H */}
