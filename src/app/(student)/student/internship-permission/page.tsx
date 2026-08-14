@@ -246,7 +246,7 @@ export default function InternshipPermissionPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className={labelClass}>Name</label>
-                    <input type="text" className={cn(inputClass, "bg-gray-50")} value={profile?.name || ""} disabled />
+                    <input type="text" className={cn(inputClass, "bg-gray-50")} value={profile?.fullName || ""} disabled />
                   </div>
                   <div>
                     <label className={labelClass}>USN</label>
@@ -254,7 +254,7 @@ export default function InternshipPermissionPage() {
                   </div>
                   <div>
                     <label className={labelClass}>Branch</label>
-                    <input type="text" className={cn(inputClass, "bg-gray-50")} value={profile?.branch || ""} disabled />
+                    <input type="text" className={cn(inputClass, "bg-gray-50")} value={profile?.department || ""} disabled />
                   </div>
                   <div>
                     <label className={labelClass}>Student Mobile Number</label>
@@ -262,7 +262,7 @@ export default function InternshipPermissionPage() {
                   </div>
                   <div>
                     <label className={labelClass}>Personal Email ID</label>
-                    <input type="text" className={cn(inputClass, "bg-gray-50")} value={profile?.email || ""} disabled />
+                    <input type="text" className={cn(inputClass, "bg-gray-50")} value={profile?.user?.email || user?.email || ""} disabled />
                   </div>
                   <div>
                     <label className={labelClass}>Mentor Name{requiredStar}</label>
