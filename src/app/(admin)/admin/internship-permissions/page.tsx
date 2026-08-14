@@ -11,7 +11,7 @@ import {
   Search,
   Loader2,
   FileText,
-  Printer,
+  Download,
   ChevronDown,
   ChevronUp,
   Building,
@@ -95,9 +95,11 @@ export default function InternshipPermissionsPage() {
     return Array.from(depts).sort();
   }, [forms]);
 
-  // Auto-expand all departments on first load
+  // Auto-expand all departments on first load only
+  const hasAutoExpanded = React.useRef(false);
   useEffect(() => {
-    if (Object.keys(grouped).length > 0 && expandedDepts.size === 0) {
+    if (Object.keys(grouped).length > 0 && !hasAutoExpanded.current) {
+      hasAutoExpanded.current = true;
       setExpandedDepts(new Set(Object.keys(grouped)));
       const allBatchKeys: string[] = [];
       Object.entries(grouped).forEach(([dept, batches]) => {
@@ -107,7 +109,7 @@ export default function InternshipPermissionsPage() {
       });
       setExpandedBatches(new Set(allBatchKeys));
     }
-  }, [grouped, expandedDepts.size]);
+  }, [grouped]);
 
   const toggleDept = (dept: string) => {
     setExpandedDepts((prev) => {
@@ -366,7 +368,7 @@ export default function InternshipPermissionsPage() {
                                                 onClick={(e) => handlePrint(form.id, e)}
                                                 className="text-xs font-medium px-3 py-1.5 rounded-lg border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 transition-colors flex items-center gap-1"
                                               >
-                                                <Printer className="w-3 h-3" /> Print
+                                                <Download className="w-3 h-3" /> Download
                                               </button>
                                             </div>
                                           </div>

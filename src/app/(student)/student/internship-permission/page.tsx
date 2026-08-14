@@ -14,7 +14,7 @@ import {
   CheckCircle,
   Calendar,
   MapPin,
-  Printer,
+  Download,
   ChevronDown,
   ChevronUp,
   AlertCircle,
@@ -606,8 +606,8 @@ export default function InternshipPermissionPage() {
                     href={`/student/internship-permission/${sub.id}/print`}
                     className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-sm font-medium transition-colors"
                   >
-                    <Printer className="w-4 h-4" />
-                    View & Print
+                    <Download className="w-4 h-4" />
+                    Download
                   </Link>
                 </div>
               ))}
