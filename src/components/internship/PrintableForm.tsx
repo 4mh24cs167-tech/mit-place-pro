@@ -162,8 +162,8 @@ export default function PrintableForm({ form }: PrintableFormProps) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <img src="/mitm-logo.png" alt="MIT" style={{ width: 42, height: 42, borderRadius: 99, border: '2px solid rgba(255,255,255,0.3)', objectFit: 'contain', background: '#fff' }} />
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: 0.5 }}>MITM PlacePro</div>
-                  <div style={{ fontSize: 8.5, opacity: 0.7, marginTop: 1 }}>Campus Placement Portal</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.3 }}>Maharaja Institute of Technology</div>
+                  <div style={{ fontSize: 8, opacity: 0.7, marginTop: 1 }}>Mysore | Belawadi, Srirangapatna Taluk, Mandya – 571477</div>
                 </div>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: '8px 14px', textAlign: 'center', backdropFilter: 'blur(4px)' }}>
@@ -337,13 +337,13 @@ export default function PrintableForm({ form }: PrintableFormProps) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <img src="/mitm-logo.png" alt="MIT" style={{ width: 22, height: 22, borderRadius: 99, objectFit: 'contain', background: '#fff' }} />
               <div>
-                <div style={{ fontSize: 9, fontWeight: 700 }}>MITM PlacePro</div>
-                <div style={{ fontSize: 7, opacity: 0.6 }}>Campus Placement Portal</div>
+                <div style={{ fontSize: 9, fontWeight: 700 }}>Maharaja Institute of Technology Mysore</div>
+                <div style={{ fontSize: 7, opacity: 0.6 }}>Belawadi, Srirangapatna Taluk, Mandya – 571477</div>
               </div>
             </div>
             <div style={{ fontSize: 7, opacity: 0.6, textAlign: 'right' }}>
-              <div style={{ fontWeight: 600, opacity: 0.8 }}>Maharaja Institute of Technology Mysore</div>
-              <div>Belawadi, Srirangapatna Taluk, Mandya, Karnataka – 571477</div>
+              <div style={{ fontWeight: 600, opacity: 0.8 }}>An Autonomous Institution</div>
+              <div>Affiliated to VTU, Belagavi | Approved by AICTE, New Delhi</div>
             </div>
           </div>
         </div>
@@ -447,11 +447,11 @@ export default function PrintableForm({ form }: PrintableFormProps) {
           <div style={{ background: C.navy, color: '#fff', padding: '8px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'absolute', bottom: 0, left: 0, right: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <img src="/mitm-logo.png" alt="MIT" style={{ width: 22, height: 22, borderRadius: 99, objectFit: 'contain', background: '#fff' }} />
-              <div><div style={{ fontSize: 9, fontWeight: 700 }}>MITM PlacePro</div><div style={{ fontSize: 7, opacity: 0.6 }}>Campus Placement Portal</div></div>
+              <div><div style={{ fontSize: 9, fontWeight: 700 }}>Maharaja Institute of Technology Mysore</div><div style={{ fontSize: 7, opacity: 0.6 }}>Belawadi, Srirangapatna Taluk, Mandya – 571477</div></div>
             </div>
             <div style={{ fontSize: 7, opacity: 0.6, textAlign: 'right' }}>
-              <div style={{ fontWeight: 600, opacity: 0.8 }}>Maharaja Institute of Technology Mysore</div>
-              <div>Belawadi, Srirangapatna Taluk, Mandya, Karnataka – 571477</div>
+              <div style={{ fontWeight: 600, opacity: 0.8 }}>An Autonomous Institution</div>
+              <div>Affiliated to VTU, Belagavi | Approved by AICTE, New Delhi</div>
             </div>
           </div>
         </div>
