@@ -290,8 +290,8 @@ export default function PrintableForm({ form }: PrintableFormProps) {
                 ['🤝', 'PPO Possible', form.ppoPossible || '–', '#dcfce7'],
               ].map(([icon, label, val, bg], i) => (
                 <div key={i} style={{ background: '#fff', borderRadius: 10, padding: '8px 10px', border: `1px solid ${C.border}`, textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 99, background: bg as string, margin: '0 auto 3px', textAlign: 'center', lineHeight: '28px' }}>
-                    <span style={{ fontSize: 14, lineHeight: 1, verticalAlign: 'middle' }}>{icon}</span>
+                  <div style={{ width: 28, height: 28, borderRadius: 99, background: bg as string, margin: '0 auto 3px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                    <span style={{ fontSize: 13, display: 'block', lineHeight: '28px', textAlign: 'center' }}>{icon}</span>
                   </div>
                   <div style={{ fontSize: 7, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
                   <div style={{ fontSize: 10, fontWeight: 700, marginTop: 1, textTransform: 'capitalize' }}>{val}</div>
