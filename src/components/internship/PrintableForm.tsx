@@ -142,7 +142,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
               Belawadi, Srirangapatna Taluk, Mandya District, Karnataka – 571477
             </p>
             <p style={{ fontSize: 8.5, margin: '0', color: '#555' }}>
-              (Affiliated to VTU, Belagavi | Approved by AICTE, New Delhi)
+              (An Autonomous Institution | Affiliated to VTU, Belagavi | Approved by AICTE, New Delhi)
             </p>
             <h2 style={{ fontSize: 11.5, fontWeight: 'bold', marginTop: 5, textTransform: 'uppercase', letterSpacing: 0.5 }}>
               External Internship Permission &amp; Registration Form
