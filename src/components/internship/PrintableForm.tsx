@@ -234,8 +234,8 @@ export default function PrintableForm({ form }: PrintableFormProps) {
 
               {/* Student Profile */}
               <div style={{ background: '#fff', borderRadius: 10, padding: '12px 14px', border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 8, background: '#fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 14 }}>👤</span></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                  <span style={{ fontSize: 13 }}>👤</span>
                   <div style={{ fontSize: 11, fontWeight: 700 }}>Student Profile</div>
                 </div>
                 {[
@@ -256,8 +256,8 @@ export default function PrintableForm({ form }: PrintableFormProps) {
 
               {/* Internship Info */}
               <div style={{ background: '#fff', borderRadius: 10, padding: '12px 14px', border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 8, background: C.purpleLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 14 }}>💼</span></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                  <span style={{ fontSize: 13 }}>💼</span>
                   <div style={{ fontSize: 11, fontWeight: 700 }}>Internship Information</div>
                 </div>
                 {[
@@ -289,10 +289,8 @@ export default function PrintableForm({ form }: PrintableFormProps) {
                 ['📍', 'Work Location', form.workLocation || '–', '#dbeafe'],
                 ['🤝', 'PPO Possible', form.ppoPossible || '–', '#dcfce7'],
               ].map(([icon, label, val, bg], i) => (
-                <div key={i} style={{ background: '#fff', borderRadius: 10, padding: '8px 10px', border: `1px solid ${C.border}`, textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 99, background: bg as string, margin: '0 auto 3px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                    <span style={{ fontSize: 13, display: 'block', lineHeight: '28px', textAlign: 'center' }}>{icon}</span>
-                  </div>
+                <div key={i} style={{ background: '#fff', borderRadius: 10, padding: '10px 10px 8px', border: `1px solid ${C.border}`, textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <span style={{ fontSize: 18, display: 'block', marginBottom: 2 }}>{icon}</span>
                   <div style={{ fontSize: 7, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
                   <div style={{ fontSize: 10, fontWeight: 700, marginTop: 1, textTransform: 'capitalize' }}>{val}</div>
                 </div>
@@ -303,8 +301,8 @@ export default function PrintableForm({ form }: PrintableFormProps) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
               {/* HR Details */}
               <div style={{ background: '#fff', borderRadius: 10, padding: '12px 14px', border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 6, background: '#fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 12 }}>🏢</span></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <span style={{ fontSize: 12 }}>🏢</span>
                   <div style={{ fontSize: 10, fontWeight: 700 }}>HR / Supervisor Details</div>
                 </div>
                 {[
@@ -323,8 +321,8 @@ export default function PrintableForm({ form }: PrintableFormProps) {
 
               {/* Opportunity + Additional */}
               <div style={{ background: '#fff', borderRadius: 10, padding: '12px 14px', border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 6, background: C.purpleLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 12 }}>📋</span></div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                  <span style={{ fontSize: 12 }}>📋</span>
                   <div style={{ fontSize: 10, fontWeight: 700 }}>Opportunity & Company</div>
                 </div>
                 {[
@@ -347,8 +345,8 @@ export default function PrintableForm({ form }: PrintableFormProps) {
 
             {/* DECLARATION */}
             <div style={{ background: '#fff', borderRadius: 10, padding: '10px 14px', border: `1px solid ${C.border}`, marginBottom: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <div style={{ width: 24, height: 24, borderRadius: 6, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 12 }}>✅</span></div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <span style={{ fontSize: 12 }}>✅</span>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#166534' }}>Student Declaration {form.declarationAccepted ? '(Accepted)' : ''}</div>
               </div>
               <ol style={{ fontSize: 7, color: C.muted, margin: 0, paddingLeft: 14, lineHeight: 1.35 }}>
