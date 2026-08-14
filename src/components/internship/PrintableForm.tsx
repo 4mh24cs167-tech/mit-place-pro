@@ -15,46 +15,70 @@ export default function PrintableForm({ form }: PrintableFormProps) {
 
   useEffect(() => { setShowInstruction(true); }, []);
 
-  // Load html2pdf from CDN (dynamic import breaks on Vercel)
-  const loadHtml2Pdf = useCallback((): Promise<typeof window & { html2pdf: any }> => {
-    return new Promise((resolve, reject) => {
-      if ((window as any).html2pdf) {
-        resolve(window as any);
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js';
-      script.onload = () => resolve(window as any);
-      script.onerror = () => reject(new Error('Failed to load PDF library'));
-      document.head.appendChild(script);
-    });
-  }, []);
-
   const handleDownload = useCallback(async () => {
     if (!printRef.current || downloading) return;
     setDownloading(true);
+
     try {
-      const win = await loadHtml2Pdf();
-      const html2pdf = win.html2pdf;
+      // Load html2canvas + jsPDF from CDN directly (more reliable than html2pdf.js)
+      const loadScript = (url: string): Promise<void> => {
+        return new Promise((resolve, reject) => {
+          if (document.querySelector(`script[src="${url}"]`)) { resolve(); return; }
+          const s = document.createElement('script');
+          s.src = url;
+          s.onload = () => resolve();
+          s.onerror = () => reject(new Error(`Failed to load: ${url}`));
+          document.head.appendChild(s);
+        });
+      };
+
+      await loadScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js');
+      await loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
+
+      const html2canvas = (window as any).html2canvas;
+      const jsPDF = (window as any).jspdf.jsPDF;
+
+      if (!html2canvas || !jsPDF) throw new Error('Libraries not loaded');
+
+      const element = printRef.current;
+      const pages = element.querySelectorAll(':scope > div') as NodeListOf<HTMLElement>;
+      const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+
+      const pdfWidth = 210; // A4 mm
+      const pdfHeight = 297;
+
+      for (let i = 0; i < pages.length; i++) {
+        const canvas = await html2canvas(pages[i], {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          width: 794,
+          windowWidth: 794,
+          scrollY: 0,
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const imgWidth = pdfWidth;
+        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+        if (i > 0) pdf.addPage();
+        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, Math.min(imgHeight, pdfHeight));
+      }
+
       const name = (form.student?.fullName || 'Student').replace(/\s+/g, '_');
       const company = form.companyName.replace(/\s+/g, '_');
-      await html2pdf().set({
-        margin: 0,
-        filename: `Internship_Permission_${name}_${company}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, scrollY: 0, windowWidth: 794, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
-        pagebreak: { mode: ['css'] },
-      }).from(printRef.current).save();
+      pdf.save(`Internship_Permission_${name}_${company}.pdf`);
+
     } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Unknown';
+      const msg = e instanceof Error ? e.message : 'Unknown error';
       alert(`PDF generation failed: ${msg}. Please try again.`);
     } finally {
       setDownloading(false);
-      document.querySelectorAll('.html2pdf__overlay').forEach(el => el.remove());
+      // Cleanup any leftover elements
+      document.querySelectorAll('.html2pdf__overlay, .html2canvas-container').forEach(el => el.remove());
       document.body.style.overflow = '';
     }
-  }, [downloading, form, loadHtml2Pdf]);
+  }, [downloading, form]);
 
   // Colors
   const C = {
