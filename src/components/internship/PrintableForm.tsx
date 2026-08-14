@@ -247,7 +247,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
                   ['👨‍🏫', 'Faculty Mentor', form.mentorName || '–'],
                 ].map(([icon, label, val], i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', borderBottom: i < 5 ? `1px solid ${C.border}` : 'none' }}>
-                    <span style={{ fontSize: 10, width: 16, textAlign: 'center' }}>{icon}</span>
+                    <span style={{ fontSize: 10, width: 16, textAlign: 'center', lineHeight: 1, verticalAlign: 'middle' }}>{icon}</span>
                     <span style={{ fontSize: 8.5, color: C.muted, width: 70, flexShrink: 0 }}>{label}</span>
                     <span style={{ fontSize: 9, fontWeight: 600, flex: 1 }}>{val}</span>
                   </div>
@@ -273,7 +273,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
                   ['⏰', 'Working Hours', form.workingHours || '–'],
                 ].map(([icon, label, val], i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', borderBottom: i < 9 ? `1px solid ${C.border}` : 'none' }}>
-                    <span style={{ fontSize: 10, width: 16, textAlign: 'center' }}>{icon}</span>
+                    <span style={{ fontSize: 10, width: 16, textAlign: 'center', lineHeight: 1, verticalAlign: 'middle' }}>{icon}</span>
                     <span style={{ fontSize: 8.5, color: C.muted, width: 76, flexShrink: 0 }}>{label}</span>
                     <span style={{ fontSize: 8.5, fontWeight: 600, flex: 1 }}>{val}</span>
                   </div>
@@ -290,8 +290,8 @@ export default function PrintableForm({ form }: PrintableFormProps) {
                 ['🤝', 'PPO Possible', form.ppoPossible || '–', '#dcfce7'],
               ].map(([icon, label, val, bg], i) => (
                 <div key={i} style={{ background: '#fff', borderRadius: 10, padding: '8px 10px', border: `1px solid ${C.border}`, textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 99, background: bg as string, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 3 }}>
-                    <span style={{ fontSize: 14 }}>{icon}</span>
+                  <div style={{ width: 28, height: 28, borderRadius: 99, background: bg as string, margin: '0 auto 3px', textAlign: 'center', lineHeight: '28px' }}>
+                    <span style={{ fontSize: 14, lineHeight: 1, verticalAlign: 'middle' }}>{icon}</span>
                   </div>
                   <div style={{ fontSize: 7, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
                   <div style={{ fontSize: 10, fontWeight: 700, marginTop: 1, textTransform: 'capitalize' }}>{val}</div>
