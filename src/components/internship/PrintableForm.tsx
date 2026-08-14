@@ -221,7 +221,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
             {/* Journey Banner */}
             <div style={{ background: '#fff', borderRadius: 10, padding: '10px 16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 12, border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <div style={{ width: 36, height: 36, borderRadius: 10, background: C.purpleLight, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <span style={{ fontSize: 18 }}>🎓</span>
+                <span style={{ fontSize: 16, color: C.purple, fontWeight: 700 }}>✦</span>
               </div>
               <div>
                 <div style={{ fontSize: 10, fontWeight: 700, color: C.purple, textTransform: 'uppercase', letterSpacing: 1 }}>Internship Journey</div>
@@ -235,19 +235,19 @@ export default function PrintableForm({ form }: PrintableFormProps) {
               {/* Student Profile */}
               <div style={{ background: '#fff', borderRadius: 10, padding: '12px 14px', border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 8, background: '#fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 14 }}>👤</span></div>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: '#fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 14, color: '#db2777' }}>S</span></div>
                   <div style={{ fontSize: 11, fontWeight: 700 }}>Student Profile</div>
                 </div>
                 {[
-                  ['👤', 'Name', s?.fullName || '–'],
-                  ['🆔', 'USN', s?.usn || '–'],
-                  ['🏛️', 'Department', s?.department || '–'],
-                  ['📱', 'Phone', s?.phone || '–'],
-                  ['📧', 'Email', s?.user?.email || s?.email || '–'],
-                  ['👨‍🏫', 'Faculty Mentor', form.mentorName || '–'],
+                  ['●', 'Name', s?.fullName || '–'],
+                  ['●', 'USN', s?.usn || '–'],
+                  ['●', 'Department', s?.department || '–'],
+                  ['●', 'Phone', s?.phone || '–'],
+                  ['●', 'Email', s?.user?.email || s?.email || '–'],
+                  ['●', 'Faculty Mentor', form.mentorName || '–'],
                 ].map(([icon, label, val], i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', borderBottom: i < 5 ? `1px solid ${C.border}` : 'none' }}>
-                    <span style={{ fontSize: 10, width: 16, textAlign: 'center' }}>{icon}</span>
+                    <span style={{ fontSize: 8, width: 16, textAlign: 'center', color: C.purple }}>{icon}</span>
                     <span style={{ fontSize: 8.5, color: C.muted, width: 70, flexShrink: 0 }}>{label}</span>
                     <span style={{ fontSize: 9, fontWeight: 600, flex: 1 }}>{val}</span>
                   </div>
@@ -257,23 +257,23 @@ export default function PrintableForm({ form }: PrintableFormProps) {
               {/* Internship Info */}
               <div style={{ background: '#fff', borderRadius: 10, padding: '12px 14px', border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                  <div style={{ width: 28, height: 28, borderRadius: 8, background: C.purpleLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 14 }}>💼</span></div>
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: C.purpleLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 14, color: C.purple }}>I</span></div>
                   <div style={{ fontSize: 11, fontWeight: 700 }}>Internship Information</div>
                 </div>
                 {[
-                  ['🏢', 'Organization', form.companyName],
-                  ['💻', 'Domain', form.internshipDomain],
-                  ['🎯', 'Role', form.internshipRole],
-                  ['📝', 'Project Title', form.projectTitle || '–'],
-                  ['📍', 'Mode', form.mode || '–'],
-                  ['📌', 'Location', form.workLocation || '–'],
-                  ['📅', 'Start Date', form.startDate],
-                  ['📅', 'End Date', form.endDate],
-                  ['⏳', 'Duration', form.totalDuration || '–'],
-                  ['⏰', 'Working Hours', form.workingHours || '–'],
+                  ['●', 'Organization', form.companyName],
+                  ['●', 'Domain', form.internshipDomain],
+                  ['●', 'Role', form.internshipRole],
+                  ['●', 'Project Title', form.projectTitle || '–'],
+                  ['●', 'Mode', form.mode || '–'],
+                  ['●', 'Location', form.workLocation || '–'],
+                  ['●', 'Start Date', form.startDate],
+                  ['●', 'End Date', form.endDate],
+                  ['●', 'Duration', form.totalDuration || '–'],
+                  ['●', 'Working Hours', form.workingHours || '–'],
                 ].map(([icon, label, val], i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', borderBottom: i < 9 ? `1px solid ${C.border}` : 'none' }}>
-                    <span style={{ fontSize: 10, width: 16, textAlign: 'center' }}>{icon}</span>
+                    <span style={{ fontSize: 8, width: 16, textAlign: 'center', color: C.purple }}>{icon}</span>
                     <span style={{ fontSize: 8.5, color: C.muted, width: 76, flexShrink: 0 }}>{label}</span>
                     <span style={{ fontSize: 8.5, fontWeight: 600, flex: 1 }}>{val}</span>
                   </div>
@@ -284,10 +284,10 @@ export default function PrintableForm({ form }: PrintableFormProps) {
             {/* HIGHLIGHT CARDS */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
               {[
-                ['🔍', 'Opportunity Source', form.opportunitySource || '–', C.purpleLight],
-                ['💰', 'Stipend', form.stipendAmount ? String(form.stipendAmount) : (form.stipendProvided ? 'Yes' : 'No'), '#fef3c7'],
-                ['📍', 'Work Location', form.workLocation || '–', '#dbeafe'],
-                ['🤝', 'PPO Possible', form.ppoPossible || '–', '#dcfce7'],
+                ['◎', 'Opportunity Source', form.opportunitySource || '–', C.purpleLight],
+                ['₹', 'Stipend', form.stipendAmount ? String(form.stipendAmount) : (form.stipendProvided ? 'Yes' : 'No'), '#fef3c7'],
+                ['◉', 'Work Location', form.workLocation || '–', '#dbeafe'],
+                ['★', 'PPO Possible', form.ppoPossible || '–', '#dcfce7'],
               ].map(([icon, label, val, bg], i) => (
                 <div key={i} style={{ background: '#fff', borderRadius: 10, padding: '8px 10px', border: `1px solid ${C.border}`, textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                   <div style={{ width: 26, height: 26, borderRadius: 99, background: bg as string, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 3 }}>
@@ -304,17 +304,17 @@ export default function PrintableForm({ form }: PrintableFormProps) {
               {/* HR Details */}
               <div style={{ background: '#fff', borderRadius: 10, padding: '12px 14px', border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 6, background: '#fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 12 }}>🏢</span></div>
+                  <div style={{ width: 24, height: 24, borderRadius: 6, background: '#fce7f3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 11, color: '#db2777', fontWeight: 700 }}>H</span></div>
                   <div style={{ fontSize: 10, fontWeight: 700 }}>HR / Supervisor Details</div>
                 </div>
                 {[
-                  ['👤', 'Contact', form.hrName || '–'],
-                  ['📧', 'Email', form.hrEmail || '–'],
-                  ['📱', 'Phone', form.hrPhone || '–'],
-                  ['💼', 'Designation', form.hrDesignation || '–'],
+                  ['●', 'Contact', form.hrName || '–'],
+                  ['●', 'Email', form.hrEmail || '–'],
+                  ['●', 'Phone', form.hrPhone || '–'],
+                  ['●', 'Designation', form.hrDesignation || '–'],
                 ].map(([icon, label, val], i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0', borderBottom: i < 3 ? `1px solid ${C.border}` : 'none' }}>
-                    <span style={{ fontSize: 9, width: 14 }}>{icon}</span>
+                    <span style={{ fontSize: 7, width: 14, color: C.purple }}>{icon}</span>
                     <span style={{ fontSize: 8, color: C.muted, width: 55 }}>{label}</span>
                     <span style={{ fontSize: 8.5, fontWeight: 600, flex: 1, wordBreak: 'break-all' }}>{val}</span>
                   </div>
@@ -324,20 +324,20 @@ export default function PrintableForm({ form }: PrintableFormProps) {
               {/* Opportunity + Additional */}
               <div style={{ background: '#fff', borderRadius: 10, padding: '12px 14px', border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 6, background: C.purpleLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 12 }}>📋</span></div>
+                  <div style={{ width: 24, height: 24, borderRadius: 6, background: C.purpleLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 11, color: C.purple, fontWeight: 700 }}>C</span></div>
                   <div style={{ fontSize: 10, fontWeight: 700 }}>Opportunity & Company</div>
                 </div>
                 {[
-                  ['🌐', 'Website', form.companyWebsite || '–'],
-                  ['📍', 'Address', form.companyAddress || '–'],
-                  ['🏫', 'College facilitated', form.facilitatedByCollege ? 'Yes' : 'No'],
-                  ['👤', 'Source / Ref', form.sourcePerson || '–'],
-                  ['🎓', 'Related to branch', form.isRelatedToBranch || '–'],
-                  ['🎁', 'Other benefits', form.otherBenefits || '–'],
-                  ['📄', 'PPO details', form.ppoDetails || '–'],
+                  ['●', 'Website', form.companyWebsite || '–'],
+                  ['●', 'Address', form.companyAddress || '–'],
+                  ['●', 'College facilitated', form.facilitatedByCollege ? 'Yes' : 'No'],
+                  ['●', 'Source / Ref', form.sourcePerson || '–'],
+                  ['●', 'Related to branch', form.isRelatedToBranch || '–'],
+                  ['●', 'Other benefits', form.otherBenefits || '–'],
+                  ['●', 'PPO details', form.ppoDetails || '–'],
                 ].map(([icon, label, val], i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2.5px 0', borderBottom: i < 6 ? `1px solid ${C.border}` : 'none' }}>
-                    <span style={{ fontSize: 9, width: 14 }}>{icon}</span>
+                    <span style={{ fontSize: 7, width: 14, color: C.purple }}>●</span>
                     <span style={{ fontSize: 7.5, color: C.muted, width: 72 }}>{label}</span>
                     <span style={{ fontSize: 8, fontWeight: 600, flex: 1, wordBreak: 'break-all' }}>{val}</span>
                   </div>
@@ -348,7 +348,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
             {/* DECLARATION */}
             <div style={{ background: '#fff', borderRadius: 10, padding: '10px 14px', border: `1px solid ${C.border}`, marginBottom: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <div style={{ width: 24, height: 24, borderRadius: 6, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 12 }}>✅</span></div>
+                <div style={{ width: 24, height: 24, borderRadius: 6, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 13, color: '#16a34a', fontWeight: 700 }}>✓</span></div>
                 <div style={{ fontSize: 10, fontWeight: 700, color: '#166534' }}>Student Declaration {form.declarationAccepted ? '(Accepted)' : ''}</div>
               </div>
               <ol style={{ fontSize: 7, color: C.muted, margin: 0, paddingLeft: 14, lineHeight: 1.35 }}>
@@ -407,7 +407,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
             {/* H — Verification */}
             <div style={{ background: '#fff', borderRadius: 10, padding: '14px 16px', marginBottom: 14, border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 14 }}>📋</span> Department Verification & Approval
+                <span style={{ fontSize: 13, color: C.navy, fontWeight: 700 }}>☑</span> Department Verification & Approval
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 9 }}>
                 <tbody>
@@ -424,7 +424,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
                   ].map(([label, val], i) => (
                     <tr key={i}>
                       <td style={{ padding: '5px 8px', borderBottom: `1px solid ${C.border}`, fontWeight: 600, width: '35%', color: C.navy }}>{label}</td>
-                      <td style={{ padding: '5px 8px', borderBottom: `1px solid ${C.border}`, color: C.muted }}>{val}</td>
+                      <td style={{ padding: '6px 8px', borderBottom: `1px solid ${C.border}`, color: C.muted, fontSize: 10 }}>{val}</td>
                     </tr>
                   ))}
                   <tr>
@@ -438,7 +438,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
             {/* I — Signatures */}
             <div style={{ background: '#fff', borderRadius: 10, padding: '14px 16px', marginBottom: 14, border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 14 }}>✍️</span> Signatures & Authorization
+                <span style={{ fontSize: 13, color: C.navy, fontWeight: 700 }}>✍</span> Signatures & Authorization
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 {['Student Name & Signature', 'Faculty Coordinator', 'Head of Department (HOD)', 'Placement / Training Officer'].map((title) => (
@@ -454,7 +454,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
             {/* J — Post Internship */}
             <div style={{ background: '#fff', borderRadius: 10, padding: '14px 16px', marginBottom: 14, border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 14 }}>📝</span> Post-Internship Requirements
+                <span style={{ fontSize: 13, color: C.navy, fontWeight: 700 }}>☐</span> Post-Internship Requirements
               </div>
               <div style={{ fontSize: 9 }}>
                 {['Internship Completion Certificate', 'Proof of attendance / completion', 'Internship Report', 'Company Evaluation (if required)', 'Student Feedback Form', 'Any other prescribed document'].map((item, i) => (
@@ -469,7 +469,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
             {/* Documents submitted */}
             <div style={{ background: '#fff', borderRadius: 10, padding: '12px 16px', border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <div style={{ fontSize: 10, fontWeight: 700, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 12 }}>📎</span> Documents Submitted by Student
+                <span style={{ fontSize: 12, color: C.navy, fontWeight: 700 }}>☇</span> Documents Submitted by Student
               </div>
               <div style={{ fontSize: 8.5 }}>
                 {['Offer Letter / Appointment Letter', 'Confirmation Email / Screenshot', 'Job Description / Role Description', 'Joining Instructions', 'NOC / Permission document', 'Other supporting document'].map((item, i) => (
