@@ -186,34 +186,37 @@ export default function PrintableForm({ form }: PrintableFormProps) {
                   ['🏢', 'Organization', form.companyName],
                   ['💻', 'Domain', form.internshipDomain],
                   ['🎯', 'Role', form.internshipRole],
+                  ['📝', 'Project Title', form.projectTitle || '–'],
                   ['📍', 'Mode', form.mode || '–'],
                   ['📌', 'Location', form.workLocation || '–'],
                   ['📅', 'Start Date', form.startDate],
                   ['📅', 'End Date', form.endDate],
+                  ['⏳', 'Duration', form.totalDuration || '–'],
                   ['⏰', 'Working Hours', form.workingHours || '–'],
                 ].map(([icon, label, val], i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3.5px 0', borderBottom: i < 7 ? `1px solid ${C.border}` : 'none' }}>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '3px 0', borderBottom: i < 9 ? `1px solid ${C.border}` : 'none' }}>
                     <span style={{ fontSize: 10, width: 16, textAlign: 'center' }}>{icon}</span>
                     <span style={{ fontSize: 8.5, color: C.muted, width: 76, flexShrink: 0 }}>{label}</span>
-                    <span style={{ fontSize: 9, fontWeight: 600, flex: 1 }}>{val}</span>
+                    <span style={{ fontSize: 8.5, fontWeight: 600, flex: 1 }}>{val}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* THREE HIGHLIGHT CARDS */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 12 }}>
+            {/* HIGHLIGHT CARDS */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
               {[
                 ['🔍', 'Opportunity Source', form.opportunitySource || '–', C.purpleLight],
-                ['₹', 'Monthly Stipend', form.stipendProvided ? `₹${form.stipendAmount || '–'}` : 'No Stipend', '#fef3c7'],
+                ['💰', 'Stipend', form.stipendAmount ? String(form.stipendAmount) : (form.stipendProvided ? 'Yes' : 'No'), '#fef3c7'],
                 ['📍', 'Work Location', form.workLocation || '–', '#dbeafe'],
+                ['🤝', 'PPO Possible', form.ppoPossible || '–', '#dcfce7'],
               ].map(([icon, label, val, bg], i) => (
-                <div key={i} style={{ background: '#fff', borderRadius: 10, padding: '10px 12px', border: `1px solid ${C.border}`, textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                  <div style={{ width: 30, height: 30, borderRadius: 99, background: bg as string, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
-                    <span style={{ fontSize: icon === '₹' ? 16 : 13, fontWeight: 700, color: C.purple }}>{icon}</span>
+                <div key={i} style={{ background: '#fff', borderRadius: 10, padding: '8px 10px', border: `1px solid ${C.border}`, textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                  <div style={{ width: 26, height: 26, borderRadius: 99, background: bg as string, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 3 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: C.purple }}>{icon}</span>
                   </div>
-                  <div style={{ fontSize: 7.5, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
-                  <div style={{ fontSize: 11, fontWeight: 700, marginTop: 1, textTransform: 'capitalize' }}>{val}</div>
+                  <div style={{ fontSize: 7, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, marginTop: 1, textTransform: 'capitalize' }}>{val}</div>
                 </div>
               ))}
             </div>
@@ -240,22 +243,25 @@ export default function PrintableForm({ form }: PrintableFormProps) {
                 ))}
               </div>
 
-              {/* Company + Additional */}
+              {/* Opportunity + Additional */}
               <div style={{ background: '#fff', borderRadius: 10, padding: '12px 14px', border: `1px solid ${C.border}`, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <div style={{ width: 24, height: 24, borderRadius: 6, background: C.purpleLight, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 12 }}>📋</span></div>
-                  <div style={{ fontSize: 10, fontWeight: 700 }}>Additional Details</div>
+                  <div style={{ fontSize: 10, fontWeight: 700 }}>Opportunity & Company</div>
                 </div>
                 {[
                   ['🌐', 'Website', form.companyWebsite || '–'],
                   ['📍', 'Address', form.companyAddress || '–'],
+                  ['🏫', 'College facilitated', form.facilitatedByCollege ? 'Yes' : 'No'],
+                  ['👤', 'Source / Ref', form.sourcePerson || '–'],
                   ['🎓', 'Related to branch', form.isRelatedToBranch || '–'],
-                  ['🤝', 'PPO possible', form.ppoPossible || '–'],
+                  ['🎁', 'Other benefits', form.otherBenefits || '–'],
+                  ['📄', 'PPO details', form.ppoDetails || '–'],
                 ].map(([icon, label, val], i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0', borderBottom: i < 3 ? `1px solid ${C.border}` : 'none' }}>
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2.5px 0', borderBottom: i < 6 ? `1px solid ${C.border}` : 'none' }}>
                     <span style={{ fontSize: 9, width: 14 }}>{icon}</span>
-                    <span style={{ fontSize: 8, color: C.muted, width: 75 }}>{label}</span>
-                    <span style={{ fontSize: 8.5, fontWeight: 600, flex: 1, wordBreak: 'break-all' }}>{val}</span>
+                    <span style={{ fontSize: 7.5, color: C.muted, width: 72 }}>{label}</span>
+                    <span style={{ fontSize: 8, fontWeight: 600, flex: 1, wordBreak: 'break-all' }}>{val}</span>
                   </div>
                 ))}
               </div>
@@ -265,14 +271,24 @@ export default function PrintableForm({ form }: PrintableFormProps) {
             <div style={{ background: '#fff', borderRadius: 10, padding: '10px 14px', border: `1px solid ${C.border}`, marginBottom: 10, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <div style={{ width: 24, height: 24, borderRadius: 6, background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ fontSize: 12 }}>✅</span></div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: '#166534' }}>Student Declaration</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#166534' }}>Student Declaration {form.declarationAccepted ? '(Accepted)' : ''}</div>
               </div>
-              <p style={{ fontSize: 7.5, color: C.muted, margin: 0, lineHeight: 1.4 }}>
-                The student confirms that all internship information submitted is accurate and agrees to comply with institutional policies, academic requirements, and organizational guidelines throughout the internship period.
-              </p>
-              <div style={{ textAlign: 'right', marginTop: 6 }}>
-                <div style={{ display: 'inline-block', borderBottom: '1px solid #000', width: 120, height: 20 }} />
-                <div style={{ fontSize: 7, color: C.muted, marginTop: 1 }}>Student Signature</div>
+              <ol style={{ fontSize: 7, color: C.muted, margin: 0, paddingLeft: 14, lineHeight: 1.35 }}>
+                <li>I declare all information furnished and documents submitted are true, complete and authentic.</li>
+                <li>Internship is subject to verification; submission does not constitute automatic permission.</li>
+                <li>I will follow rules and code of conduct of both College and Company.</li>
+                <li>I will maintain regular attendance. Any changes will be informed to the Department.</li>
+                <li>College may contact Company to verify details and performance.</li>
+                <li>After completion, I will submit the Internship Completion Certificate.</li>
+                <li>I will submit internship report, feedback, evaluation within stipulated time.</li>
+                <li>Failure to submit documents or false information may result in action per institutional rules.</li>
+              </ol>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 6 }}>
+                <div style={{ fontSize: 7.5, color: C.text }}>{form.declarationAccepted ? '☑' : '☐'} I have read, understood and agree to the above.</div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ display: 'inline-block', borderBottom: '1px solid #000', width: 110, height: 18 }} />
+                  <div style={{ fontSize: 6.5, color: C.muted, marginTop: 1 }}>Student Signature</div>
+                </div>
               </div>
             </div>
           </div>
