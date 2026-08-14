@@ -284,14 +284,14 @@ export default function PrintableForm({ form }: PrintableFormProps) {
             {/* HIGHLIGHT CARDS */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>
               {[
-                ['S', 'Opportunity Source', form.opportunitySource || '–', C.purpleLight, C.purple],
-                ['₹', 'Stipend', form.stipendAmount ? String(form.stipendAmount) : (form.stipendProvided ? 'Yes' : 'No'), '#fef3c7', '#b45309'],
-                ['L', 'Work Location', form.workLocation || '–', '#dbeafe', '#1d4ed8'],
-                ['P', 'PPO Possible', form.ppoPossible || '–', '#dcfce7', '#15803d'],
-              ].map(([icon, label, val, bg, clr], i) => (
+                ['🔍', 'Opportunity Source', form.opportunitySource || '–', C.purpleLight],
+                ['💰', 'Stipend', form.stipendAmount ? String(form.stipendAmount) : (form.stipendProvided ? 'Yes' : 'No'), '#fef3c7'],
+                ['📍', 'Work Location', form.workLocation || '–', '#dbeafe'],
+                ['🤝', 'PPO Possible', form.ppoPossible || '–', '#dcfce7'],
+              ].map(([icon, label, val, bg], i) => (
                 <div key={i} style={{ background: '#fff', borderRadius: 10, padding: '8px 10px', border: `1px solid ${C.border}`, textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                   <div style={{ width: 28, height: 28, borderRadius: 99, background: bg as string, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 3 }}>
-                    <span style={{ fontSize: 14, fontWeight: 800, color: clr as string, fontFamily: 'Arial, sans-serif' }}>{icon}</span>
+                    <span style={{ fontSize: 14 }}>{icon}</span>
                   </div>
                   <div style={{ fontSize: 7, color: C.muted, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</div>
                   <div style={{ fontSize: 10, fontWeight: 700, marginTop: 1, textTransform: 'capitalize' }}>{val}</div>
