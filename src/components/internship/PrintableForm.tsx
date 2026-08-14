@@ -39,8 +39,8 @@ export default function PrintableForm({ form }: PrintableFormProps) {
         })
         .from(printRef.current)
         .save();
-    } catch {
-      window.print();
+    } catch (err) {
+      alert('Failed to generate PDF. Please try the Print button instead.');
     } finally {
       setDownloading(false);
     }
