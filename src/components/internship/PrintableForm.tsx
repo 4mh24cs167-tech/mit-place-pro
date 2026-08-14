@@ -55,6 +55,27 @@ export default function PrintableForm({ form }: PrintableFormProps) {
           width: 794,
           windowWidth: 794,
           scrollY: 0,
+          backgroundColor: '#ffffff',
+          onclone: (clonedDoc: Document) => {
+            // Fix: html2canvas can't parse modern CSS lab() colors
+            const allEls = clonedDoc.querySelectorAll('*');
+            allEls.forEach((el: Element) => {
+              const htmlEl = el as HTMLElement;
+              const cs = clonedDoc.defaultView?.getComputedStyle(htmlEl);
+              if (!cs) return;
+              ['color', 'background-color', 'border-color', 'border-top-color', 'border-right-color', 'border-bottom-color', 'border-left-color'].forEach(prop => {
+                const val = cs.getPropertyValue(prop);
+                if (val && (val.includes('lab(') || val.includes('lch(') || val.includes('oklch(') || val.includes('oklab('))) {
+                  // Convert via canvas 2d context
+                  const ctx = document.createElement('canvas').getContext('2d');
+                  if (ctx) {
+                    ctx.fillStyle = val;
+                    htmlEl.style.setProperty(prop, ctx.fillStyle);
+                  }
+                }
+              });
+            });
+          },
         });
 
         const imgData = canvas.toDataURL('image/jpeg', 0.95);
@@ -204,7 +225,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
                   ['🆔', 'USN', s?.usn || '–'],
                   ['🏛️', 'Department', s?.department || '–'],
                   ['📱', 'Phone', s?.phone || '–'],
-                  ['📧', 'Email', s?.email || '–'],
+                  ['📧', 'Email', s?.user?.email || s?.email || '–'],
                   ['👨‍🏫', 'Faculty Mentor', form.mentorName || '–'],
                 ].map(([icon, label, val], i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', borderBottom: i < 5 ? `1px solid ${C.border}` : 'none' }}>

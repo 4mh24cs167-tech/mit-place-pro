@@ -36,14 +36,14 @@ export class InternshipService {
     return this.permissionRepo.find({
       where: { studentId: student.id },
       order: { createdAt: 'DESC' },
-      relations: ['student', 'student.batch'],
+      relations: ['student', 'student.batch', 'student.user'],
     });
   }
 
   async getFormById(id: string): Promise<InternshipPermission> {
     const form = await this.permissionRepo.findOne({
       where: { id },
-      relations: ['student', 'student.batch'],
+      relations: ['student', 'student.batch', 'student.user'],
     });
     if (!form) {
       throw new NotFoundException('Internship permission form not found');
@@ -54,7 +54,7 @@ export class InternshipService {
   async listAllForms(): Promise<InternshipPermission[]> {
     return this.permissionRepo.find({
       order: { createdAt: 'DESC' },
-      relations: ['student', 'student.batch'],
+      relations: ['student', 'student.batch', 'student.user'],
     });
   }
 }

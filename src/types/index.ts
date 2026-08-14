@@ -62,6 +62,7 @@ export interface Student {
   profileComplete: boolean;
   placementStatus: PlacementStatus;
   email?: string;
+  user?: User;
   departmentType?: 'UG' | 'PG' | 'DEGREE';
   totalSemesters?: number;
 }
