@@ -81,6 +81,16 @@ export default function PrintableForm({ form }: PrintableFormProps) {
                 --color-sidebar-bg: #f0eef5 !important;
                 --color-dark: #1e1a33 !important;
               }
+              body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+              }
+              #printable-form {
+                margin: 0 !important;
+                max-width: none !important;
+                width: 794px !important;
+              }
             `;
             clonedDoc.head.appendChild(style);
           },
