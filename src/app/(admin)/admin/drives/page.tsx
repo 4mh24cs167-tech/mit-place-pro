@@ -20,6 +20,7 @@ interface DriveSummary {
   status: string;
   driveDate: string | null;
   departments: string[];
+  batchIds?: string[];
   company: string;
   jobTitle: string;
   jobId: string;
@@ -240,11 +241,16 @@ export default function AdminDrivesPage() {
                     </span>
                   </div>
 
-                  {drive.departments.length > 0 && (
+                  {(drive.departments.length > 0 || (drive.batchIds && drive.batchIds.length > 0)) && (
                     <div className="flex flex-wrap gap-1.5 mb-3">
                       {drive.departments.map((d) => (
                         <span key={d} className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 font-medium">{d}</span>
                       ))}
+                      {drive.batchIds && drive.batchIds.length > 0 && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 font-medium">
+                          {drive.batchIds.length} {drive.batchIds.length === 1 ? 'Batch' : 'Batches'}
+                        </span>
+                      )}
                     </div>
                   )}
 

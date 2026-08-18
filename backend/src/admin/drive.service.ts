@@ -33,6 +33,7 @@ export class DriveService {
     type: 'single' | 'multiple';
     jobId?: string;
     jobIds?: string[];
+    batchIds?: string[];
     description?: string;
     driveDate?: string;
     departments?: string[];
@@ -58,6 +59,7 @@ export class DriveService {
       description: data.description || null,
       driveDate: data.driveDate || null,
       departments,
+      batchIds: data.batchIds || [],
     });
 
     // Find eligible students and NOTIFY them (opt-in workflow, no auto-registration)
@@ -66,6 +68,10 @@ export class DriveService {
 
     if (drive.departments && drive.departments.length > 0) {
       studentQuery.andWhere('s.department IN (:...depts)', { depts: drive.departments });
+    }
+
+    if (data.batchIds && data.batchIds.length > 0) {
+      studentQuery.andWhere('s.batchId IN (:...batchIds)', { batchIds: data.batchIds });
     }
 
     const minCgpas = jobs.map(j => j.minCgpa).filter(c => c != null && c > 0);
@@ -200,6 +206,7 @@ export class DriveService {
         status: d.status,
         driveDate: d.driveDate,
         departments: d.departments,
+        batchIds: d.batchIds || [],
         company: companyName,
         jobTitle: jobTitles,
         jobId: d.jobId || jobIds[0] || null,
@@ -292,6 +299,7 @@ export class DriveService {
       status: drive.status,
       driveDate: drive.driveDate,
       departments: drive.departments,
+      batchIds: drive.batchIds || [],
       description: drive.description,
       company: companyName,
       jobTitle: jobTitles,

@@ -366,10 +366,12 @@ export class StudentService {
       .orderBy('d.createdAt', 'DESC')
       .getMany();
 
-    // Filter drives matching student's department
-    const matchingDrives = drives.filter((d) =>
-      !d.departments || d.departments.length === 0 || d.departments.includes(student.department),
-    );
+    // Filter drives matching student's department and batch
+    const matchingDrives = drives.filter((d) => {
+      const deptOk = !d.departments || d.departments.length === 0 || d.departments.includes(student.department);
+      const batchOk = !d.batchIds || d.batchIds.length === 0 || d.batchIds.includes(student.batchId);
+      return deptOk && batchOk;
+    });
 
     if (matchingDrives.length === 0) return [];
 
@@ -461,6 +463,10 @@ export class StudentService {
 
     if (eligibleDepts.length > 0 && !eligibleDepts.includes(student.department)) {
       throw new BadRequestException('Your department is not eligible for this drive');
+    }
+
+    if (drive.batchIds && drive.batchIds.length > 0 && !drive.batchIds.includes(student.batchId)) {
+      throw new BadRequestException('Your batch is not eligible for this drive');
     }
 
     const minCgpas = jobs.map(j => j.minCgpa).filter(c => c != null && c > 0);

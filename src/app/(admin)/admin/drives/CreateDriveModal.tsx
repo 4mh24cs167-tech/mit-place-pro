@@ -36,6 +36,8 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
   const [selectedDepts, setSelectedDepts] = useState<string[]>([]);
   const [isCreating, setIsCreating] = useState(false);
   const [DEPARTMENTS, setDepartments] = useState<string[]>([]);
+  const [batches, setBatches] = useState<Array<{ id: string; name: string; department: string; year: number }>>([]);
+  const [selectedBatchIds, setSelectedBatchIds] = useState<string[]>([]);
 
   // Fetch companies on mount
   const fetchCompanies = useCallback(async () => {
@@ -55,6 +57,8 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
       try {
         const res = await adminApi.listDepartments();
         if (res.data) setDepartments((res.data as Array<{ code: string }>).map(d => d.code));
+        const batchesRes = await adminApi.listBatches();
+        if (batchesRes.data) setBatches(batchesRes.data as any);
       } catch { /* empty */ }
     })();
   }, [fetchCompanies]);
@@ -90,6 +94,12 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
     );
   };
 
+  const toggleBatch = (batchId: string) => {
+    setSelectedBatchIds((prev) =>
+      prev.includes(batchId) ? prev.filter((id) => id !== batchId) : [...prev, batchId]
+    );
+  };
+
   const toggleJobSelect = (jobId: string) => {
     setSelectedJobIds((prev) =>
       prev.includes(jobId) ? prev.filter((id) => id !== jobId) : [...prev, jobId]
@@ -111,6 +121,7 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
         description: description || undefined,
         driveDate: driveDate || undefined,
         departments: selectedDepts.length > 0 ? selectedDepts : undefined,
+        batchIds: selectedBatchIds.length > 0 ? selectedBatchIds : undefined,
       });
       showToast("success", "Drive created successfully! Eligible students auto-registered.");
       onCreated();
@@ -305,6 +316,30 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
               ))}
             </div>
             <p className="text-muted-foreground text-xs mt-1.5">Leave empty to use job&apos;s allowed departments</p>
+          </div>
+
+          {/* Batches */}
+          <div>
+            <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1.5">Target Batches</label>
+            <div className="grid grid-cols-4 gap-2">
+              {batches
+                .filter(b => selectedDepts.length === 0 || selectedDepts.includes(b.department))
+                .map((batch) => (
+                <button
+                  key={batch.id}
+                  onClick={() => toggleBatch(batch.id)}
+                  className={cn(
+                    "px-3 py-2 rounded-lg text-xs font-semibold border transition-all",
+                    selectedBatchIds.includes(batch.id)
+                      ? "bg-indigo-600 border-indigo-600 text-white"
+                      : "bg-white border-border text-foreground hover:border-indigo-300"
+                  )}
+                >
+                  {batch.name || `${batch.department} ${batch.year}`}
+                </button>
+              ))}
+            </div>
+            <p className="text-muted-foreground text-xs mt-1.5">Leave empty to include all batches</p>
           </div>
 
           {/* Description */}

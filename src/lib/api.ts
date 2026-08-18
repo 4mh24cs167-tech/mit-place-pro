@@ -276,7 +276,7 @@ export const adminApi = {
   getDrive: (id: string) => apiFetch(`/api/v1/admin/drives/${id}`),
   createDrive: (data: {
     title: string; type: 'single' | 'multiple'; jobId?: string; jobIds?: string[];
-    description?: string; driveDate?: string; departments?: string[];
+    description?: string; driveDate?: string; departments?: string[]; batchIds?: string[];
   }) => apiFetch('/api/v1/admin/drives', { method: 'POST', body: data }),
   rejectDriveStudents: (driveId: string, studentIds: string[], reason?: string) =>
     apiFetch(`/api/v1/admin/drives/${driveId}/reject`, { method: 'POST', body: { studentIds, reason } }),
@@ -320,10 +320,6 @@ export const adminApi = {
     apiFetch(`/api/v1/admin/assessments/${id}/credentials`, { method: 'POST', body: { credentials, replaceAll: true } }),
   previewAssessmentCredentials: (id: string, credentials: { email: string; loginId: string; password: string }[]) =>
     apiFetch(`/api/v1/admin/assessments/${id}/credentials/preview`, { method: 'POST', body: { credentials } }),
-  
-  // Internship Permissions
-  listInternshipPermissions: () => apiFetch('/api/v1/admin/internship-permissions'),
-  getInternshipPermission: (id: string) => apiFetch(`/api/v1/admin/internship-permissions/${id}`),
 };
 
 // ─── Student ─────────────────────────────────────
@@ -352,11 +348,6 @@ export const studentApi = {
   getPendingFeedback: () => apiFetch('/api/v1/student/feedback/pending'),
   // Assessments
   getMyAssessments: () => apiFetch('/api/v1/student/assessments'),
-  
-  // Internship Permission
-  submitInternshipPermission: (data: Record<string, unknown>) => apiFetch('/api/v1/student/internship-permission', { method: 'POST', body: data }),
-  getMyInternshipPermissions: () => apiFetch('/api/v1/student/internship-permissions'),
-  getInternshipPermission: (id: string) => apiFetch(`/api/v1/student/internship-permissions/${id}`),
 };
 
 // ─── Company ─────────────────────────────────────

@@ -41,6 +41,9 @@ export class Drive {
   @Column({ type: 'jsonb', nullable: true, default: '[]' })
   departments: string[];
 
+  @Column({ type: 'jsonb', nullable: true, default: '[]', name: 'batch_ids' })
+  batchIds: string[];
+
   @Column({ type: 'jsonb', nullable: true, default: '[]', name: 'job_ids' })
   jobIds: string[];
 
