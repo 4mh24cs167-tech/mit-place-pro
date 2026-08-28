@@ -369,7 +369,7 @@ export class StudentService {
     // Filter drives matching student's department and batch
     const matchingDrives = drives.filter((d) => {
       const deptOk = !d.departments || d.departments.length === 0 || d.departments.includes(student.department);
-      const batchOk = !d.batchIds || d.batchIds.length === 0 || d.batchIds.includes(student.batchId);
+      const batchOk = !d.batchIds || d.batchIds.length === 0 || (student.batchId != null && d.batchIds.includes(student.batchId));
       return deptOk && batchOk;
     });
 
@@ -465,7 +465,7 @@ export class StudentService {
       throw new BadRequestException('Your department is not eligible for this drive');
     }
 
-    if (drive.batchIds && drive.batchIds.length > 0 && !drive.batchIds.includes(student.batchId)) {
+    if (drive.batchIds && drive.batchIds.length > 0 && (!student.batchId || !drive.batchIds.includes(student.batchId))) {
       throw new BadRequestException('Your batch is not eligible for this drive');
     }
 
