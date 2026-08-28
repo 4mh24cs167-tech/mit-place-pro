@@ -354,6 +354,7 @@ export const studentApi = {
   // Internship Permissions
   submitInternshipPermission: (data: Record<string, unknown>) => apiFetch('/api/v1/student/internship-permission', { method: 'POST', body: data }),
   getInternshipPermissions: () => apiFetch('/api/v1/student/internship-permissions'),
+  getMyInternshipPermissions: () => apiFetch('/api/v1/student/internship-permissions'),
   getInternshipPermission: (id: string) => apiFetch(`/api/v1/student/internship-permissions/${id}`),
 };
 
