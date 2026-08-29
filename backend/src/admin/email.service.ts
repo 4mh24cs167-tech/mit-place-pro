@@ -61,9 +61,10 @@ export class EmailService {
       port: smtpPort,
       secure: smtpPort === 465,
       auth: { user: smtpUser, pass: smtpPass },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 20000,
+      connectionTimeout: 30000,
+      greetingTimeout: 30000,
+      socketTimeout: 30000,
+      tls: { rejectUnauthorized: false },
     });
 
     // Verify in background so it doesn't block startup or destroy the transporter permanently if it fails
