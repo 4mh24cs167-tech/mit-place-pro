@@ -6,7 +6,7 @@ import { studentApi } from "@/lib/api";
 import {
   User, Mail, Phone, Calendar, GraduationCap, Award, Globe, Edit3,
   ExternalLink, Loader2, CheckCircle2, AlertCircle, Save, ShieldCheck,
-  Code, Camera, X, Plus, FileText, Link2, GitBranch, MapPin,
+  Code, Camera, X, Plus, FileText, Link2, GitBranch, MapPin, Upload,
   BookOpen, Building2, Trophy, Sparkles, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -146,6 +146,8 @@ export default function StudentProfilePage() {
     tenthMarksCardLink: "", twelfthMarksCardLink: "",
     qualificationType: "12th" as "12th" | "Diploma",
     diplomaBranch: "",
+    collegeName: "",
+    ugCourseName: "",
     // PG-specific
     ugDegreeName: "", ugUniversity: "", ugCgpa: "", ugYearOfPassing: "",
   });
@@ -198,6 +200,8 @@ export default function StudentProfilePage() {
           twelfthMarksCardLink: (pd.twelfthMarksCardLink as string) || "",
           qualificationType: ((pd.qualificationType as string) || "12th") as "12th" | "Diploma",
           diplomaBranch: (pd.diplomaBranch as string) || "",
+          collegeName: (pd.collegeName as string) || "",
+          ugCourseName: (pd.ugCourseName as string) || "",
           // PG fields
           ugDegreeName: (pd.ugDegreeName as string) || "",
           ugUniversity: (pd.ugUniversity as string) || "",
@@ -309,6 +313,8 @@ export default function StudentProfilePage() {
         profileData: {
           qualificationType: form.qualificationType,
           diplomaBranch: form.diplomaBranch || undefined,
+          collegeName: form.collegeName || undefined,
+          ugCourseName: form.ugCourseName || undefined,
         },
         // PG-specific fields
         ugDegreeName: form.ugDegreeName || undefined,
@@ -580,10 +586,13 @@ export default function StudentProfilePage() {
                     <p className="text-xs text-muted-foreground mt-0.5">Maharaja Institute of Technology, Mysuru</p>
                     <div className="flex items-center gap-4 mt-2 flex-wrap">
                       {editing ? (
-                        <div className="grid grid-cols-3 gap-3 w-full">
-                          <InlineInput label="CGPA" value={form.cgpa} onChange={(v) => setField("cgpa", v)} editing={editing} type="number" required placeholder="8.50" />
-                          <InlineInput label="Semester" value={form.semester} onChange={(v) => setField("semester", v)} editing={editing} type="number" placeholder="6" />
-                          <InlineInput label="Backlogs" value={form.backlogs} onChange={(v) => setField("backlogs", v)} editing={editing} type="number" placeholder="0" />
+                        <div className="space-y-3 w-full mt-2">
+                          <InlineInput label="Course Name" value={form.ugCourseName} onChange={(v) => setField("ugCourseName", v)} editing={editing} placeholder="e.g. B.E. Computer Science" />
+                          <div className="grid grid-cols-3 gap-3">
+                            <InlineInput label="CGPA" value={form.cgpa} onChange={(v) => setField("cgpa", v)} editing={editing} type="number" required placeholder="8.50" />
+                            <InlineInput label="Semester" value={form.semester} onChange={(v) => setField("semester", v)} editing={editing} type="number" placeholder="6" />
+                            <InlineInput label="Backlogs" value={form.backlogs} onChange={(v) => setField("backlogs", v)} editing={editing} type="number" placeholder="0" />
+                          </div>
                         </div>
                       ) : (
                         <>
@@ -682,12 +691,17 @@ export default function StudentProfilePage() {
                         {form.qualificationType !== "Diploma" && form.twelfthStream && <span className="text-xs text-muted-foreground">· {form.twelfthStream}</span>}
                       </div>
                     )}
-                    {/* Marks Card Link */}
+                    {/* Marks Card Link + Upload */}
                     {editing ? (
-                      <div className="mt-3">
+                      <div className="mt-3 space-y-2">
                         <InlineInput label={form.qualificationType === "Diploma" ? "Diploma Marks Card (Drive Link)" : "12th Marks Card (Drive Link)"} value={form.twelfthMarksCardLink}
                           onChange={(v) => setField("twelfthMarksCardLink", v)} editing={editing}
                           placeholder="https://drive.google.com/..." />
+                        <label className="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 border-dashed border-border/60 hover:border-indigo-400 cursor-pointer transition-colors">
+                          <Upload className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <span className="text-xs text-muted-foreground">Or upload file (JPG/PDF)</span>
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={() => showToast("success", "File selected! Drive link preferred for now.")} />
+                        </label>
                       </div>
                     ) : form.twelfthMarksCardLink ? (
                       <a href={form.twelfthMarksCardLink} target="_blank" rel="noopener noreferrer"
@@ -718,12 +732,17 @@ export default function StudentProfilePage() {
                         {form.tenthYear && <span className="text-xs text-muted-foreground">· {form.tenthYear}</span>}
                       </div>
                     )}
-                    {/* 10th Marks Card Link */}
+                    {/* 10th Marks Card Link + Upload */}
                     {editing ? (
-                      <div className="mt-3">
+                      <div className="mt-3 space-y-2">
                         <InlineInput label="10th Marks Card (Drive Link)" value={form.tenthMarksCardLink}
                           onChange={(v) => setField("tenthMarksCardLink", v)} editing={editing}
                           placeholder="https://drive.google.com/..." />
+                        <label className="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 border-dashed border-border/60 hover:border-indigo-400 cursor-pointer transition-colors">
+                          <Upload className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <span className="text-xs text-muted-foreground">Or upload file (JPG/PDF)</span>
+                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={() => showToast("success", "File selected! Drive link preferred for now.")} />
+                        </label>
                       </div>
                     ) : form.tenthMarksCardLink ? (
                       <a href={form.tenthMarksCardLink} target="_blank" rel="noopener noreferrer"
@@ -835,6 +854,7 @@ export default function StudentProfilePage() {
                 <InlineInput label="Date of Birth" value={form.dateOfBirth} onChange={(v) => setField("dateOfBirth", v)} editing={editing} type="date" required />
                 <InlineSelect label="Gender" value={form.gender} onChange={(v) => setField("gender", v)} editing={editing} options={GENDER_OPTIONS} required />
                 <InlineSelect label="Category" value={form.category} onChange={(v) => setField("category", v)} editing={editing} options={CATEGORY_OPTIONS} />
+                <InlineInput label="College Name" value={form.collegeName} onChange={(v) => setField("collegeName", v)} editing={editing} placeholder="e.g. Maharaja Institute of Technology, Mysuru" />
                 <InlineInput label="Family Income (₹/yr)" value={form.familyIncome} onChange={(v) => setField("familyIncome", v)} editing={editing} type="number" placeholder="500000" />
                 {/* Email (read-only) */}
                 <div className="pt-2 border-t border-border/40">
