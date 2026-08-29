@@ -348,25 +348,6 @@ export default function StudentOnboarding() {
             <div className="space-y-5">
               <h2 className="text-lg font-semibold">Education & Qualifications</h2>
 
-              {/* Current UG Details (always shown) */}
-              <div className="p-4 rounded-xl bg-indigo-50/50 border border-indigo-100">
-                <h3 className="text-sm font-semibold text-indigo-700 mb-3">Current UG Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-medium mb-1">CGPA</label>
-                    <input type="number" step="0.01" value={form.cgpa ?? ""} onChange={(e) => updateForm("cgpa", e.target.value)} placeholder="e.g. 8.5" className={inputClass} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-1">Semester</label>
-                    <input type="number" value={form.semester ?? ""} onChange={(e) => updateForm("semester", e.target.value)} placeholder="e.g. 6" className={inputClass} />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-1">Active Backlogs</label>
-                    <input type="number" value={form.backlogs ?? 0} onChange={(e) => updateForm("backlogs", e.target.value)} placeholder="0" className={inputClass} />
-                  </div>
-                </div>
-              </div>
-
               {/* Dynamic Education Manager */}
               <EducationManager editing={true} />
 

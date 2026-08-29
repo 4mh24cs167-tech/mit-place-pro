@@ -572,42 +572,7 @@ export default function StudentProfilePage() {
             {/* Education & Qualifications */}
             <div className="i-card p-5 sm:p-6">
               <SectionHeader icon={GraduationCap} title="Education & Qualifications" />
-              <div className="space-y-4">
-                {/* Current Degree */}
-                <div className="flex gap-4 p-4 rounded-xl bg-gradient-to-r from-indigo-50/50 to-violet-50/50 border border-indigo-100/60">
-                  <div className="p-2.5 rounded-xl bg-indigo-100 h-fit">
-                    <BookOpen className="w-5 h-5 text-indigo-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-foreground">
-                      {profile.departmentType === 'PG' ? 'M.Tech / MBA / MCA' :
-                       profile.departmentType === 'DEGREE' ? 'Degree Program' :
-                       'B.E. / B.Tech'} — {profile.department}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Maharaja Institute of Technology, Mysuru</p>
-                    <div className="flex items-center gap-4 mt-2 flex-wrap">
-                      {editing ? (
-                        <div className="space-y-3 w-full mt-2">
-                          <InlineInput label="Course Name" value={form.ugCourseName} onChange={(v) => setField("ugCourseName", v)} editing={editing} placeholder="e.g. B.E. Computer Science" />
-                          <div className="grid grid-cols-3 gap-3">
-                            <InlineInput label="CGPA" value={form.cgpa} onChange={(v) => setField("cgpa", v)} editing={editing} type="number" required placeholder="8.50" />
-                            <InlineInput label="Semester" value={form.semester} onChange={(v) => setField("semester", v)} editing={editing} type="number" placeholder="6" />
-                            <InlineInput label="Backlogs" value={form.backlogs} onChange={(v) => setField("backlogs", v)} editing={editing} type="number" placeholder="0" />
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          {form.cgpa && <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">CGPA {form.cgpa}</span>}
-                          {form.semester && <span className="text-xs text-muted-foreground">Semester {form.semester}</span>}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Dynamic Education Qualifications */}
-                <EducationManager editing={editing} />
-              </div>
+              <EducationManager editing={editing} />
             </div>
 
             {/* Skills */}

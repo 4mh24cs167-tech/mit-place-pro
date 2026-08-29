@@ -230,7 +230,7 @@ export default function LoginPage() {
             MITM College, Mysuru · Placement Cell Portal
           </p>
           <p className="text-[10px] text-muted-foreground/60 text-center mt-1">
-            Developed by Yashas N, CSE Department &amp; Shreyas M, ISE Department
+            Developed by Yashas N, Shreyas M, Varshith V, Vishesh G Devanur, Vinod Patel, Bhavish S, Yashavanth B N — CSE Department
           </p>
         </div>
       </div>
