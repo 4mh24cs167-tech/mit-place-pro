@@ -181,6 +181,27 @@ export default function LoginPage() {
             </button>
           </form>
 
+          {/* Registration links */}
+          <div className="flex items-center gap-3 pt-2">
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-xs text-muted-foreground">New here?</span>
+            <div className="h-px flex-1 bg-border" />
+          </div>
+          <div className="flex gap-3 mt-4">
+            <a
+              href="/register/student"
+              className="flex-1 text-center py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+            >
+              Register as Student
+            </a>
+            <a
+              href="/register/company"
+              className="flex-1 text-center py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+            >
+              Register as Company
+            </a>
+          </div>
+
           {/* Divider with role info */}
           <div className="mt-8 pt-6 border-t border-border/50">
             <p className="text-xs text-muted-foreground text-center mb-3">

@@ -17,6 +17,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 interface Interview {
   company?: string;
@@ -48,6 +49,7 @@ const activityColors = {
 };
 
 export default function StudentDashboardPage() {
+  const router = useRouter();
   const { user } = useAuth();
   const [interviews, setInterviews] = useState<Interview[]>([]);
   const [applications, setApplications] = useState<unknown[]>([]);
@@ -75,7 +77,14 @@ export default function StudentDashboardPage() {
       }
       if (profileRes.status === "fulfilled") {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setProfile((profileRes.value as any)?.data || null);
+        const profileData = (profileRes.value as any)?.data || null;
+        setProfile(profileData);
+        
+        // After getting profile data
+        if (profileData && profileData.profileComplete === false) {
+          router.push('/student/onboarding');
+          return;
+        }
       }
     } catch {
       // handled per-request

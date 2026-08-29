@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Patch, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginDto, ChangePasswordDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto } from './dto/auth.dto';
+import { LoginDto, ChangePasswordDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto, RegisterSendOtpDto, RegisterVerifyOtpDto, RegisterStudentDto } from './dto/auth.dto';
 import { Auth, CurrentUser } from './auth.decorators';
 
 @Controller('api/v1/auth')
@@ -45,6 +45,30 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() dto: ResetPasswordDto) {
     const result = await this.authService.resetPassword(dto);
+    return { success: true, data: result };
+  }
+
+  // ── Public: Registration - Send OTP ─────────────────────
+  @Post('register/send-otp')
+  @HttpCode(HttpStatus.OK)
+  async registerSendOtp(@Body() dto: RegisterSendOtpDto) {
+    const result = await this.authService.sendRegistrationOtp(dto);
+    return { success: true, data: result };
+  }
+
+  // ── Public: Registration - Verify OTP ───────────────────
+  @Post('register/verify-otp')
+  @HttpCode(HttpStatus.OK)
+  async registerVerifyOtp(@Body() dto: RegisterVerifyOtpDto) {
+    const result = await this.authService.verifyRegistrationOtp(dto);
+    return { success: true, data: result };
+  }
+
+  // ── Public: Registration - Complete Student Registration ─
+  @Post('register/student')
+  @HttpCode(HttpStatus.CREATED)
+  async registerStudent(@Body() dto: RegisterStudentDto) {
+    const result = await this.authService.registerStudent(dto);
     return { success: true, data: result };
   }
 }

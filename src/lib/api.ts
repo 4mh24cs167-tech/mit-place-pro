@@ -398,4 +398,14 @@ export const companyApi = {
   getPendingFeedback: () => apiFetch('/api/v1/company/feedback/pending'),
 };
 
+// ─── Registration ────────────────────────────────
+export const registerApi = {
+  sendOtp: (email: string) =>
+    apiFetch('/api/v1/auth/register/send-otp', { method: 'POST', body: { email } }),
+  verifyOtp: (email: string, otp: string) =>
+    apiFetch('/api/v1/auth/register/verify-otp', { method: 'POST', body: { email, otp } }),
+  registerStudent: (data: { fullName: string; email: string; password: string; otp: string }) =>
+    apiFetch('/api/v1/auth/register/student', { method: 'POST', body: data }),
+};
+
 export { ApiError, getToken, removeToken, getStoredUser };

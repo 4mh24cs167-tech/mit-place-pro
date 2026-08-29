@@ -5,16 +5,23 @@ import { Repository } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { User } from '../entities/user.entity';
-import { LoginDto, ChangePasswordDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto } from './dto/auth.dto';
+import { Student } from '../entities/student.entity';
+import { Department } from '../entities/department.entity';
+import { LoginDto, ChangePasswordDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto, RegisterSendOtpDto, RegisterVerifyOtpDto, RegisterStudentDto } from './dto/auth.dto';
 import { EmailService } from '../admin/email.service';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly registrationOtps = new Map<string, { otp: string; expiresAt: Date; fullName?: string }>();
 
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Student)
+    private readonly studentRepo: Repository<Student>,
+    @InjectRepository(Department)
+    private readonly departmentRepo: Repository<Department>,
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
   ) {}
@@ -171,6 +178,113 @@ export class AuthService {
     this.logger.log(`Password reset successfully for ${user.email}`);
 
     return { message: 'Password has been reset successfully' };
+  }
+
+  // ── Registration: Send OTP ────────────────────────────────
+  async sendRegistrationOtp(dto: RegisterSendOtpDto) {
+    const email = dto.email.toLowerCase();
+    
+    // Check if email already exists
+    const existingUser = await this.userRepo.findOne({ where: { email } });
+    if (existingUser) {
+      throw new BadRequestException('An account with this email already exists');
+    }
+
+    // Generate 6-digit OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Store in memory map
+    this.registrationOtps.set(email, { otp, expiresAt });
+
+    // Send OTP via email
+    const sent = await this.emailService.sendOtpEmail(email, otp);
+    if (!sent) {
+      this.logger.warn(`Registration OTP email delivery failed for ${email}. OTP: ${otp}`);
+    }
+
+    this.logger.log(`Registration OTP generated for ${email}`);
+    return { message: 'OTP sent to your email address' };
+  }
+
+  // ── Registration: Verify OTP ──────────────────────────────
+  async verifyRegistrationOtp(dto: RegisterVerifyOtpDto) {
+    const email = dto.email.toLowerCase();
+    const stored = this.registrationOtps.get(email);
+
+    if (!stored) {
+      throw new BadRequestException('No OTP found for this email. Please request a new one.');
+    }
+
+    if (new Date() > stored.expiresAt) {
+      this.registrationOtps.delete(email);
+      throw new BadRequestException('OTP has expired. Please request a new one.');
+    }
+
+    if (stored.otp !== dto.otp) {
+      throw new BadRequestException('Invalid OTP');
+    }
+
+    return { verified: true, message: 'Email verified successfully' };
+  }
+
+  // ── Registration: Register Student ────────────────────────
+  async registerStudent(dto: RegisterStudentDto) {
+    const email = dto.email.toLowerCase();
+
+    // Verify OTP one final time
+    const stored = this.registrationOtps.get(email);
+    if (!stored || stored.otp !== dto.otp || new Date() > stored.expiresAt) {
+      throw new BadRequestException('Invalid or expired OTP. Please start over.');
+    }
+
+    // Check email not taken
+    const existingUser = await this.userRepo.findOne({ where: { email } });
+    if (existingUser) {
+      throw new BadRequestException('An account with this email already exists');
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(12);
+    const passwordHash = await bcrypt.hash(dto.password, salt);
+
+    // Create user
+    const user = this.userRepo.create({
+      email,
+      passwordHash,
+      role: 'student' as any,
+      mustChangePassword: false,
+      isActive: true,
+    });
+    await this.userRepo.save(user);
+
+    // Ensure GLOBAL department exists
+    let globalDept = await this.departmentRepo.findOne({ where: { code: 'GLOBAL' } });
+    if (!globalDept) {
+      globalDept = this.departmentRepo.create({
+        code: 'GLOBAL',
+        name: 'Global (Self-Registered)',
+        isActive: true,
+      });
+      await this.departmentRepo.save(globalDept);
+    }
+
+    // Create student record
+    const student = this.studentRepo.create({
+      user,
+      fullName: dto.fullName,
+      usn: `SELF-${Date.now()}`,
+      department: 'GLOBAL',
+      profileComplete: false,
+      profileData: {},
+    });
+    await this.studentRepo.save(student);
+
+    // Clean up OTP
+    this.registrationOtps.delete(email);
+
+    this.logger.log(`Student registered successfully: ${email}`);
+    return { message: 'Registration successful! You can now login.' };
   }
 
   async validateUser(userId: string) {

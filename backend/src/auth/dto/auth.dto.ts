@@ -49,3 +49,37 @@ export class ResetPasswordDto {
   @MinLength(8)
   newPassword: string;
 }
+
+export class RegisterSendOtpDto {
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+}
+
+export class RegisterVerifyOtpDto {
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
+}
+
+export class RegisterStudentDto {
+  @IsString()
+  @IsNotEmpty()
+  fullName: string;
+
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @IsString()
+  @MinLength(8)
+  password: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
+}
