@@ -8,7 +8,6 @@ import { UpdateProfileDto, ApplyJobDto, CreateEducationDto, UpdateEducationDto }
 import { FeedbackService } from '../admin/feedback.service';
 import { AssessmentService } from '../admin/assessment.service';
 import { InternshipService } from '../admin/internship.service';
-import { Response } from 'express';
 
 @Controller('api/v1/student')
 @Auth(UserRole.STUDENT)
@@ -239,7 +238,7 @@ export class StudentController {
   async getEducationDocument(
     @CurrentUser('id') userId: string,
     @Param('id') id: string,
-    @Res() res: Response,
+    @Res() res: any,
   ) {
     const doc = await this.studentService.getEducationDocument(userId, id);
     res.set({ 'Content-Type': doc.type, 'Content-Disposition': `inline; filename="${doc.name}"` });
