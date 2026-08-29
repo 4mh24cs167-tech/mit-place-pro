@@ -8,6 +8,7 @@ import { User } from '../entities/user.entity';
 import { Student } from '../entities/student.entity';
 import { Company } from '../entities/company.entity';
 import { Department } from '../entities/department.entity';
+import { Batch } from '../entities/batch.entity';
 import { LoginDto, ChangePasswordDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto, RegisterSendOtpDto, RegisterVerifyOtpDto, RegisterStudentDto, RegisterCompanyDto } from './dto/auth.dto';
 import { EmailService } from '../admin/email.service';
 
@@ -25,6 +26,8 @@ export class AuthService {
     private readonly departmentRepo: Repository<Department>,
     @InjectRepository(Company)
     private readonly companyRepo: Repository<Company>,
+    @InjectRepository(Batch)
+    private readonly batchRepo: Repository<Batch>,
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
   ) {}
@@ -275,16 +278,38 @@ export class AuthService {
       await this.departmentRepo.save(globalDept);
     }
 
-    // Create student record
+    // Ensure GLOBAL batch exists for current year
+    const currentYear = new Date().getFullYear();
+    let globalBatch = await this.batchRepo.findOne({
+      where: { department: 'GLOBAL', year: currentYear },
+    });
+    if (!globalBatch) {
+      globalBatch = this.batchRepo.create({
+        name: `GLOBAL ${currentYear}`,
+        department: 'GLOBAL',
+        year: currentYear,
+        currentSemester: 1,
+        studentCount: 0,
+      });
+      await this.batchRepo.save(globalBatch);
+    }
+
+    // Create student record with batch assignment
     const student = this.studentRepo.create({
       user,
       fullName: dto.fullName,
       usn: `SELF-${Date.now()}`,
       department: 'GLOBAL',
+      batchId: globalBatch.id,
+      semester: globalBatch.currentSemester,
       profileComplete: false,
       profileData: {},
     });
     await this.studentRepo.save(student);
+
+    // Update batch student count
+    globalBatch.studentCount += 1;
+    await this.batchRepo.save(globalBatch);
 
     // Clean up OTP
     this.registrationOtps.delete(email);

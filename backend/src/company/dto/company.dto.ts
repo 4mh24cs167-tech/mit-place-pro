@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsArray, IsObject, IsEnum, Min, Max, ValidateNested, ArrayMinSize } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsArray, IsObject, IsEnum, IsBoolean, Min, Max, ValidateNested, ArrayMinSize } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateJobDto {
@@ -169,6 +169,10 @@ export class UpdateCompanyProfileDto {
   @IsOptional()
   @IsString()
   hrPhone?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  profileComplete?: boolean;
 }
 
 export class SubmitRoundResultsDto {
