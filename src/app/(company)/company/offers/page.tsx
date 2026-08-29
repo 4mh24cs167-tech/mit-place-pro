@@ -4,6 +4,7 @@ import Header from "@/components/layout/Header";
 import { cn, getInitials, formatLPA } from "@/lib/utils";
 import { companyApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { generateOfferLetterPdf, downloadOfferLetter, previewOfferLetterHtml } from "@/lib/offer-letter-generator";
 import {
   Send,
   Download,
@@ -45,6 +46,10 @@ export default function CompanyOffersPage() {
   const [jobs, setJobs] = useState<Array<{ id: string; title: string; ctcMaxLpa: number }>>([]);
   const [selectedJobId, setSelectedJobId] = useState<string>("");
   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [companyProfile, setCompanyProfile] = useState<any>(null);
+  const [previewHtml, setPreviewHtml] = useState<string | null>(null);
+  const [generatingFor, setGeneratingFor] = useState<string | null>(null);
 
   const showToast = (type: "success" | "error", msg: string) => {
     setToast({ type, msg });
@@ -97,11 +102,32 @@ export default function CompanyOffersPage() {
     fetchCandidates();
   }, [fetchCandidates]);
 
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    companyApi.getProfile().then((res: any) => {
+      setCompanyProfile(res?.data || res);
+    }).catch(() => {});
+  }, []);
+
   const selectedCandidates = candidates.filter((c) => c.finalResult === "selected");
   const pendingCandidates = candidates.filter(
     (c) => c.finalResult === "pending" || (c.finalResult !== "selected" && c.finalResult !== "rejected")
   );
   const currentJob = jobs.find((j) => j.id === selectedJobId);
+
+  const buildOfferData = (c: OfferCandidate) => ({
+    studentName: c.studentName,
+    usn: c.usn,
+    department: c.department,
+    cgpa: c.cgpa,
+    jobTitle: currentJob?.title || "Software Engineer",
+    companyName: companyProfile?.name || "Company",
+    companySector: companyProfile?.sector,
+    companyWebsite: companyProfile?.website,
+    companyHqCity: companyProfile?.hqCity,
+    ctcLpa: currentJob ? `₹${currentJob.ctcMaxLpa} LPA` : "As discussed",
+    offerDate: new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }),
+  });
 
   return (
     <div className="page-enter">
@@ -157,7 +183,13 @@ export default function CompanyOffersPage() {
         <div className="flex items-center justify-between">
           <h3 className="text-base font-semibold text-foreground">Offer Management</h3>
           <button
-            onClick={() => showToast("success", "Create Offer: coming in next update")}
+            onClick={() => {
+              if (selectedCandidates.length === 0) {
+                showToast("error", "No selected candidates to generate offers for");
+              } else {
+                showToast("success", "Use the Send Offer button next to each selected candidate");
+              }
+            }}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-sm font-semibold shadow-lg shadow-indigo-500/20 hover:shadow-xl transition-all"
           >
             <Plus className="w-4 h-4" />
@@ -216,20 +248,40 @@ export default function CompanyOffersPage() {
 
                       <div className="flex items-center gap-1.5">
                         <button
-                          onClick={() => showToast("success", `Sending offer to ${c.studentName}...`)}
+                          onClick={async () => {
+                            try {
+                              setGeneratingFor(c.applicationId);
+                              const blob = await generateOfferLetterPdf(buildOfferData(c));
+                              downloadOfferLetter(blob, c.studentName);
+                              showToast("success", `Offer letter generated for ${c.studentName}!`);
+                            } catch {
+                              showToast("error", "Failed to generate offer letter");
+                            } finally {
+                              setGeneratingFor(null);
+                            }
+                          }}
                           className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition-colors"
                         >
-                          <Send className="w-3.5 h-3.5" /> Send Offer
+                          {generatingFor === c.applicationId ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                          {generatingFor === c.applicationId ? "Generating..." : "Send Offer"}
                         </button>
                         <button
-                          onClick={() => showToast("success", `Preview offer for ${c.studentName}`)}
+                          onClick={() => setPreviewHtml(previewOfferLetterHtml(buildOfferData(c)))}
                           className="p-2 rounded-lg hover:bg-muted transition-colors"
                           title="Preview"
                         >
                           <Eye className="w-4 h-4 text-muted-foreground" />
                         </button>
                         <button
-                          onClick={() => showToast("success", `Downloading offer letter for ${c.studentName}...`)}
+                          onClick={async () => {
+                            try {
+                              const blob = await generateOfferLetterPdf(buildOfferData(c));
+                              downloadOfferLetter(blob, c.studentName);
+                              showToast("success", `Downloaded offer letter for ${c.studentName}`);
+                            } catch {
+                              showToast("error", "Failed to download offer letter");
+                            }
+                          }}
                           className="p-2 rounded-lg hover:bg-muted transition-colors"
                           title="Download PDF"
                         >
@@ -268,6 +320,18 @@ export default function CompanyOffersPage() {
           </div>
         )}
       </div>
+      {/* Preview Modal */}
+      {previewHtml && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setPreviewHtml(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-sm font-semibold">Offer Letter Preview</h3>
+              <button onClick={() => setPreviewHtml(null)} className="text-sm text-muted-foreground hover:text-foreground">✕ Close</button>
+            </div>
+            <div dangerouslySetInnerHTML={{ __html: previewHtml }} />
+          </div>
+        </div>
+      )}
       {/* Toast */}
       {toast && (
         <div className={cn(
