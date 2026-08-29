@@ -6,8 +6,9 @@ import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { User } from '../entities/user.entity';
 import { Student } from '../entities/student.entity';
+import { Company } from '../entities/company.entity';
 import { Department } from '../entities/department.entity';
-import { LoginDto, ChangePasswordDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto, RegisterSendOtpDto, RegisterVerifyOtpDto, RegisterStudentDto } from './dto/auth.dto';
+import { LoginDto, ChangePasswordDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto, RegisterSendOtpDto, RegisterVerifyOtpDto, RegisterStudentDto, RegisterCompanyDto } from './dto/auth.dto';
 import { EmailService } from '../admin/email.service';
 
 @Injectable()
@@ -22,6 +23,8 @@ export class AuthService {
     private readonly studentRepo: Repository<Student>,
     @InjectRepository(Department)
     private readonly departmentRepo: Repository<Department>,
+    @InjectRepository(Company)
+    private readonly companyRepo: Repository<Company>,
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
   ) {}
@@ -284,6 +287,68 @@ export class AuthService {
     this.registrationOtps.delete(email);
 
     this.logger.log(`Student registered successfully: ${email}`);
+    return { message: 'Registration successful! You can now login.' };
+  }
+
+  // ── Helper: Validate company domain email ──────────────────
+  private isCompanyDomainEmail(email: string): boolean {
+    const freeEmailDomains = [
+      'gmail.com', 'yahoo.com', 'yahoo.co.in', 'hotmail.com', 'outlook.com',
+      'live.com', 'aol.com', 'protonmail.com', 'icloud.com', 'mail.com',
+      'zoho.com', 'yandex.com', 'gmx.com', 'rediffmail.com',
+    ];
+    const domain = email.split('@')[1]?.toLowerCase();
+    return domain ? !freeEmailDomains.includes(domain) : false;
+  }
+
+  // ── Registration: Register Company ────────────────────────
+  async registerCompany(dto: RegisterCompanyDto) {
+    const email = dto.email.toLowerCase();
+
+    // Validate company domain email
+    if (!this.isCompanyDomainEmail(email)) {
+      throw new BadRequestException('Please use a company domain email address (e.g. name@company.com). Free email providers like Gmail, Yahoo are not accepted.');
+    }
+
+    // Verify OTP one final time
+    const stored = this.registrationOtps.get(email);
+    if (!stored || stored.otp !== dto.otp || new Date() > stored.expiresAt) {
+      throw new BadRequestException('Invalid or expired OTP. Please start over.');
+    }
+
+    // Check email not taken
+    const existingUser = await this.userRepo.findOne({ where: { email } });
+    if (existingUser) {
+      throw new BadRequestException('An account with this email already exists');
+    }
+
+    // Hash password
+    const salt = await bcrypt.genSalt(12);
+    const passwordHash = await bcrypt.hash(dto.password, salt);
+
+    // Create user with company role
+    const user = this.userRepo.create({
+      email,
+      passwordHash,
+      role: 'company' as any,
+      mustChangePassword: false,
+      isActive: true,
+    });
+    await this.userRepo.save(user);
+
+    // Create company record
+    const company = this.companyRepo.create({
+      user,
+      name: dto.companyName,
+      hrPhone: dto.companyPhone,
+      profileComplete: false,
+    });
+    await this.companyRepo.save(company);
+
+    // Clean up OTP
+    this.registrationOtps.delete(email);
+
+    this.logger.log(`Company registered successfully: ${email}`);
     return { message: 'Registration successful! You can now login.' };
   }
 

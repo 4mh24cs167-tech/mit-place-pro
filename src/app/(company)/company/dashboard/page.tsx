@@ -52,6 +52,19 @@ export default function CompanyDashboardPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
+
+      try {
+        const profileRes = await companyApi.getProfile();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const profileData = (profileRes as any)?.data;
+        if (profileData && profileData.profileComplete === false) {
+          router.push('/company/onboarding');
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile", err);
+      }
+
       const jobRes = await companyApi.getJobs();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const jobData = (jobRes as any)?.data;

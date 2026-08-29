@@ -8,16 +8,22 @@ import { generateResumePdf, downloadResumePdf } from "@/lib/resume-generator";
 import { User, GraduationCap, FileText, Loader2, Upload, CheckCircle2 } from "lucide-react";
 
 interface ProfileData {
+  fullName?: string;
   phone?: string;
   dateOfBirth?: string;
   gender?: string;
   category?: string;
   tenthPercent?: number;
   tenthBoard?: string;
+  tenthYear?: number;
   twelfthPercent?: number;
   twelfthBoard?: string;
+  twelfthYear?: number;
+  twelfthStream?: string;
   cgpa?: number;
   backlogs?: number;
+  semester?: number;
+  familyIncome?: number;
   skills?: string;
   aboutMe?: string;
 }
@@ -33,16 +39,22 @@ export default function StudentOnboarding() {
   const [studentName, setStudentName] = useState("");
 
   const [form, setForm] = useState<ProfileData>({
+    fullName: "",
     phone: "",
     dateOfBirth: "",
     gender: "",
     category: "",
     tenthPercent: undefined,
     tenthBoard: "",
+    tenthYear: undefined,
     twelfthPercent: undefined,
     twelfthBoard: "",
+    twelfthYear: undefined,
+    twelfthStream: "",
     cgpa: undefined,
     backlogs: 0,
+    semester: undefined,
+    familyIncome: undefined,
     skills: "",
     aboutMe: "",
   });
@@ -66,16 +78,22 @@ export default function StudentOnboarding() {
     try {
       // Update profile with all details
       await studentApi.updateProfile({
+        fullName: form.fullName || undefined,
         phone: form.phone,
         dateOfBirth: form.dateOfBirth || undefined,
         gender: form.gender || undefined,
         category: form.category || undefined,
         tenthPercent: form.tenthPercent ? Number(form.tenthPercent) : undefined,
         tenthBoard: form.tenthBoard || undefined,
+        tenthYear: form.tenthYear ? Number(form.tenthYear) : undefined,
         twelfthPercent: form.twelfthPercent ? Number(form.twelfthPercent) : undefined,
         twelfthBoard: form.twelfthBoard || undefined,
+        twelfthYear: form.twelfthYear ? Number(form.twelfthYear) : undefined,
+        twelfthStream: form.twelfthStream || undefined,
         cgpa: form.cgpa ? Number(form.cgpa) : undefined,
         backlogs: form.backlogs ? Number(form.backlogs) : 0,
+        semester: form.semester ? Number(form.semester) : undefined,
+        familyIncome: form.familyIncome ? Number(form.familyIncome) : undefined,
         skills: form.skills || undefined,
         aboutMe: form.aboutMe || undefined,
         profileComplete: true,
@@ -186,10 +204,20 @@ export default function StudentOnboarding() {
               <h2 className="text-lg font-semibold">Personal Details</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
+                  <label className="block text-sm font-medium mb-1.5">Full Name</label>
+                  <input
+                    type="text"
+                    value={form.fullName || ""}
+                    onChange={(e) => updateForm("fullName", e.target.value)}
+                    placeholder="Your full name"
+                    className="w-full px-4 py-2.5 rounded-xl border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+                <div>
                   <label className="block text-sm font-medium mb-1.5">Phone Number *</label>
                   <input
                     type="tel"
-                    value={form.phone}
+                    value={form.phone || ""}
                     onChange={(e) => updateForm("phone", e.target.value)}
                     placeholder="+91 XXXXXXXXXX"
                     className="w-full px-4 py-2.5 rounded-xl border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
@@ -270,6 +298,18 @@ export default function StudentOnboarding() {
                   />
                 </div>
                 <div>
+                  <label className="block text-sm font-medium mb-1.5">10th Year</label>
+                  <input
+                    type="number"
+                    value={form.tenthYear ?? ""}
+                    onChange={(e) => updateForm("tenthYear", e.target.value)}
+                    placeholder="e.g. 2020"
+                    className="w-full px-4 py-2.5 rounded-xl border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
                   <label className="block text-sm font-medium mb-1.5">12th Percentage</label>
                   <input
                     type="number"
@@ -284,9 +324,45 @@ export default function StudentOnboarding() {
                   <label className="block text-sm font-medium mb-1.5">12th Board</label>
                   <input
                     type="text"
-                    value={form.twelfthBoard}
+                    value={form.twelfthBoard || ""}
                     onChange={(e) => updateForm("twelfthBoard", e.target.value)}
                     placeholder="e.g. CBSE, PUC"
+                    className="w-full px-4 py-2.5 rounded-xl border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">12th Year</label>
+                  <input
+                    type="number"
+                    value={form.twelfthYear ?? ""}
+                    onChange={(e) => updateForm("twelfthYear", e.target.value)}
+                    placeholder="e.g. 2022"
+                    className="w-full px-4 py-2.5 rounded-xl border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">12th Stream</label>
+                  <select
+                    value={form.twelfthStream || ""}
+                    onChange={(e) => updateForm("twelfthStream", e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option value="">Select Stream</option>
+                    <option value="Science">Science</option>
+                    <option value="Commerce">Commerce</option>
+                    <option value="Arts">Arts</option>
+                    <option value="Diploma">Diploma</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Current Semester</label>
+                  <input
+                    type="number"
+                    value={form.semester ?? ""}
+                    onChange={(e) => updateForm("semester", e.target.value)}
+                    placeholder="e.g. 6"
                     className="w-full px-4 py-2.5 rounded-xl border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
@@ -308,6 +384,16 @@ export default function StudentOnboarding() {
                     value={form.backlogs ?? 0}
                     onChange={(e) => updateForm("backlogs", e.target.value)}
                     placeholder="0"
+                    className="w-full px-4 py-2.5 rounded-xl border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1.5">Family Income (INR)</label>
+                  <input
+                    type="number"
+                    value={form.familyIncome ?? ""}
+                    onChange={(e) => updateForm("familyIncome", e.target.value)}
+                    placeholder="e.g. 500000"
                     className="w-full px-4 py-2.5 rounded-xl border border-input bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>

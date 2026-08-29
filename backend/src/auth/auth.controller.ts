@@ -1,6 +1,6 @@
 import { Controller, Post, Body, Patch, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginDto, ChangePasswordDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto, RegisterSendOtpDto, RegisterVerifyOtpDto, RegisterStudentDto } from './dto/auth.dto';
+import { LoginDto, ChangePasswordDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto, RegisterSendOtpDto, RegisterVerifyOtpDto, RegisterStudentDto, RegisterCompanyDto } from './dto/auth.dto';
 import { Auth, CurrentUser } from './auth.decorators';
 
 @Controller('api/v1/auth')
@@ -69,6 +69,14 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   async registerStudent(@Body() dto: RegisterStudentDto) {
     const result = await this.authService.registerStudent(dto);
+    return { success: true, data: result };
+  }
+
+  // ── Public: Registration - Complete Company Registration ──
+  @Post('register/company')
+  @HttpCode(HttpStatus.CREATED)
+  async registerCompany(@Body() dto: RegisterCompanyDto) {
+    const result = await this.authService.registerCompany(dto);
     return { success: true, data: result };
   }
 }

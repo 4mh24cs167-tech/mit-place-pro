@@ -406,6 +406,8 @@ export const registerApi = {
     apiFetch('/api/v1/auth/register/verify-otp', { method: 'POST', body: { email, otp } }),
   registerStudent: (data: { fullName: string; email: string; password: string; otp: string }) =>
     apiFetch('/api/v1/auth/register/student', { method: 'POST', body: data }),
+  registerCompany: (data: { companyName: string; companyPhone: string; email: string; password: string; otp: string }) =>
+    apiFetch('/api/v1/auth/register/company', { method: 'POST', body: data }),
 };
 
 export { ApiError, getToken, removeToken, getStoredUser };

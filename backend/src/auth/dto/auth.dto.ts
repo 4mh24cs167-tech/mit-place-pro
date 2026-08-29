@@ -83,3 +83,25 @@ export class RegisterStudentDto {
   @IsNotEmpty()
   otp: string;
 }
+
+export class RegisterCompanyDto {
+  @IsString()
+  @IsNotEmpty()
+  companyName: string;
+
+  @IsString()
+  @IsNotEmpty()
+  companyPhone: string;
+
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @IsString()
+  @MinLength(8)
+  password: string;
+
+  @IsString()
+  @IsNotEmpty()
+  otp: string;
+}

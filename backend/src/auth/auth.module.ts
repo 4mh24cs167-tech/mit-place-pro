@@ -7,6 +7,7 @@ import { User } from '../entities/user.entity';
 import { EmailLog } from '../entities/email-log.entity';
 import { Student } from '../entities/student.entity';
 import { Department } from '../entities/department.entity';
+import { Company } from '../entities/company.entity';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
@@ -16,7 +17,7 @@ import { EmailService } from '../admin/email.service';
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([User, EmailLog, Student, Department]),
+    TypeOrmModule.forFeature([User, EmailLog, Student, Department, Company]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
