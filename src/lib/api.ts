@@ -217,6 +217,7 @@ export const adminApi = {
     return apiFetch(`/api/v1/admin/companies?${query.toString()}`);
   },
   getCompany: (id: string) => apiFetch(`/api/v1/admin/companies/${id}`),
+  approveCompany: (id: string) => apiFetch(`/api/v1/admin/companies/${id}/approve`, { method: 'PATCH' }),
   deleteCompany: (id: string) => apiFetch(`/api/v1/admin/companies/${id}`, { method: 'DELETE' }),
 
   // Shortlist

@@ -68,8 +68,7 @@ export default function CompanyRegisterPage() {
     setLoading(true);
     try {
       await registerApi.registerCompany({ companyName, companyPhone, email, password, otp });
-      setSuccess("Registration successful! Redirecting to login...");
-      setTimeout(() => router.push("/login"), 2000);
+      setSuccess("Registration successful! Your account is pending admin approval. You will be notified once approved.");
     } catch (err: any) {
       setError(err?.message || "Registration failed");
     } finally {

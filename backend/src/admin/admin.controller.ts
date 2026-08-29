@@ -148,6 +148,15 @@ export class AdminController {
     return { success: true, data };
   }
 
+  @Patch('companies/:id/approve')
+  async approveCompany(
+    @Param('id') id: string,
+    @CurrentUser('id') actorId: string,
+  ) {
+    const result = await this.adminService.approveCompany(id, actorId);
+    return { success: true, data: result };
+  }
+
   @Delete('companies/:id')
   async deleteCompany(
     @Param('id') id: string,

@@ -516,6 +516,28 @@ export class AdminService {
     return company;
   }
 
+  async approveCompany(companyId: string, actorId: string) {
+    const company = await this.companyRepo.findOne({
+      where: { id: companyId },
+      relations: ['user'],
+    });
+    if (!company) throw new NotFoundException('Company not found');
+    
+    // Activate the user account
+    await this.userRepo.update(company.userId, { isActive: true });
+    
+    // Log the action
+    await this.auditRepo.save({
+      action: 'APPROVE_COMPANY',
+      entityType: 'company',
+      entityId: companyId,
+      actorUserId: actorId,
+      newValue: { companyName: company.name, email: company.user?.email } as unknown as Record<string, unknown>,
+    });
+    
+    return { message: `Company '${company.name}' has been approved and can now login.` };
+  }
+
   // ─── Shortlist Approval ─────────────────────────
   async getShortlist(jobId: string) {
     const job = await this.jobRepo.findOne({ where: { id: jobId }, relations: ['company'] });

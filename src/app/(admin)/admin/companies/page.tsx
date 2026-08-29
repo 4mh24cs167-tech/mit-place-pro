@@ -235,12 +235,32 @@ export default function AdminCompaniesPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={cn(
-                      "text-[10px] font-semibold px-2.5 py-1 rounded-full",
-                      company.isActive !== false ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"
-                    )}>
-                      {company.isActive !== false ? "Active" : "Inactive"}
-                    </span>
+                    {company.isActive === false ? (
+                      <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
+                        Pending Approval
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600">
+                        Active
+                      </span>
+                    )}
+                    
+                    {company.isActive === false && (
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            await adminApi.approveCompany(company.id);
+                            fetchCompanies();
+                          } catch (err) {
+                            console.error(err);
+                          }
+                        }}
+                        className="text-xs px-3 py-1 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium"
+                      >
+                        Approve
+                      </button>
+                    )}
                     <button
                       onClick={(e) => { e.stopPropagation(); setDeleteConfirm(company); }}
                       className="p-1.5 rounded-lg hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
