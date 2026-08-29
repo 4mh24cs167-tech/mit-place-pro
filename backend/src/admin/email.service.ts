@@ -125,7 +125,7 @@ export class EmailService {
     const recipients = Array.isArray(options.to) ? options.to : [options.to];
 
     // ─── 1. Attempt Brevo HTTP API First (Immune to Render Free Tier SMTP Outbound Blocks) ───
-    if (smtpPass.startsWith('xsmtpsib-')) {
+    if (smtpPass.startsWith('xsmtpsib-') || smtpPass.startsWith('xkeysib-')) {
       try {
         this.logger.log(`🔄 Attempting Brevo HTTP REST API to send to: ${recipients.join(', ')}`);
         
