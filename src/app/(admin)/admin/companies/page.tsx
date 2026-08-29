@@ -29,6 +29,7 @@ interface Company {
   hqCity?: string;
   website?: string;
   profileComplete?: boolean;
+  isApproved?: boolean;
   isActive?: boolean;
   email?: string;
   hrName?: string;
@@ -235,17 +236,21 @@ export default function AdminCompaniesPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {company.isActive === false ? (
+                    {!company.profileComplete ? (
+                      <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
+                        Profile Incomplete
+                      </span>
+                    ) : !company.isApproved ? (
                       <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
                         Pending Approval
                       </span>
                     ) : (
                       <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600">
-                        Active
+                        Approved
                       </span>
                     )}
                     
-                    {company.isActive === false && (
+                    {company.profileComplete && !company.isApproved && (
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();

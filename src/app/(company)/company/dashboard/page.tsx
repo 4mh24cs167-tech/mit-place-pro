@@ -43,6 +43,7 @@ export default function CompanyDashboardPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isPendingApproval, setIsPendingApproval] = useState(false);
   const [showCreateJob, setShowCreateJob] = useState(false);
   const [jobForm, setJobForm] = useState({ title: "", description: "", location: "", ctcMinLpa: "", ctcMaxLpa: "", minCgpa: "", openPositions: "1", eligibleDepartments: "" });
   const [jobSaving, setJobSaving] = useState(false);
@@ -57,9 +58,16 @@ export default function CompanyDashboardPage() {
         const profileRes = await companyApi.getProfile();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const profileData = (profileRes as any)?.data;
-        if (profileData && profileData.profileComplete === false) {
-          router.push('/company/onboarding');
-          return;
+        if (profileData) {
+          if (profileData.profileComplete === false) {
+            router.push('/company/onboarding');
+            return;
+          }
+          if (profileData.isApproved === false) {
+            setIsPendingApproval(true);
+            setLoading(false);
+            return;
+          }
         }
       } catch (err) {
         console.error("Failed to fetch profile", err);
@@ -116,6 +124,28 @@ export default function CompanyDashboardPage() {
   ];
 
   const maxCount = Math.max(...pipelineStages.map(s => s.count), 1);
+
+  if (isPendingApproval) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center border border-gray-100">
+          <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Clock className="w-8 h-8 text-amber-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-3">Pending Admin Approval</h1>
+          <p className="text-gray-600 mb-8 leading-relaxed">
+            Thank you for completing your profile! Your company account is currently under review by the placement cell. You will be notified via email once approved.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="w-full bg-gray-900 text-white font-medium py-3 rounded-xl hover:bg-gray-800 transition-colors"
+          >
+            Refresh Status
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-enter">

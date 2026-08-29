@@ -37,11 +37,8 @@ export class AuthService {
       where: { email: dto.email.toLowerCase() },
     });
 
-    if (!user) {
+    if (!user || !user.isActive) {
       throw new UnauthorizedException('Invalid credentials');
-    }
-    if (!user.isActive) {
-      throw new UnauthorizedException('Your account is pending admin approval. Please wait for approval before logging in.');
     }
 
     const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
@@ -360,7 +357,7 @@ export class AuthService {
       passwordHash,
       role: 'company' as any,
       mustChangePassword: false,
-      isActive: false,
+      isActive: true,
     });
     await this.userRepo.save(user);
 
@@ -377,7 +374,7 @@ export class AuthService {
     this.registrationOtps.delete(email);
 
     this.logger.log(`Company registered successfully: ${email}`);
-    return { message: 'Registration successful! Your account is pending admin approval. You will be notified once approved.' };
+    return { message: 'Registration successful! You can now login to complete your company profile.' };
   }
 
   async validateUser(userId: string) {

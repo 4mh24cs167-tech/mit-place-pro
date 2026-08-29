@@ -500,6 +500,7 @@ export class AdminService {
         sector: c.sector,
         hrName: c.hrName,
         profileComplete: c.profileComplete,
+        isApproved: c.isApproved,
         isActive: c.user?.isActive,
         createdAt: c.createdAt,
       })),
@@ -523,8 +524,9 @@ export class AdminService {
     });
     if (!company) throw new NotFoundException('Company not found');
     
-    // Activate the user account
-    await this.userRepo.update(company.userId, { isActive: true });
+    // Mark as approved
+    company.isApproved = true;
+    await this.companyRepo.save(company);
     
     // Log the action
     await this.auditRepo.save({
@@ -534,8 +536,17 @@ export class AdminService {
       actorUserId: actorId,
       newValue: { companyName: company.name, email: company.user?.email } as unknown as Record<string, unknown>,
     });
+
+    // Send approval email to company
+    try {
+      if (company.user?.email) {
+        await this.emailService.sendCompanyApprovalEmail(company.user.email, company.name);
+      }
+    } catch (e) {
+      this.logger.warn(`Failed to send company approval email: ${(e as Error).message}`);
+    }
     
-    return { message: `Company '${company.name}' has been approved and can now login.` };
+    return { message: `Company '${company.name}' has been approved.` };
   }
 
   // ─── Shortlist Approval ─────────────────────────

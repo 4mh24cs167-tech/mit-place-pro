@@ -43,6 +43,9 @@ export class Company {
   @Column({ type: 'boolean', default: false, name: 'profile_complete' })
   profileComplete: boolean;
 
+  @Column({ type: 'boolean', default: false, name: 'is_approved' })
+  isApproved: boolean;
+
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 
