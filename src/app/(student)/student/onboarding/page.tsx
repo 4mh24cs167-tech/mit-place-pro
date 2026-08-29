@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { studentApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { generateResumePdf, downloadResumePdf } from "@/lib/resume-generator";
 import { User, GraduationCap, FileText, Loader2, Upload, CheckCircle2 } from "lucide-react";
 
 interface ProfileData {
@@ -29,6 +30,7 @@ export default function StudentOnboarding() {
   const [error, setError] = useState("");
   const [hasResume, setHasResume] = useState<boolean | null>(null);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [studentName, setStudentName] = useState("");
 
   const [form, setForm] = useState<ProfileData>({
     phone: "",
@@ -48,6 +50,14 @@ export default function StudentOnboarding() {
   const updateForm = (field: string, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
+
+  // Fetch student profile to get full name for resume
+  useEffect(() => {
+    studentApi.getProfile().then((res: any) => {
+      const profile = res?.data || res;
+      if (profile?.fullName) setStudentName(profile.fullName);
+    }).catch(() => {});
+  }, []);
 
   const handleSubmit = async () => {
     if (!form.phone) return setError("Phone number is required");
@@ -73,21 +83,50 @@ export default function StudentOnboarding() {
 
       // Handle resume
       if (hasResume && resumeFile) {
-        // Upload resume file
-        const formData = new FormData();
-        formData.append("photo", resumeFile);
-        // Use the existing profile photo upload as a workaround, or handle resume separately
+        // Upload resume file - store as drive link for now
+        await studentApi.updateProfile({
+          resumeLink: resumeFile.name,
+        });
       }
 
-      if (!hasResume) {
-        // Auto-generate resume link by saving profile data
-        await studentApi.updateProfile({
-          resumeLink: 'auto-generated',
-          profileData: {
+      if (hasResume === false) {
+        // Auto-generate resume PDF and download it
+        try {
+          const pdfBlob = await generateResumePdf({
+            fullName: studentName || user?.email?.split("@")[0] || "Student",
+            email: user?.email || "",
+            phone: form.phone,
+            gender: form.gender,
+            category: form.category,
+            dateOfBirth: form.dateOfBirth,
+            tenthPercent: form.tenthPercent ? Number(form.tenthPercent) : undefined,
+            tenthBoard: form.tenthBoard,
+            twelfthPercent: form.twelfthPercent ? Number(form.twelfthPercent) : undefined,
+            twelfthBoard: form.twelfthBoard,
+            cgpa: form.cgpa ? Number(form.cgpa) : undefined,
+            backlogs: form.backlogs ? Number(form.backlogs) : undefined,
             skills: form.skills,
             aboutMe: form.aboutMe,
-          },
-        });
+          });
+          downloadResumePdf(pdfBlob, `Resume_${Date.now()}.pdf`);
+          await studentApi.updateProfile({
+            resumeLink: "auto-generated",
+            profileData: {
+              skills: form.skills,
+              aboutMe: form.aboutMe,
+            },
+          });
+        } catch (pdfErr) {
+          console.warn("Resume generation failed:", pdfErr);
+          // Still continue even if PDF generation fails
+          await studentApi.updateProfile({
+            resumeLink: "auto-generated",
+            profileData: {
+              skills: form.skills,
+              aboutMe: form.aboutMe,
+            },
+          });
+        }
       }
 
       router.push("/student/dashboard");
