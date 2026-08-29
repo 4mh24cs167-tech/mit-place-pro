@@ -10,7 +10,8 @@ import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
 import { MeetingAssignment } from '../entities/round-meeting.entity';
-import { UpdateProfileDto, ApplyJobDto } from './dto/student.dto';
+import { StudentEducation, QualificationType } from '../entities/student-education.entity';
+import { UpdateProfileDto, ApplyJobDto, CreateEducationDto, UpdateEducationDto } from './dto/student.dto';
 
 @Injectable()
 export class StudentService {
@@ -26,6 +27,7 @@ export class StudentService {
     @InjectRepository(DriveRegistration) private readonly driveRegRepo: Repository<DriveRegistration>,
     @InjectRepository(DriveSlot) private readonly driveSlotRepo: Repository<DriveSlot>,
     @InjectRepository(MeetingAssignment) private readonly meetingAssignmentRepo: Repository<MeetingAssignment>,
+    @InjectRepository(StudentEducation) private readonly educationRepo: Repository<StudentEducation>,
   ) {}
 
   // ─── Profile ────────────────────────────────────
@@ -627,5 +629,196 @@ export class StudentService {
       meetingStatus: a.roundMeeting?.status,
       createdAt: a.createdAt,
     }));
+  }
+
+  // ─── Education CRUD ────────────────────────────────
+  private async getStudentByUserId(userId: string): Promise<Student> {
+    const student = await this.studentRepo.findOne({ where: { userId } });
+    if (!student) throw new NotFoundException('Student profile not found');
+    return student;
+  }
+
+  async listEducations(userId: string) {
+    const student = await this.getStudentByUserId(userId);
+    return this.educationRepo.find({
+      where: { studentId: student.id },
+      order: { createdAt: 'ASC' },
+      select: ['id', 'qualificationType', 'courseName', 'collegeName', 'university', 'board', 'stream',
+               'specialization', 'registrationNumber', 'startYear', 'passingYear', 'percentage', 'cgpa',
+               'documentDriveUrl', 'documentFileName', 'documentFileType', 'createdAt', 'updatedAt'],
+    });
+  }
+
+  async addEducation(userId: string, dto: CreateEducationDto) {
+    const student = await this.getStudentByUserId(userId);
+    const qualType = dto.qualificationType.toUpperCase() as QualificationType;
+
+    // Validate qualification type
+    if (!Object.values(QualificationType).includes(qualType)) {
+      throw new BadRequestException(`Invalid qualification type: ${dto.qualificationType}`);
+    }
+
+    // Check duplicate
+    const existing = await this.educationRepo.findOne({
+      where: { studentId: student.id, qualificationType: qualType },
+    });
+    if (existing) throw new ConflictException(`${qualType} qualification already exists`);
+
+    // Dependency validation
+    const existingQuals = await this.educationRepo.find({ where: { studentId: student.id } });
+    const existingTypes = existingQuals.map(e => e.qualificationType);
+
+    if (qualType === QualificationType.UG) {
+      if (!existingTypes.includes(QualificationType.SSLC)) {
+        throw new BadRequestException('UG qualification requires SSLC details. Please add SSLC first.');
+      }
+      if (!existingTypes.includes(QualificationType.PUC) && !existingTypes.includes(QualificationType.DIPLOMA)) {
+        throw new BadRequestException('UG qualification requires PUC or Diploma details. Please add PUC or Diploma first.');
+      }
+    }
+
+    if (qualType === QualificationType.PG) {
+      if (!existingTypes.includes(QualificationType.SSLC)) {
+        throw new BadRequestException('PG qualification requires SSLC details. Please add SSLC first.');
+      }
+      if (!existingTypes.includes(QualificationType.PUC) && !existingTypes.includes(QualificationType.DIPLOMA)) {
+        throw new BadRequestException('PG qualification requires PUC or Diploma details. Please add PUC or Diploma first.');
+      }
+      if (!existingTypes.includes(QualificationType.UG)) {
+        throw new BadRequestException('PG qualification requires UG details. Please add UG first.');
+      }
+    }
+
+    // College name mandatory for UG/PG
+    if ((qualType === QualificationType.UG || qualType === QualificationType.PG) && !dto.collegeName) {
+      throw new BadRequestException(`College name is mandatory for ${qualType} qualification.`);
+    }
+
+    const record = this.educationRepo.create({
+      studentId: student.id,
+      qualificationType: qualType,
+      courseName: dto.courseName || null,
+      collegeName: dto.collegeName || null,
+      university: dto.university || null,
+      board: dto.board || null,
+      stream: dto.stream || null,
+      specialization: dto.specialization || null,
+      registrationNumber: dto.registrationNumber || null,
+      startYear: dto.startYear || null,
+      passingYear: dto.passingYear || null,
+      percentage: dto.percentage || null,
+      cgpa: dto.cgpa || null,
+      documentDriveUrl: dto.documentDriveUrl || null,
+    });
+
+    return this.educationRepo.save(record);
+  }
+
+  async updateEducation(userId: string, eduId: string, dto: UpdateEducationDto) {
+    const student = await this.getStudentByUserId(userId);
+    const record = await this.educationRepo.findOne({
+      where: { id: eduId, studentId: student.id },
+    });
+    if (!record) throw new NotFoundException('Education record not found');
+
+    // College name mandatory for UG/PG
+    if ((record.qualificationType === QualificationType.UG || record.qualificationType === QualificationType.PG)) {
+      if (dto.collegeName !== undefined && !dto.collegeName) {
+        throw new BadRequestException(`College name is mandatory for ${record.qualificationType} qualification.`);
+      }
+    }
+
+    Object.assign(record, {
+      ...(dto.courseName !== undefined && { courseName: dto.courseName || null }),
+      ...(dto.collegeName !== undefined && { collegeName: dto.collegeName || null }),
+      ...(dto.university !== undefined && { university: dto.university || null }),
+      ...(dto.board !== undefined && { board: dto.board || null }),
+      ...(dto.stream !== undefined && { stream: dto.stream || null }),
+      ...(dto.specialization !== undefined && { specialization: dto.specialization || null }),
+      ...(dto.registrationNumber !== undefined && { registrationNumber: dto.registrationNumber || null }),
+      ...(dto.startYear !== undefined && { startYear: dto.startYear || null }),
+      ...(dto.passingYear !== undefined && { passingYear: dto.passingYear || null }),
+      ...(dto.percentage !== undefined && { percentage: dto.percentage || null }),
+      ...(dto.cgpa !== undefined && { cgpa: dto.cgpa || null }),
+      ...(dto.documentDriveUrl !== undefined && { documentDriveUrl: dto.documentDriveUrl || null }),
+    });
+
+    return this.educationRepo.save(record);
+  }
+
+  async deleteEducation(userId: string, eduId: string) {
+    const student = await this.getStudentByUserId(userId);
+    const record = await this.educationRepo.findOne({
+      where: { id: eduId, studentId: student.id },
+    });
+    if (!record) throw new NotFoundException('Education record not found');
+
+    // Dependency check: prevent removal if higher quals depend on it
+    const existingQuals = await this.educationRepo.find({ where: { studentId: student.id } });
+    const existingTypes = existingQuals.map(e => e.qualificationType);
+    const qualType = record.qualificationType;
+
+    if (qualType === QualificationType.SSLC) {
+      if (existingTypes.includes(QualificationType.UG)) {
+        throw new BadRequestException('Cannot remove SSLC while UG qualification exists. Remove UG first.');
+      }
+      if (existingTypes.includes(QualificationType.PG)) {
+        throw new BadRequestException('Cannot remove SSLC while PG qualification exists. Remove PG first.');
+      }
+    }
+
+    if (qualType === QualificationType.PUC || qualType === QualificationType.DIPLOMA) {
+      const otherPath = qualType === QualificationType.PUC ? QualificationType.DIPLOMA : QualificationType.PUC;
+      if (existingTypes.includes(QualificationType.UG) && !existingTypes.includes(otherPath)) {
+        throw new BadRequestException(`Cannot remove ${qualType} while UG qualification exists and no alternative (${otherPath}) is present. Remove UG first.`);
+      }
+    }
+
+    if (qualType === QualificationType.UG) {
+      if (existingTypes.includes(QualificationType.PG)) {
+        throw new BadRequestException('Cannot remove UG while PG qualification exists. Remove PG first.');
+      }
+    }
+
+    await this.educationRepo.remove(record);
+    return { deleted: true };
+  }
+
+  async uploadEducationDocument(userId: string, eduId: string, file: Express.Multer.File) {
+    const student = await this.getStudentByUserId(userId);
+    const record = await this.educationRepo.findOne({
+      where: { id: eduId, studentId: student.id },
+    });
+    if (!record) throw new NotFoundException('Education record not found');
+
+    // Validate file type
+    const allowedMimes = ['image/jpeg', 'application/pdf'];
+    const allowedExts = ['jpg', 'jpeg', 'pdf'];
+    const ext = file.originalname.split('.').pop()?.toLowerCase() || '';
+
+    if (!allowedMimes.includes(file.mimetype) || !allowedExts.includes(ext)) {
+      throw new BadRequestException('Unsupported file format. Please upload a JPG, JPEG, or PDF file.');
+    }
+
+    // 2MB limit
+    if (file.size > 2 * 1024 * 1024) {
+      throw new BadRequestException('File size exceeds 2MB limit.');
+    }
+
+    record.documentFileName = file.originalname;
+    record.documentFileType = file.mimetype;
+    record.documentFileData = file.buffer;
+
+    await this.educationRepo.save(record);
+    return { fileName: file.originalname, fileType: file.mimetype, uploaded: true };
+  }
+
+  async getEducationDocument(userId: string, eduId: string) {
+    const student = await this.getStudentByUserId(userId);
+    const record = await this.educationRepo.findOne({
+      where: { id: eduId, studentId: student.id },
+    });
+    if (!record || !record.documentFileData) throw new NotFoundException('Document not found');
+    return { data: record.documentFileData, type: record.documentFileType, name: record.documentFileName };
   }
 }

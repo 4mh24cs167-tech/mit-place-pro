@@ -357,6 +357,20 @@ export const studentApi = {
   getInternshipPermissions: () => apiFetch('/api/v1/student/internship-permissions'),
   getMyInternshipPermissions: () => apiFetch('/api/v1/student/internship-permissions'),
   getInternshipPermission: (id: string) => apiFetch(`/api/v1/student/internship-permissions/${id}`),
+  // Education
+  getEducations: () => apiFetch('/api/v1/student/education'),
+  addEducation: (data: Record<string, unknown>) => apiFetch('/api/v1/student/education', { method: 'POST', body: data }),
+  updateEducation: (id: string, data: Record<string, unknown>) => apiFetch(`/api/v1/student/education/${id}`, { method: 'PATCH', body: data }),
+  deleteEducation: (id: string) => apiFetch(`/api/v1/student/education/${id}`, { method: 'DELETE' }),
+  uploadEducationDocument: (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append('document', file);
+    return apiFetch(`/api/v1/student/education/${id}/document`, { method: 'POST', body: formData, isFormData: true });
+  },
+  getEducationDocumentUrl: (id: string) => {
+    const base = typeof window !== 'undefined' ? localStorage.getItem('api_base') || '' : '';
+    return `${base}/api/v1/student/education/${id}/document`;
+  },
 };
 
 // ─── Company ─────────────────────────────────────

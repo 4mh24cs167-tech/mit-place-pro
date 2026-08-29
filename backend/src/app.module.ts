@@ -29,6 +29,7 @@ import { EmailLog } from './entities';
 import { StudentDriveFeedback, CompanyDriveFeedback } from './entities';
 import { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule, AssessmentSubItem, AssessmentCredential } from './entities';
 import { InternshipPermission } from './entities';
+import { StudentEducation } from './entities';
 
 const entities = [
   User,
@@ -61,6 +62,7 @@ const entities = [
   AssessmentSubItem,
   AssessmentCredential,
   InternshipPermission,
+  StudentEducation,
 ];
 
 @Module({

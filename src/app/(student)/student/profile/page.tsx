@@ -3,6 +3,7 @@
 import Header from "@/components/layout/Header";
 import { cn } from "@/lib/utils";
 import { studentApi } from "@/lib/api";
+import EducationManager from "@/components/education/EducationManager";
 import {
   User, Mail, Phone, Calendar, GraduationCap, Award, Globe, Edit3,
   ExternalLink, Loader2, CheckCircle2, AlertCircle, Save, ShieldCheck,
@@ -568,9 +569,9 @@ export default function StudentProfilePage() {
           {/* ─── LEFT COLUMN (2/3) ─── */}
           <div className="lg:col-span-2 space-y-5">
 
-            {/* Education */}
+            {/* Education & Qualifications */}
             <div className="i-card p-5 sm:p-6">
-              <SectionHeader icon={GraduationCap} title="Education" />
+              <SectionHeader icon={GraduationCap} title="Education & Qualifications" />
               <div className="space-y-4">
                 {/* Current Degree */}
                 <div className="flex gap-4 p-4 rounded-xl bg-gradient-to-r from-indigo-50/50 to-violet-50/50 border border-indigo-100/60">
@@ -604,154 +605,8 @@ export default function StudentProfilePage() {
                   </div>
                 </div>
 
-                {/* PG: Undergraduate Education */}
-                {profile.departmentType === 'PG' && (
-                  <div className="flex gap-4 p-4 rounded-xl bg-gradient-to-r from-violet-50/50 to-purple-50/50 border border-violet-100/60">
-                    <div className="p-2.5 rounded-xl bg-violet-100 h-fit">
-                      <Sparkles className="w-5 h-5 text-violet-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-foreground">Undergraduate Education</p>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Completed UG Degree</p>
-                      {editing ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
-                          <InlineInput label="UG Degree" value={form.ugDegreeName} onChange={(v) => setField("ugDegreeName", v)} editing={editing} placeholder="B.Tech CSE" />
-                          <InlineInput label="University" value={form.ugUniversity} onChange={(v) => setField("ugUniversity", v)} editing={editing} placeholder="VTU" />
-                          <InlineInput label="CGPA / %" value={form.ugCgpa} onChange={(v) => setField("ugCgpa", v)} editing={editing} type="number" placeholder="8.5" />
-                          <InlineInput label="Year of Passing" value={form.ugYearOfPassing} onChange={(v) => setField("ugYearOfPassing", v)} editing={editing} type="number" placeholder="2024" />
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                          {form.ugDegreeName && <span className="text-xs font-semibold text-violet-600 bg-violet-50 px-2.5 py-1 rounded-full">{form.ugDegreeName}</span>}
-                          {form.ugUniversity && <span className="text-xs text-muted-foreground">{form.ugUniversity}</span>}
-                          {form.ugCgpa && <span className="text-xs text-muted-foreground">· CGPA {form.ugCgpa}</span>}
-                          {form.ugYearOfPassing && <span className="text-xs text-muted-foreground">· {form.ugYearOfPassing}</span>}
-                          {!form.ugDegreeName && !form.ugUniversity && (
-                            <span className="text-xs text-muted-foreground/50 italic">UG details not added yet</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* 12th / Diploma Toggle + Section */}
-                <div className="flex gap-4 p-4 rounded-xl bg-white border border-border/40">
-                  <div className="p-2.5 rounded-xl bg-violet-50 h-fit">
-                    <GraduationCap className="w-5 h-5 text-violet-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    {/* Toggle: 12th / Diploma */}
-                    <div className="flex items-center gap-3 mb-1">
-                      <p className="text-sm font-bold text-foreground">
-                        {form.qualificationType === "Diploma" ? "Diploma" : "12th Standard (PUC / Higher Secondary)"}
-                      </p>
-                      {editing && (
-                        <div className="flex rounded-lg border border-border overflow-hidden text-[10px] font-semibold">
-                          <button
-                            onClick={() => { setField("qualificationType", "12th"); setField("diplomaBranch", ""); }}
-                            className={cn("px-3 py-1.5 transition-colors",
-                              form.qualificationType === "12th" ? "bg-violet-600 text-white" : "bg-white text-muted-foreground hover:bg-muted/50"
-                            )}
-                          >12th / PUC</button>
-                          <button
-                            onClick={() => setField("qualificationType", "Diploma")}
-                            className={cn("px-3 py-1.5 transition-colors",
-                              form.qualificationType === "Diploma" ? "bg-violet-600 text-white" : "bg-white text-muted-foreground hover:bg-muted/50"
-                            )}
-                          >Diploma</button>
-                        </div>
-                      )}
-                    </div>
-
-                    {editing ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
-                        <InlineInput label="Percentage" value={form.twelfthPercent} onChange={(v) => setField("twelfthPercent", v)} editing={editing} type="number" required placeholder="88.6" />
-                        <InlineSelect
-                          label={form.qualificationType === "Diploma" ? "Board" : "Board"}
-                          value={form.twelfthBoard}
-                          onChange={(v) => setField("twelfthBoard", v)}
-                          editing={editing}
-                          options={form.qualificationType === "Diploma" ? DIPLOMA_BOARD_OPTIONS : BOARD_OPTIONS}
-                        />
-                        <InlineInput label="Year" value={form.twelfthYear} onChange={(v) => setField("twelfthYear", v)} editing={editing} type="number" placeholder="2022" />
-                        {form.qualificationType === "Diploma" ? (
-                          <InlineSelect label="Branch" value={form.diplomaBranch} onChange={(v) => setField("diplomaBranch", v)} editing={editing} options={DIPLOMA_BRANCH_OPTIONS} />
-                        ) : (
-                          <InlineSelect label="Stream" value={form.twelfthStream} onChange={(v) => setField("twelfthStream", v)} editing={editing} options={STREAM_OPTIONS} />
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                        {form.qualificationType === "Diploma" && <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">DIPLOMA</span>}
-                        {form.twelfthPercent && <span className="text-xs font-semibold text-violet-600 bg-violet-50 px-2.5 py-1 rounded-full">{form.twelfthPercent}%</span>}
-                        {form.twelfthBoard && <span className="text-xs text-muted-foreground">{form.twelfthBoard}</span>}
-                        {form.twelfthYear && <span className="text-xs text-muted-foreground">· {form.twelfthYear}</span>}
-                        {form.qualificationType === "Diploma" && form.diplomaBranch && <span className="text-xs text-muted-foreground">· {form.diplomaBranch}</span>}
-                        {form.qualificationType !== "Diploma" && form.twelfthStream && <span className="text-xs text-muted-foreground">· {form.twelfthStream}</span>}
-                      </div>
-                    )}
-                    {/* Marks Card Link + Upload */}
-                    {editing ? (
-                      <div className="mt-3 space-y-2">
-                        <InlineInput label={form.qualificationType === "Diploma" ? "Diploma Marks Card (Drive Link)" : "12th Marks Card (Drive Link)"} value={form.twelfthMarksCardLink}
-                          onChange={(v) => setField("twelfthMarksCardLink", v)} editing={editing}
-                          placeholder="https://drive.google.com/..." />
-                        <label className="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 border-dashed border-border/60 hover:border-indigo-400 cursor-pointer transition-colors">
-                          <Upload className="w-4 h-4 text-muted-foreground shrink-0" />
-                          <span className="text-xs text-muted-foreground">Or upload file (JPG/PDF)</span>
-                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={() => showToast("success", "File selected! Drive link preferred for now.")} />
-                        </label>
-                      </div>
-                    ) : form.twelfthMarksCardLink ? (
-                      <a href={form.twelfthMarksCardLink} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 mt-2">
-                        <FileText className="w-3.5 h-3.5" />View Marks Card<ExternalLink className="w-3 h-3" />
-                      </a>
-                    ) : null}
-                  </div>
-                </div>
-
-                {/* 10th Standard */}
-                <div className="flex gap-4 p-4 rounded-xl bg-white border border-border/40">
-                  <div className="p-2.5 rounded-xl bg-emerald-50 h-fit">
-                    <GraduationCap className="w-5 h-5 text-emerald-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-foreground">10th Standard (SSLC)</p>
-                    {editing ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-3">
-                        <InlineInput label="Percentage" value={form.tenthPercent} onChange={(v) => setField("tenthPercent", v)} editing={editing} type="number" required placeholder="92.4" />
-                        <InlineSelect label="Board" value={form.tenthBoard} onChange={(v) => setField("tenthBoard", v)} editing={editing} options={BOARD_OPTIONS} />
-                        <InlineInput label="Year" value={form.tenthYear} onChange={(v) => setField("tenthYear", v)} editing={editing} type="number" placeholder="2020" />
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                        {form.tenthPercent && <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">{form.tenthPercent}%</span>}
-                        {form.tenthBoard && <span className="text-xs text-muted-foreground">{form.tenthBoard}</span>}
-                        {form.tenthYear && <span className="text-xs text-muted-foreground">· {form.tenthYear}</span>}
-                      </div>
-                    )}
-                    {/* 10th Marks Card Link + Upload */}
-                    {editing ? (
-                      <div className="mt-3 space-y-2">
-                        <InlineInput label="10th Marks Card (Drive Link)" value={form.tenthMarksCardLink}
-                          onChange={(v) => setField("tenthMarksCardLink", v)} editing={editing}
-                          placeholder="https://drive.google.com/..." />
-                        <label className="flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 border-dashed border-border/60 hover:border-indigo-400 cursor-pointer transition-colors">
-                          <Upload className="w-4 h-4 text-muted-foreground shrink-0" />
-                          <span className="text-xs text-muted-foreground">Or upload file (JPG/PDF)</span>
-                          <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={() => showToast("success", "File selected! Drive link preferred for now.")} />
-                        </label>
-                      </div>
-                    ) : form.tenthMarksCardLink ? (
-                      <a href={form.tenthMarksCardLink} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 mt-2">
-                        <FileText className="w-3.5 h-3.5" />View Marks Card<ExternalLink className="w-3 h-3" />
-                      </a>
-                    ) : null}
-                  </div>
-                </div>
+                {/* Dynamic Education Qualifications */}
+                <EducationManager editing={editing} />
               </div>
             </div>
 

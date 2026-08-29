@@ -164,3 +164,36 @@ export class ApplyJobDto {
   @IsString()
   cvId?: string;
 }
+
+export class CreateEducationDto {
+  @IsString()
+  qualificationType: string;
+
+  @IsOptional() @IsString() courseName?: string;
+  @IsOptional() @IsString() collegeName?: string;
+  @IsOptional() @IsString() university?: string;
+  @IsOptional() @IsString() board?: string;
+  @IsOptional() @IsString() stream?: string;
+  @IsOptional() @IsString() specialization?: string;
+  @IsOptional() @IsString() registrationNumber?: string;
+  @IsOptional() @IsNumber() startYear?: number;
+  @IsOptional() @IsNumber() passingYear?: number;
+  @IsOptional() @IsNumber() percentage?: number;
+  @IsOptional() @IsNumber() cgpa?: number;
+  @IsOptional() @IsString() documentDriveUrl?: string;
+}
+
+export class UpdateEducationDto {
+  @IsOptional() @IsString() courseName?: string;
+  @IsOptional() @IsString() collegeName?: string;
+  @IsOptional() @IsString() university?: string;
+  @IsOptional() @IsString() board?: string;
+  @IsOptional() @IsString() stream?: string;
+  @IsOptional() @IsString() specialization?: string;
+  @IsOptional() @IsString() registrationNumber?: string;
+  @IsOptional() @IsNumber() startYear?: number;
+  @IsOptional() @IsNumber() passingYear?: number;
+  @IsOptional() @IsNumber() percentage?: number;
+  @IsOptional() @IsNumber() cgpa?: number;
+  @IsOptional() @IsString() documentDriveUrl?: string;
+}

@@ -6,6 +6,7 @@ import { studentApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { generateResumePdf, downloadResumePdf } from "@/lib/resume-generator";
 import { User, GraduationCap, FileText, Loader2, Upload, CheckCircle2, Plus, Trash2, AlertCircle } from "lucide-react";
+import EducationManager from "@/components/education/EducationManager";
 
 /* ═══════════════════════════════════════════════════ */
 /* Types                                               */
@@ -345,7 +346,7 @@ export default function StudentOnboarding() {
           {/* ══════════════════════════════════════════ */}
           {step === 2 && (
             <div className="space-y-5">
-              <h2 className="text-lg font-semibold">Education Details</h2>
+              <h2 className="text-lg font-semibold">Education & Qualifications</h2>
 
               {/* Current UG Details (always shown) */}
               <div className="p-4 rounded-xl bg-indigo-50/50 border border-indigo-100">
@@ -366,34 +367,8 @@ export default function StudentOnboarding() {
                 </div>
               </div>
 
-              {/* Add Education Dropdown */}
-              <div className="flex items-center gap-3">
-                <label className="text-sm font-medium">Add Qualification:</label>
-                <select
-                  value=""
-                  onChange={(e) => { if (e.target.value) addEducation(e.target.value as EduLevel); }}
-                  className={`${inputClass} max-w-xs`}
-                  disabled={availableLevels.length === 0}
-                >
-                  <option value="">Select qualification...</option>
-                  {availableLevels.map((l) => (
-                    <option key={l} value={l}>{EDU_LABELS[l]}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Prerequisite hints */}
-              {educations.length === 0 && (
-                <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-xs">
-                  <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                  <span>Start by adding <strong>SSLC</strong>. You need SSLC before adding PUC/Diploma, and PUC/Diploma + SSLC before adding UG, and UG before PG.</span>
-                </div>
-              )}
-
-              {/* Education Cards */}
-              {educations.map((edu) => (
-                <EducationCard key={edu.level} edu={edu} updateEdu={updateEdu} removeEducation={removeEducation} />
-              ))}
+              {/* Dynamic Education Manager */}
+              <EducationManager editing={true} />
 
               <div className="flex justify-between">
                 <button onClick={() => setStep(1)} className="px-6 py-2.5 rounded-xl border border-border text-foreground font-medium hover:bg-secondary">

@@ -1,13 +1,14 @@
-import { Controller, Get, Patch, Post, Body, Param, Query, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Delete, Body, Param, Query, Res, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StudentService } from './student.service';
 import { UploadService } from '../upload/upload.service';
 import { Auth, CurrentUser } from '../auth/auth.decorators';
 import { UserRole } from '../entities/user.entity';
-import { UpdateProfileDto, ApplyJobDto } from './dto/student.dto';
+import { UpdateProfileDto, ApplyJobDto, CreateEducationDto, UpdateEducationDto } from './dto/student.dto';
 import { FeedbackService } from '../admin/feedback.service';
 import { AssessmentService } from '../admin/assessment.service';
 import { InternshipService } from '../admin/internship.service';
+import { Response } from 'express';
 
 @Controller('api/v1/student')
 @Auth(UserRole.STUDENT)
@@ -195,5 +196,53 @@ export class StudentController {
   ) {
     const data = await this.internshipService.getFormById(id);
     return { success: true, data };
+  }
+
+  // ─── Education ────────────────────────────────────
+  @Get('education')
+  async listEducations(@CurrentUser('id') userId: string) {
+    const data = await this.studentService.listEducations(userId);
+    return { success: true, data };
+  }
+
+  @Post('education')
+  async addEducation(@CurrentUser('id') userId: string, @Body() dto: CreateEducationDto) {
+    const data = await this.studentService.addEducation(userId, dto);
+    return { success: true, data };
+  }
+
+  @Patch('education/:id')
+  async updateEducation(@CurrentUser('id') userId: string, @Param('id') id: string, @Body() dto: UpdateEducationDto) {
+    const data = await this.studentService.updateEducation(userId, id, dto);
+    return { success: true, data };
+  }
+
+  @Delete('education/:id')
+  async deleteEducation(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    const data = await this.studentService.deleteEducation(userId, id);
+    return { success: true, data };
+  }
+
+  @Post('education/:id/document')
+  @UseInterceptors(FileInterceptor('document', { limits: { fileSize: 2 * 1024 * 1024 } }))
+  async uploadEducationDocument(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('No file uploaded');
+    const data = await this.studentService.uploadEducationDocument(userId, id, file);
+    return { success: true, data };
+  }
+
+  @Get('education/:id/document')
+  async getEducationDocument(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ) {
+    const doc = await this.studentService.getEducationDocument(userId, id);
+    res.set({ 'Content-Type': doc.type, 'Content-Disposition': `inline; filename="${doc.name}"` });
+    res.send(doc.data);
   }
 }
