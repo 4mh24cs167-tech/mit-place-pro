@@ -1,9 +1,22 @@
 "use client";
 
 /**
- * Auto-generates a professional PDF resume from student profile data
+ * Auto-generates a professional ATS-friendly PDF resume from student profile data
  * using html2pdf.js (already installed in the project).
  */
+
+interface EducationRecord {
+  qualificationType: string;
+  collegeName?: string;
+  courseName?: string;
+  university?: string;
+  board?: string;
+  stream?: string;
+  specialization?: string;
+  percentage?: number;
+  cgpa?: number;
+  passingYear?: number;
+}
 
 interface ResumeData {
   fullName: string;
@@ -12,20 +25,30 @@ interface ResumeData {
   gender?: string;
   category?: string;
   dateOfBirth?: string;
-  tenthPercent?: number;
-  tenthBoard?: string;
-  twelfthPercent?: number;
-  twelfthBoard?: string;
-  cgpa?: number;
-  backlogs?: number;
-  skills?: string;
+  skills?: string[] | string;
+  certifications?: string[];
+  languages?: string[];
   aboutMe?: string;
+  department?: string;
+  educationRecords?: EducationRecord[];
+  linkedin?: string;
+  github?: string;
 }
 
+const QUAL_ORDER: Record<string, number> = { PG: 1, UG: 2, DIPLOMA: 3, PUC: 4, SSLC: 5 };
+const QUAL_LABELS: Record<string, string> = {
+  SSLC: "10th / SSLC", PUC: "12th / PUC", DIPLOMA: "Diploma", UG: "Undergraduate", PG: "Postgraduate",
+};
+
 function buildResumeHtml(data: ResumeData): string {
-  const skillsList = data.skills
+  const skillsList = Array.isArray(data.skills)
+    ? data.skills
+    : data.skills
     ? data.skills.split(",").map((s) => s.trim()).filter(Boolean)
     : [];
+
+  const eduRecords = (data.educationRecords || [])
+    .sort((a, b) => (QUAL_ORDER[a.qualificationType] || 9) - (QUAL_ORDER[b.qualificationType] || 9));
 
   return `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 40px; color: #1a1a2e;">
@@ -35,17 +58,21 @@ function buildResumeHtml(data: ResumeData): string {
           ${data.fullName || "Student"}
         </h1>
         <div style="margin-top: 8px; font-size: 13px; color: #555;">
-          ${[data.email, data.phone, data.gender].filter(Boolean).join(" • ")}
+          ${[data.email, data.phone].filter(Boolean).join(" • ")}
         </div>
+        ${data.linkedin || data.github ? `
+        <div style="margin-top: 4px; font-size: 12px; color: #666;">
+          ${data.linkedin ? `LinkedIn: ${data.linkedin}` : ""}${data.linkedin && data.github ? " • " : ""}${data.github ? `GitHub: ${data.github}` : ""}
+        </div>` : ""}
       </div>
 
       ${
         data.aboutMe
           ? `
-      <!-- About -->
+      <!-- Career Objective -->
       <div style="margin-bottom: 24px;">
         <h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">
-          About Me
+          Career Objective
         </h2>
         <p style="font-size: 13px; line-height: 1.6; color: #444; margin: 0;">
           ${data.aboutMe}
@@ -55,40 +82,36 @@ function buildResumeHtml(data: ResumeData): string {
       }
 
       <!-- Education -->
+      ${eduRecords.length > 0 ? `
       <div style="margin-bottom: 24px;">
         <h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">
           Education
         </h2>
         <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
-          ${
-            data.cgpa
-              ? `
+          ${eduRecords.map(edu => {
+            const label = QUAL_LABELS[edu.qualificationType] || edu.qualificationType;
+            const institution = edu.collegeName || "";
+            const details = [
+              edu.university || edu.board || "",
+              edu.stream || edu.specialization || edu.courseName || "",
+            ].filter(Boolean).join(" · ");
+            const score = edu.cgpa ? `CGPA: ${edu.cgpa}` : edu.percentage ? `${edu.percentage}%` : "";
+            const year = edu.passingYear ? `${edu.passingYear}` : "";
+            return `
           <tr>
-            <td style="padding: 6px 0; font-weight: 600;">Degree (Current)</td>
-            <td style="padding: 6px 0; text-align: right;">CGPA: ${data.cgpa}${data.backlogs ? ` | Backlogs: ${data.backlogs}` : ""}</td>
-          </tr>`
-              : ""
-          }
-          ${
-            data.twelfthPercent
-              ? `
-          <tr>
-            <td style="padding: 6px 0; font-weight: 600;">12th / PUC${data.twelfthBoard ? ` (${data.twelfthBoard})` : ""}</td>
-            <td style="padding: 6px 0; text-align: right;">${data.twelfthPercent}%</td>
-          </tr>`
-              : ""
-          }
-          ${
-            data.tenthPercent
-              ? `
-          <tr>
-            <td style="padding: 6px 0; font-weight: 600;">10th / SSLC${data.tenthBoard ? ` (${data.tenthBoard})` : ""}</td>
-            <td style="padding: 6px 0; text-align: right;">${data.tenthPercent}%</td>
-          </tr>`
-              : ""
-          }
+            <td style="padding: 8px 0; vertical-align: top;">
+              <div style="font-weight: 600;">${label}</div>
+              ${institution ? `<div style="font-size: 12px; color: #666;">${institution}</div>` : ""}
+              ${details ? `<div style="font-size: 11px; color: #888;">${details}</div>` : ""}
+            </td>
+            <td style="padding: 8px 0; text-align: right; vertical-align: top; white-space: nowrap;">
+              ${score ? `<div style="font-weight: 600;">${score}</div>` : ""}
+              ${year ? `<div style="font-size: 11px; color: #888;">${year}</div>` : ""}
+            </td>
+          </tr>`;
+          }).join("")}
         </table>
-      </div>
+      </div>` : ""}
 
       ${
         skillsList.length > 0
@@ -111,14 +134,45 @@ function buildResumeHtml(data: ResumeData): string {
       }
 
       ${
-        data.category
+        (data.certifications || []).length > 0
+          ? `
+      <!-- Certifications -->
+      <div style="margin-bottom: 24px;">
+        <h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">
+          Certifications
+        </h2>
+        <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #444;">
+          ${(data.certifications || []).map(c => `<li style="padding: 3px 0;">${c}</li>`).join("")}
+        </ul>
+      </div>`
+          : ""
+      }
+
+      ${
+        (data.languages || []).length > 0
+          ? `
+      <!-- Languages -->
+      <div style="margin-bottom: 24px;">
+        <h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">
+          Languages Known
+        </h2>
+        <div style="font-size: 13px; color: #444;">
+          ${(data.languages || []).join(", ")}
+        </div>
+      </div>`
+          : ""
+      }
+
+      ${
+        data.category || data.department
           ? `
       <!-- Additional Info -->
       <div style="margin-bottom: 24px;">
         <h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">
           Additional Information
         </h2>
-        <p style="font-size: 13px; color: #444; margin: 0;">Category: ${data.category}</p>
+        ${data.department ? `<p style="font-size: 13px; color: #444; margin: 0 0 4px;">Department: ${data.department}</p>` : ""}
+        ${data.category ? `<p style="font-size: 13px; color: #444; margin: 0;">Category: ${data.category}</p>` : ""}
       </div>`
           : ""
       }
@@ -134,12 +188,10 @@ function buildResumeHtml(data: ResumeData): string {
 }
 
 export async function generateResumePdf(data: ResumeData): Promise<Blob> {
-  // Dynamic import html2pdf.js (client-side only)
   const html2pdf = (await import("html2pdf.js")).default;
 
   const html = buildResumeHtml(data);
 
-  // Create a temporary container
   const container = document.createElement("div");
   container.innerHTML = html;
   document.body.appendChild(container);
@@ -160,6 +212,10 @@ export async function generateResumePdf(data: ResumeData): Promise<Blob> {
   } finally {
     document.body.removeChild(container);
   }
+}
+
+export function previewResumeHtml(data: ResumeData): string {
+  return buildResumeHtml(data);
 }
 
 export function downloadResumePdf(blob: Blob, fileName: string) {

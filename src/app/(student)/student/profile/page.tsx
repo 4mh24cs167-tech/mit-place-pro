@@ -4,11 +4,12 @@ import Header from "@/components/layout/Header";
 import { cn } from "@/lib/utils";
 import { studentApi } from "@/lib/api";
 import EducationManager from "@/components/education/EducationManager";
+import { generateResumePdf, downloadResumePdf, previewResumeHtml } from "@/lib/resume-generator";
 import {
   User, Mail, Phone, Calendar, GraduationCap, Award, Globe, Edit3,
   ExternalLink, Loader2, CheckCircle2, AlertCircle, Save, ShieldCheck,
-  Code, Camera, X, Plus, FileText, Link2, GitBranch, MapPin, Upload,
-  BookOpen, Building2, Trophy, Sparkles, ChevronDown, ChevronUp,
+  Code, Camera, X, Plus, FileText, Link2, GitBranch, MapPin, Upload, Eye,
+  BookOpen, Building2, Trophy, Sparkles, ChevronDown, ChevronUp, Download,
 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
 
@@ -159,6 +160,9 @@ export default function StudentProfilePage() {
   const [newCert, setNewCert] = useState("");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [educationRecords, setEducationRecords] = useState<any[]>([]);
+  const [resumeChoice, setResumeChoice] = useState<"" | "yes" | "no">("");
+  const [resumePreviewHtml, setResumePreviewHtml] = useState("");
+  const [generatingResume, setGeneratingResume] = useState(false);
 
   const setField = (key: string, val: string) => setForm((p) => ({ ...p, [key]: val }));
 
@@ -703,27 +707,121 @@ export default function StudentProfilePage() {
               </div>
             </div>
 
-            {/* Documents & Links */}
-            <div className="i-card p-5 sm:p-6">
-              <SectionHeader icon={Link2} title="Documents & Links" />
-              <div className="space-y-3">
-                <InlineInput label="Resume (Drive Link)" value={form.resumeLink} onChange={(v) => setField("resumeLink", v)}
-                  editing={editing} placeholder="https://drive.google.com/..." />
 
-                {/* View links when not editing */}
-                {!editing && (
-                  <div className="space-y-2 pt-2 border-t border-border/40">
-                    {form.resumeLink && (
-                      <a href={form.resumeLink} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors group">
-                        <span className="flex items-center gap-2 text-xs font-medium text-foreground"><FileText className="w-4 h-4 text-indigo-500" />Resume</span>
-                        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-indigo-600 transition-colors" />
-                      </a>
+            {/* Resume */}
+            <div className="i-card p-5 sm:p-6">
+              <SectionHeader icon={FileText} title="Resume" />
+              <div className="space-y-4">
+                {/* Show existing resume link if saved */}
+                {form.resumeLink && !editing && (
+                  <a href={form.resumeLink} target="_blank" rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 rounded-xl bg-indigo-50/50 border border-indigo-100 hover:bg-indigo-50 transition-colors group">
+                    <span className="flex items-center gap-2 text-sm font-medium text-indigo-700"><FileText className="w-4 h-4" />View Resume</span>
+                    <ExternalLink className="w-4 h-4 text-indigo-400 group-hover:text-indigo-600" />
+                  </a>
+                )}
+
+                {editing && (
+                  <div className="space-y-4">
+                    <p className="text-sm font-medium text-foreground">Do you already have a resume?</p>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => { setResumeChoice("yes"); setResumePreviewHtml(""); }}
+                        className={cn("flex-1 py-3 px-4 rounded-xl border-2 text-sm font-semibold transition-all",
+                          resumeChoice === "yes" ? "border-indigo-500 bg-indigo-50 text-indigo-700" : "border-border hover:border-indigo-300 text-muted-foreground"
+                        )}
+                      >
+                        ✅ Yes, I have a Resume
+                      </button>
+                      <button
+                        onClick={() => setResumeChoice("no")}
+                        className={cn("flex-1 py-3 px-4 rounded-xl border-2 text-sm font-semibold transition-all",
+                          resumeChoice === "no" ? "border-violet-500 bg-violet-50 text-violet-700" : "border-border hover:border-violet-300 text-muted-foreground"
+                        )}
+                      >
+                        📝 No, Create a Resume for Me
+                      </button>
+                    </div>
+
+                    {/* YES path — upload or paste link */}
+                    {resumeChoice === "yes" && (
+                      <div className="space-y-3 p-4 rounded-xl bg-indigo-50/30 border border-indigo-100/50">
+                        <InlineInput label="Resume Link (Google Drive / URL)" value={form.resumeLink} onChange={(v) => setField("resumeLink", v)}
+                          editing={editing} placeholder="https://drive.google.com/..." />
+                        <p className="text-[10px] text-muted-foreground">Paste your resume link above. Accepted: PDF, DOC, DOCX</p>
+                      </div>
                     )}
-                    {!form.resumeLink && (
-                      <p className="text-xs text-muted-foreground/50 italic">No resume linked yet</p>
+
+                    {/* NO path — auto-generate */}
+                    {resumeChoice === "no" && (
+                      <div className="space-y-3 p-4 rounded-xl bg-violet-50/30 border border-violet-100/50">
+                        <p className="text-xs text-muted-foreground">
+                          We&apos;ll create a professional, ATS-friendly resume using your profile details — personal info, education, skills, certifications, and more.
+                        </p>
+
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => {
+                              const html = previewResumeHtml({
+                                fullName: form.fullName, email: profile?.user?.email || "", phone: form.phone,
+                                gender: form.gender, category: form.category, aboutMe: form.aboutMe,
+                                skills, certifications, department: profile?.department,
+                                educationRecords, linkedin: form.linkedin, github: form.github,
+                              });
+                              setResumePreviewHtml(html);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-violet-100 text-violet-700 text-xs font-semibold hover:bg-violet-200 transition-colors"
+                          >
+                            <Eye className="w-3.5 h-3.5" /> Preview Resume
+                          </button>
+
+                          <button
+                            disabled={generatingResume}
+                            onClick={async () => {
+                              setGeneratingResume(true);
+                              try {
+                                const blob = await generateResumePdf({
+                                  fullName: form.fullName, email: profile?.user?.email || "", phone: form.phone,
+                                  gender: form.gender, category: form.category, aboutMe: form.aboutMe,
+                                  skills, certifications, department: profile?.department,
+                                  educationRecords, linkedin: form.linkedin, github: form.github,
+                                });
+                                downloadResumePdf(blob, `${(form.fullName || "resume").replace(/\s+/g, "_")}_Resume.pdf`);
+                                showToast("success", "Resume downloaded!");
+                              } catch {
+                                showToast("error", "Failed to generate resume");
+                              } finally {
+                                setGeneratingResume(false);
+                              }
+                            }}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-semibold hover:opacity-90 transition-opacity"
+                          >
+                            {generatingResume ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                            Download as PDF
+                          </button>
+                        </div>
+
+                        {/* Resume Preview */}
+                        {resumePreviewHtml && (
+                          <div className="mt-4 border border-border rounded-xl overflow-hidden">
+                            <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border">
+                              <span className="text-xs font-semibold text-muted-foreground">Resume Preview</span>
+                              <button onClick={() => setResumePreviewHtml("")} className="p-1 rounded hover:bg-muted"><X className="w-3.5 h-3.5" /></button>
+                            </div>
+                            <div className="p-4 bg-white max-h-[500px] overflow-y-auto" dangerouslySetInnerHTML={{ __html: resumePreviewHtml }} />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {!resumeChoice && !form.resumeLink && (
+                      <p className="text-xs text-muted-foreground/50 italic">Choose an option above to set up your resume</p>
                     )}
                   </div>
+                )}
+
+                {!editing && !form.resumeLink && (
+                  <p className="text-xs text-muted-foreground/50 italic">No resume added yet. Click Edit to add one.</p>
                 )}
               </div>
             </div>
