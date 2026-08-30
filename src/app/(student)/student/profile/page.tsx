@@ -157,6 +157,8 @@ export default function StudentProfilePage() {
   const [newSkill, setNewSkill] = useState("");
   const [certifications, setCertifications] = useState<string[]>([]);
   const [newCert, setNewCert] = useState("");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [educationRecords, setEducationRecords] = useState<any[]>([]);
 
   const setField = (key: string, val: string) => setForm((p) => ({ ...p, [key]: val }));
 
@@ -218,6 +220,13 @@ export default function StudentProfilePage() {
 
   useEffect(() => { fetchProfile(); }, [fetchProfile]);
 
+  // Fetch education records for Academic Highlights
+  useEffect(() => {
+    studentApi.getEducations().then((res: any) => {
+      setEducationRecords(res?.data || []);
+    }).catch(() => {});
+  }, []);
+
   /* ─── Photo Upload ───────────────────────────────── */
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -273,8 +282,7 @@ export default function StudentProfilePage() {
 
   /* ─── Save ───────────────────────────────────────── */
   const mandatoryFilled = !!(
-    form.fullName && form.phone && form.dateOfBirth && form.gender &&
-    form.tenthPercent && form.twelfthPercent && form.cgpa
+    form.fullName && form.phone && form.dateOfBirth && form.gender
   );
 
   const handleSave = async () => {
@@ -549,18 +557,30 @@ export default function StudentProfilePage() {
         {/* ════════════════ ACADEMIC STATS BAR ═════════════════ */}
         <div className="i-card p-5 sm:p-6">
           <SectionHeader icon={Trophy} title="Academic Highlights" />
-          <div className="flex items-center justify-around flex-wrap gap-4">
-            <StatRing value={Number(form.cgpa) || 0} max={10} label="CGPA" color="#6366f1" />
-            <StatRing value={Number(form.tenthPercent) || 0} max={100} label="10th %" color="#10b981" />
-            <StatRing value={Number(form.twelfthPercent) || 0} max={100} label={form.qualificationType === "Diploma" ? "Diploma %" : "12th %"} color="#8b5cf6" />
-            <div className="flex flex-col items-center gap-1.5">
-              <div className="w-16 h-16 rounded-full border-4 flex items-center justify-center"
-                style={{ borderColor: Number(form.backlogs) === 0 ? "#10b981" : "#ef4444" }}>
-                <span className="text-sm font-bold text-foreground">{form.backlogs || "0"}</span>
+          {(() => {
+            const sslc = educationRecords.find((r: any) => r.qualificationType === "SSLC");
+            const puc = educationRecords.find((r: any) => r.qualificationType === "PUC");
+            const diploma = educationRecords.find((r: any) => r.qualificationType === "DIPLOMA");
+            const ug = educationRecords.find((r: any) => r.qualificationType === "UG");
+            const twelfthRec = puc || diploma;
+            const tenthPct = Number(sslc?.percentage) || 0;
+            const twelfthPct = Number(twelfthRec?.percentage) || 0;
+            const ugCgpa = Number(ug?.cgpa) || Number(ug?.percentage) || Number(form.cgpa) || 0;
+            return (
+              <div className="flex items-center justify-around flex-wrap gap-4">
+                <StatRing value={ugCgpa > 10 ? ugCgpa : ugCgpa} max={ugCgpa > 10 ? 100 : 10} label="CGPA" color="#6366f1" />
+                <StatRing value={tenthPct} max={100} label="10th %" color="#10b981" />
+                <StatRing value={twelfthPct} max={100} label={diploma ? "Diploma %" : "12th %"} color="#8b5cf6" />
+                <div className="flex flex-col items-center gap-1.5">
+                  <div className="w-16 h-16 rounded-full border-4 flex items-center justify-center"
+                    style={{ borderColor: Number(form.backlogs) === 0 ? "#10b981" : "#ef4444" }}>
+                    <span className="text-sm font-bold text-foreground">{form.backlogs || "0"}</span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Backlogs</span>
+                </div>
               </div>
-              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Backlogs</span>
-            </div>
-          </div>
+            );
+          })()}
         </div>
 
         {/* ════════════════ MAIN CONTENT GRID ═════════════════ */}
