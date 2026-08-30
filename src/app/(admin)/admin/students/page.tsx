@@ -1313,7 +1313,16 @@ export default function AdminStudentsPage() {
                             <div className="text-right">
                               {edu.percentage && <span className="text-sm font-bold text-indigo-600">{edu.percentage}%</span>}
                               {edu.cgpa && <span className="text-sm font-bold text-indigo-600">CGPA {edu.cgpa}</span>}
-                              {edu.documentFileName && <p className="text-[10px] text-emerald-600 mt-1">📄 {edu.documentFileName}</p>}
+                              {edu.documentFileName && (
+                                <button onClick={() => adminApi.downloadStudentEduDoc(selectedStudent.id, edu.id).catch(() => alert("Failed to load document"))}
+                                  className="text-[10px] text-emerald-600 mt-1 hover:underline cursor-pointer flex items-center gap-1">
+                                  📄 {edu.documentFileName}
+                                </button>
+                              )}
+                              {edu.documentDriveUrl && !edu.documentFileName && (
+                                <a href={edu.documentDriveUrl} target="_blank" rel="noopener noreferrer"
+                                  className="text-[10px] text-blue-600 mt-1 hover:underline">🔗 Drive Link</a>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -1356,10 +1365,10 @@ export default function AdminStudentsPage() {
                     <h3 className="text-xs font-bold text-muted-foreground uppercase mb-2">Resume</h3>
                     {selectedStudent.resumeLink ? (
                       selectedStudent.resumeLink.startsWith("uploaded:") ? (
-                        <a href={adminApi.getStudentResumeUrl(selectedStudent.id)} target="_blank" rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors">
+                        <button onClick={() => adminApi.downloadStudentResume(selectedStudent.id).catch(() => alert("Failed to load resume"))}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors cursor-pointer">
                           📄 View Resume — {selectedStudent.resumeLink.replace("uploaded:", "")}
-                        </a>
+                        </button>
                       ) : (
                         <a href={selectedStudent.resumeLink} target="_blank" rel="noopener noreferrer"
                           className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors">

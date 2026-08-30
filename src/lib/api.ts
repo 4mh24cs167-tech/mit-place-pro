@@ -217,10 +217,27 @@ export const adminApi = {
     return apiFetch(`/api/v1/admin/companies?${query.toString()}`);
   },
   getCompany: (id: string) => apiFetch(`/api/v1/admin/companies/${id}`),
-  getStudentResumeUrl: (studentId: string) => {
-    const base = process.env.NEXT_PUBLIC_API_URL || '';
+  downloadStudentResume: async (studentId: string) => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : '';
-    return `${base}/api/v1/admin/students/${studentId}/resume?token=${token}`;
+    const res = await fetch(`${baseUrl}/api/v1/admin/students/${studentId}/resume`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error('Failed to download resume');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  },
+  downloadStudentEduDoc: async (studentId: string, educationId: string) => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : '';
+    const res = await fetch(`${baseUrl}/api/v1/admin/students/${studentId}/education/${educationId}/document`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error('Failed to download document');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
   },
   approveCompany: (id: string) => apiFetch(`/api/v1/admin/companies/${id}/approve`, { method: 'PATCH' }),
   deleteCompany: (id: string) => apiFetch(`/api/v1/admin/companies/${id}`, { method: 'DELETE' }),

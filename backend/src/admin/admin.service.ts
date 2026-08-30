@@ -268,6 +268,14 @@ export class AdminService {
     return { data: student.resumeFileData, type: student.resumeFileType, name: student.resumeFileName };
   }
 
+  async getStudentEduDocument(studentId: string, eduId: string) {
+    const eduRepo = this.studentRepo.manager.getRepository('StudentEducation');
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const edu: any = await eduRepo.findOne({ where: { id: eduId, studentId } });
+    if (!edu || !edu.documentFileData) throw new NotFoundException('Document not found');
+    return { data: edu.documentFileData, type: edu.documentFileType, name: edu.documentFileName };
+  }
+
   async updateStudent(id: string, dto: UpdateStudentDto, actorId: string) {
     const student = await this.studentRepo.findOne({ where: { id }, relations: ['user'] });
     if (!student) throw new NotFoundException('Student not found');
