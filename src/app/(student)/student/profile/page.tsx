@@ -694,7 +694,6 @@ export default function StudentProfilePage() {
                 <InlineInput label="Date of Birth" value={form.dateOfBirth} onChange={(v) => setField("dateOfBirth", v)} editing={editing} type="date" required />
                 <InlineSelect label="Gender" value={form.gender} onChange={(v) => setField("gender", v)} editing={editing} options={GENDER_OPTIONS} required />
                 <InlineSelect label="Category" value={form.category} onChange={(v) => setField("category", v)} editing={editing} options={CATEGORY_OPTIONS} />
-                <InlineInput label="College Name" value={form.collegeName} onChange={(v) => setField("collegeName", v)} editing={editing} placeholder="e.g. Maharaja Institute of Technology, Mysuru" />
                 <InlineInput label="Family Income (₹/yr)" value={form.familyIncome} onChange={(v) => setField("familyIncome", v)} editing={editing} type="number" placeholder="500000" />
                 {/* Email (read-only) */}
                 <div className="pt-2 border-t border-border/40">
@@ -710,8 +709,6 @@ export default function StudentProfilePage() {
               <div className="space-y-3">
                 <InlineInput label="Resume (Drive Link)" value={form.resumeLink} onChange={(v) => setField("resumeLink", v)}
                   editing={editing} placeholder="https://drive.google.com/..." />
-                <InlineInput label="Documents Folder (Drive Link)" value={form.driveLink} onChange={(v) => setField("driveLink", v)}
-                  editing={editing} placeholder="https://drive.google.com/..." />
 
                 {/* View links when not editing */}
                 {!editing && (
@@ -723,29 +720,8 @@ export default function StudentProfilePage() {
                         <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-indigo-600 transition-colors" />
                       </a>
                     )}
-                    {form.driveLink && (
-                      <a href={form.driveLink} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors group">
-                        <span className="flex items-center gap-2 text-xs font-medium text-foreground"><FileText className="w-4 h-4 text-blue-500" />Documents Folder</span>
-                        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-indigo-600 transition-colors" />
-                      </a>
-                    )}
-                    {form.tenthMarksCardLink && (
-                      <a href={form.tenthMarksCardLink} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors group">
-                        <span className="flex items-center gap-2 text-xs font-medium text-foreground"><FileText className="w-4 h-4 text-emerald-500" />10th Marks Card</span>
-                        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-indigo-600 transition-colors" />
-                      </a>
-                    )}
-                    {form.twelfthMarksCardLink && (
-                      <a href={form.twelfthMarksCardLink} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center justify-between p-2.5 rounded-xl bg-muted/50 hover:bg-muted transition-colors group">
-                        <span className="flex items-center gap-2 text-xs font-medium text-foreground"><FileText className="w-4 h-4 text-violet-500" />12th Marks Card</span>
-                        <ExternalLink className="w-3.5 h-3.5 text-muted-foreground group-hover:text-indigo-600 transition-colors" />
-                      </a>
-                    )}
-                    {!form.resumeLink && !form.driveLink && !form.tenthMarksCardLink && !form.twelfthMarksCardLink && (
-                      <p className="text-xs text-muted-foreground/50 italic">No documents linked yet</p>
+                    {!form.resumeLink && (
+                      <p className="text-xs text-muted-foreground/50 italic">No resume linked yet</p>
                     )}
                   </div>
                 )}

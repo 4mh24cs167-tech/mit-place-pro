@@ -329,6 +329,9 @@ function QualificationForm({
     cgpa: initialData?.cgpa?.toString() || "",
     documentDriveUrl: initialData?.documentDriveUrl || "",
   });
+  const [evalType, setEvalType] = useState<"percentage" | "cgpa">(
+    initialData?.cgpa ? "cgpa" : "percentage"
+  );
 
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
   const c = QUAL_COLORS[qualType];
@@ -466,16 +469,32 @@ function QualificationForm({
           <input type="number" value={form.passingYear} onChange={(e) => set("passingYear", e.target.value)} placeholder="e.g. 2025" className={inputCls} />
         </div>
 
-        {/* Percentage */}
-        <div>
-          <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1">Percentage</label>
-          <input type="number" step="0.01" value={form.percentage} onChange={(e) => set("percentage", e.target.value)} placeholder="e.g. 85.5" className={inputCls} />
-        </div>
-
-        {/* CGPA */}
-        <div>
-          <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1">CGPA</label>
-          <input type="number" step="0.01" value={form.cgpa} onChange={(e) => set("cgpa", e.target.value)} placeholder="e.g. 8.5" className={inputCls} />
+        {/* Evaluation Type Toggle */}
+        <div className="sm:col-span-2">
+          <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-2">How would you like to enter your result?</label>
+          <div className="flex items-center gap-4 mb-3">
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name={`eval-${qualType}`} checked={evalType === "percentage"} onChange={() => { setEvalType("percentage"); set("cgpa", ""); }}
+                className="w-3.5 h-3.5 accent-indigo-600" />
+              <span className="text-xs font-medium text-foreground">Percentage (%)</span>
+            </label>
+            <label className="flex items-center gap-1.5 cursor-pointer">
+              <input type="radio" name={`eval-${qualType}`} checked={evalType === "cgpa"} onChange={() => { setEvalType("cgpa"); set("percentage", ""); }}
+                className="w-3.5 h-3.5 accent-indigo-600" />
+              <span className="text-xs font-medium text-foreground">CGPA</span>
+            </label>
+          </div>
+          {evalType === "percentage" ? (
+            <div>
+              <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1">Percentage (%)</label>
+              <input type="number" step="0.01" value={form.percentage} onChange={(e) => set("percentage", e.target.value)} placeholder="e.g. 82.50" className={inputCls} />
+            </div>
+          ) : (
+            <div>
+              <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-1">CGPA</label>
+              <input type="number" step="0.01" value={form.cgpa} onChange={(e) => set("cgpa", e.target.value)} placeholder="e.g. 8.42" className={inputCls} />
+            </div>
+          )}
         </div>
       </div>
 
