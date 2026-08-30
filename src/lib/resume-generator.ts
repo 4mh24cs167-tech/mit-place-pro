@@ -164,15 +164,14 @@ function buildResumeHtml(data: ResumeData): string {
       }
 
       ${
-        data.category || data.department
+        data.category
           ? `
       <!-- Additional Info -->
       <div style="margin-bottom: 24px;">
         <h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">
           Additional Information
         </h2>
-        ${data.department ? `<p style="font-size: 13px; color: #444; margin: 0 0 4px;">Department: ${data.department}</p>` : ""}
-        ${data.category ? `<p style="font-size: 13px; color: #444; margin: 0;">Category: ${data.category}</p>` : ""}
+        <p style="font-size: 13px; color: #444; margin: 0;">Category: ${data.category}</p>
       </div>`
           : ""
       }

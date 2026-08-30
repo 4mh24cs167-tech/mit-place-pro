@@ -862,6 +862,51 @@ export default function StudentProfilePage() {
           </div>
         </div>
 
+        {/* ════════════════ COMPLETE AND SAVE ═════════════════ */}
+        {editing && (
+          <div className="i-card p-5 sm:p-6">
+            {(() => {
+              const missing: string[] = [];
+              if (!form.fullName) missing.push("Full Name");
+              if (!form.phone) missing.push("Phone");
+              if (!form.dateOfBirth) missing.push("Date of Birth");
+              if (!form.gender) missing.push("Gender");
+              if (educationRecords.length === 0) missing.push("At least 1 Education Qualification");
+              if (!form.resumeLink) missing.push("Resume (upload or link)");
+              if (skills.length === 0) missing.push("At least 1 Skill");
+
+              return (
+                <div className="space-y-4">
+                  {missing.length > 0 && (
+                    <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
+                      <h3 className="text-sm font-bold text-amber-800 flex items-center gap-2 mb-2">
+                        <AlertCircle className="w-4 h-4" /> Complete these before saving:
+                      </h3>
+                      <ul className="list-disc list-inside text-xs text-amber-700 space-y-1">
+                        {missing.map((m) => <li key={m}>{m}</li>)}
+                      </ul>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleSave}
+                    disabled={saving || missing.length > 0}
+                    className={cn(
+                      "w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-base font-bold shadow-xl transition-all active:scale-[0.98]",
+                      missing.length > 0
+                        ? "bg-muted text-muted-foreground cursor-not-allowed"
+                        : "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-emerald-500/30 hover:shadow-2xl"
+                    )}
+                  >
+                    {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+                    {saving ? "Saving..." : missing.length > 0 ? `Complete ${missing.length} field${missing.length > 1 ? "s" : ""} above` : "✅ Complete & Save Profile"}
+                  </button>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
         {/* ────────── Mobile Floating Save Button ────────── */}
         {editing && (
           <div className="fixed bottom-24 left-0 right-0 px-4 md:hidden z-40">

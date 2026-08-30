@@ -124,13 +124,18 @@ export default function EducationManager({ editing = true }: { editing?: boolean
   const handleAdd = async (form: Record<string, unknown>) => {
     setSaving("new");
     try {
+      const pendingFile = form._pendingFile as File | null;
+      delete form._pendingFile;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const res: any = await studentApi.addEducation(form);
+      // Upload file if selected
+      if (pendingFile && res?.data?.id) {
+        try { await studentApi.uploadEducationDocument(res.data.id, pendingFile); } catch { /* ignore */ }
+      }
       showToast("success", `${form.qualificationType} added successfully!`);
       setAddingType(null);
       setShowAdd(false);
       await fetchRecords();
-      // Auto-enter edit mode for new record
       if (res?.data?.id) setEditingId(res.data.id);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to add qualification";
@@ -142,7 +147,13 @@ export default function EducationManager({ editing = true }: { editing?: boolean
   const handleUpdate = async (id: string, data: Record<string, unknown>) => {
     setSaving(id);
     try {
+      const pendingFile = data._pendingFile as File | null;
+      delete data._pendingFile;
       await studentApi.updateEducation(id, data);
+      // Upload file if selected
+      if (pendingFile) {
+        try { await studentApi.uploadEducationDocument(id, pendingFile); } catch { /* ignore */ }
+      }
       showToast("success", "Education details saved!");
       setEditingId(null);
       await fetchRecords();
@@ -332,6 +343,8 @@ function QualificationForm({
   const [evalType, setEvalType] = useState<"percentage" | "cgpa">(
     initialData?.cgpa ? "cgpa" : "percentage"
   );
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState(initialData?.documentFileName || "");
 
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }));
   const c = QUAL_COLORS[qualType];
@@ -350,6 +363,7 @@ function QualificationForm({
     if (form.percentage) data.percentage = Number(form.percentage);
     if (form.cgpa) data.cgpa = Number(form.cgpa);
     if (form.documentDriveUrl) data.documentDriveUrl = form.documentDriveUrl;
+    data._pendingFile = uploadFile; // pass file to parent for upload after save
     onSave(data);
   };
 
@@ -503,7 +517,29 @@ function QualificationForm({
         <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-2">
           {qualType} Document / Certificate
         </label>
-        <p className="text-[10px] text-muted-foreground mb-2">You can either upload the document or provide a Drive link, or both.</p>
+        <p className="text-[10px] text-muted-foreground mb-3">Upload your marks card or certificate, or provide a Drive link.</p>
+
+        {/* Direct File Upload */}
+        <label className="flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed border-indigo-200 hover:border-indigo-400 cursor-pointer transition-colors bg-white mb-3">
+          <Upload className="w-5 h-5 text-indigo-500 shrink-0" />
+          <span className="text-xs text-muted-foreground">{uploadedFileName || "Click to select file (PDF, JPG, PNG — max 2MB)"}</span>
+          <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) {
+              if (f.size > 2 * 1024 * 1024) { alert("File must be under 2MB"); return; }
+              setUploadFile(f);
+              setUploadedFileName(f.name);
+            }
+          }} />
+        </label>
+        {uploadedFileName && (
+          <p className="text-xs text-emerald-600 font-medium mb-2 flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5" /> Selected: {uploadedFileName}
+          </p>
+        )}
+
+        {/* Or Drive Link */}
+        <p className="text-[10px] text-muted-foreground mb-1">Or paste a link:</p>
         <input type="text" value={form.documentDriveUrl} onChange={(e) => set("documentDriveUrl", e.target.value)}
           placeholder="Google Drive / Document Link (optional)" className={inputCls} />
       </div>
@@ -609,12 +645,6 @@ function QualificationCard({
         {/* Action Buttons */}
         {editing && (
           <div className="flex items-center gap-1 shrink-0">
-            {/* Upload */}
-            <label className="p-1.5 rounded-lg hover:bg-white/60 cursor-pointer transition-colors" title="Upload Document">
-              {uploading ? <Loader2 className="w-4 h-4 animate-spin text-indigo-500" /> : <Upload className="w-4 h-4 text-muted-foreground" />}
-              <input type="file" accept=".jpg,.jpeg,.pdf" className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }} />
-            </label>
             <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-white/60 transition-colors" title="Edit">
               <Edit3 className="w-4 h-4 text-muted-foreground" />
             </button>
