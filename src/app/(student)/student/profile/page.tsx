@@ -918,7 +918,7 @@ export default function StudentProfilePage() {
         {/* ────────── Mobile Floating Save Button ────────── */}
         {editing && (
           <div className="fixed bottom-24 left-0 right-0 px-4 md:hidden z-40">
-            <button onClick={handleSave} disabled={saving} type="button"
+            <button onClick={() => handleSave()} disabled={saving} type="button"
               className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-bold text-sm shadow-2xl shadow-indigo-500/30 active:scale-[0.98] transition-transform">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {saving ? "Saving..." : `Save Profile${!mandatoryFilled ? " (Fill required fields)" : ""}`}
