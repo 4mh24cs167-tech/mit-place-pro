@@ -821,4 +821,31 @@ export class StudentService {
     if (!record || !record.documentFileData) throw new NotFoundException('Document not found');
     return { data: record.documentFileData, type: record.documentFileType, name: record.documentFileName };
   }
+
+  /* ═══════════════════════════════════════════════════ */
+  /*  Resume Upload / Download                          */
+  /* ═══════════════════════════════════════════════════ */
+  async uploadResume(userId: string, file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('No file provided');
+    const allowed = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowed.includes(file.mimetype)) throw new BadRequestException('Only PDF, DOC, DOCX files are allowed');
+    if (file.size > 2 * 1024 * 1024) throw new BadRequestException('File must be under 2MB');
+
+    const student = await this.studentRepo.findOne({ where: { user: { id: userId } } });
+    if (!student) throw new NotFoundException('Student not found');
+
+    student.resumeFileData = file.buffer;
+    student.resumeFileName = file.originalname;
+    student.resumeFileType = file.mimetype;
+    student.resumeLink = `uploaded:${file.originalname}`;
+    await this.studentRepo.save(student);
+
+    return { message: 'Resume uploaded successfully', fileName: file.originalname };
+  }
+
+  async getResume(userId: string) {
+    const student = await this.studentRepo.findOne({ where: { user: { id: userId } } });
+    if (!student || !student.resumeFileData) throw new NotFoundException('Resume not found');
+    return { data: student.resumeFileData, type: student.resumeFileType, name: student.resumeFileName };
+  }
 }

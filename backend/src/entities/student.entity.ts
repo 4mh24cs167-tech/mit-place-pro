@@ -86,6 +86,15 @@ export class Student {
   @Column({ type: 'varchar', length: 500, nullable: true, name: 'resume_link' })
   resumeLink: string | null;
 
+  @Column({ type: 'bytea', nullable: true, name: 'resume_file_data' })
+  resumeFileData: Buffer | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true, name: 'resume_file_name' })
+  resumeFileName: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true, name: 'resume_file_type' })
+  resumeFileType: string | null;
+
   @Column({ type: 'bigint', nullable: true, name: 'family_income' })
   familyIncome: number | null;
 

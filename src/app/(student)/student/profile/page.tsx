@@ -712,13 +712,21 @@ export default function StudentProfilePage() {
             <div className="i-card p-5 sm:p-6">
               <SectionHeader icon={FileText} title="Resume" />
               <div className="space-y-4">
-                {/* Show existing resume link if saved */}
+                {/* Show existing resume if saved */}
                 {form.resumeLink && !editing && (
-                  <a href={form.resumeLink} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center justify-between p-3 rounded-xl bg-indigo-50/50 border border-indigo-100 hover:bg-indigo-50 transition-colors group">
-                    <span className="flex items-center gap-2 text-sm font-medium text-indigo-700"><FileText className="w-4 h-4" />View Resume</span>
-                    <ExternalLink className="w-4 h-4 text-indigo-400 group-hover:text-indigo-600" />
-                  </a>
+                  form.resumeLink.startsWith("uploaded:") ? (
+                    <a href={studentApi.getResumeDownloadUrl()} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center justify-between p-3 rounded-xl bg-indigo-50/50 border border-indigo-100 hover:bg-indigo-50 transition-colors group">
+                      <span className="flex items-center gap-2 text-sm font-medium text-indigo-700"><FileText className="w-4 h-4" />View Resume — {form.resumeLink.replace("uploaded:", "")}</span>
+                      <ExternalLink className="w-4 h-4 text-indigo-400 group-hover:text-indigo-600" />
+                    </a>
+                  ) : (
+                    <a href={form.resumeLink} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center justify-between p-3 rounded-xl bg-indigo-50/50 border border-indigo-100 hover:bg-indigo-50 transition-colors group">
+                      <span className="flex items-center gap-2 text-sm font-medium text-indigo-700"><FileText className="w-4 h-4" />View Resume</span>
+                      <ExternalLink className="w-4 h-4 text-indigo-400 group-hover:text-indigo-600" />
+                    </a>
+                  )
                 )}
 
                 {editing && (
@@ -743,12 +751,38 @@ export default function StudentProfilePage() {
                       </button>
                     </div>
 
-                    {/* YES path — upload or paste link */}
+                    {/* YES path — upload file or paste link */}
                     {resumeChoice === "yes" && (
                       <div className="space-y-3 p-4 rounded-xl bg-indigo-50/30 border border-indigo-100/50">
-                        <InlineInput label="Resume Link (Google Drive / URL)" value={form.resumeLink} onChange={(v) => setField("resumeLink", v)}
-                          editing={editing} placeholder="https://drive.google.com/..." />
-                        <p className="text-[10px] text-muted-foreground">Paste your resume link above. Accepted: PDF, DOC, DOCX</p>
+                        {/* Direct Upload */}
+                        <div>
+                          <label className="block text-[10px] font-semibold text-muted-foreground uppercase mb-2">Upload Resume (PDF / DOC / DOCX, max 2MB)</label>
+                          <label className="flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed border-indigo-200 hover:border-indigo-400 cursor-pointer transition-colors bg-white">
+                            <Upload className="w-5 h-5 text-indigo-500 shrink-0" />
+                            <span className="text-xs text-muted-foreground">Click to select your resume file</span>
+                            <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              if (file.size > 2 * 1024 * 1024) { showToast("error", "File must be under 2MB"); return; }
+                              try {
+                                await studentApi.uploadResume(file);
+                                setField("resumeLink", `uploaded:${file.name}`);
+                                showToast("success", `Resume "${file.name}" uploaded!`);
+                              } catch { showToast("error", "Failed to upload resume"); }
+                            }} />
+                          </label>
+                          {form.resumeLink?.startsWith("uploaded:") && (
+                            <p className="text-xs text-emerald-600 font-medium mt-2 flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Uploaded: {form.resumeLink.replace("uploaded:", "")}
+                            </p>
+                          )}
+                        </div>
+                        {/* Or paste link */}
+                        <div className="pt-2 border-t border-border/30">
+                          <p className="text-[10px] text-muted-foreground mb-1.5">Or paste a link instead:</p>
+                          <InlineInput label="Resume Link (Google Drive / URL)" value={form.resumeLink?.startsWith("uploaded:") ? "" : form.resumeLink} onChange={(v) => setField("resumeLink", v)}
+                            editing={editing} placeholder="https://drive.google.com/..." />
+                        </div>
                       </div>
                     )}
 

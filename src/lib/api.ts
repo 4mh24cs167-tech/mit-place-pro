@@ -371,6 +371,15 @@ export const studentApi = {
     const base = typeof window !== 'undefined' ? localStorage.getItem('api_base') || '' : '';
     return `${base}/api/v1/student/education/${id}/document`;
   },
+  uploadResume: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiFetch('/api/v1/student/resume/upload', { method: 'POST', body: formData, isFormData: true });
+  },
+  getResumeDownloadUrl: () => {
+    const base = typeof window !== 'undefined' ? localStorage.getItem('api_base') || '' : '';
+    return `${base}/api/v1/student/resume/download`;
+  },
 };
 
 // ─── Company ─────────────────────────────────────

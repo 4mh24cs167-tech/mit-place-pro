@@ -244,4 +244,24 @@ export class StudentController {
     res.set({ 'Content-Type': doc.type, 'Content-Disposition': `inline; filename="${doc.name}"` });
     res.send(doc.data);
   }
+
+  /* ─── Resume Upload / Download ─────────────────── */
+  @Post('resume/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadResume(
+    @CurrentUser('id') userId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.studentService.uploadResume(userId, file);
+  }
+
+  @Get('resume/download')
+  async downloadResume(
+    @CurrentUser('id') userId: string,
+    @Res() res: any,
+  ) {
+    const doc = await this.studentService.getResume(userId);
+    res.set({ 'Content-Type': doc.type, 'Content-Disposition': `inline; filename="${doc.name}"` });
+    res.send(doc.data);
+  }
 }
