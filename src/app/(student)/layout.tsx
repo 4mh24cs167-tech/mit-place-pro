@@ -88,7 +88,7 @@ export default function StudentLayout({
             <div className="i-card p-4 text-left">
               <p className="text-xs font-semibold text-muted-foreground uppercase mb-3">Required Information</p>
               <div className="grid grid-cols-2 gap-2 text-xs text-foreground">
-                {["Full Name", "Phone Number", "Date of Birth", "Gender", "10th %", "12th %", "CGPA"].map((field) => (
+                {["Full Name", "Phone Number", "Date of Birth", "Gender", "Education (min 1)", "Resume", "Skills (min 1)"].map((field) => (
                   <div key={field} className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                     {field}

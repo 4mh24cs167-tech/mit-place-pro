@@ -248,7 +248,8 @@ export class AdminService {
     if (!student) throw new NotFoundException('Student not found');
 
     // Also load education records
-    let educationRecords = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let educationRecords: any[] = [];
     try {
       const eduRepo = this.studentRepo.manager.getRepository('StudentEducation');
       educationRecords = await eduRepo.find({

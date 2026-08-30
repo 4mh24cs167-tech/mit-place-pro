@@ -118,17 +118,23 @@ export class StudentService {
       student.profileData = { ...(student.profileData || {}), ugYearOfPassing: dto.ugYearOfPassing };
     }
 
-    // Calculate profile completeness — all 7 mandatory fields must be filled
-    const mandatoryFields = [
-      student.fullName,
-      student.phone,
-      student.dateOfBirth,
-      student.gender,
-      student.tenthPercent,
-      student.twelfthPercent,
-      student.cgpa,
-    ];
-    student.profileComplete = mandatoryFields.every((f) => f !== null && f !== undefined && f !== '');
+    // Profile completeness — either explicitly set from frontend or auto-calculated
+    if (dto.profileComplete === true) {
+      student.profileComplete = true;
+    } else if (dto.profileComplete === undefined) {
+      // Auto-check basic mandatory fields
+      const mandatoryFields = [
+        student.fullName,
+        student.phone,
+        student.dateOfBirth,
+        student.gender,
+      ];
+      const basicComplete = mandatoryFields.every((f) => f !== null && f !== undefined && f !== '');
+      // Don't downgrade if already complete
+      if (!student.profileComplete) {
+        student.profileComplete = basicComplete;
+      }
+    }
 
     await this.studentRepo.save(student);
     return student;

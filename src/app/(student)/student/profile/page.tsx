@@ -289,7 +289,7 @@ export default function StudentProfilePage() {
     form.fullName && form.phone && form.dateOfBirth && form.gender
   );
 
-  const handleSave = async () => {
+  const handleSave = async (markComplete = false) => {
     if (!profile) return;
     if (!mandatoryFilled) {
       showToast("error", "Please fill all required fields (marked with *)");
@@ -323,6 +323,7 @@ export default function StudentProfilePage() {
         github: form.github || undefined,
         tenthMarksCardLink: form.tenthMarksCardLink || undefined,
         twelfthMarksCardLink: form.twelfthMarksCardLink || undefined,
+        profileComplete: markComplete ? true : undefined,
         profileData: {
           qualificationType: form.qualificationType,
           diplomaBranch: form.diplomaBranch || undefined,
@@ -335,7 +336,11 @@ export default function StudentProfilePage() {
         ugCgpa: form.ugCgpa ? parseFloat(form.ugCgpa) : undefined,
         ugYearOfPassing: form.ugYearOfPassing ? parseInt(form.ugYearOfPassing) : undefined,
       });
-      showToast("success", "Profile updated successfully!");
+      if (markComplete) {
+        showToast("success", "🎉 Profile completed! You now have full dashboard access.");
+      } else {
+        showToast("success", "Profile updated successfully!");
+      }
       setEditing(false);
       fetchProfile();
     } catch {
@@ -892,7 +897,7 @@ export default function StudentProfilePage() {
                   )}
 
                   <button
-                    onClick={handleSave}
+                    onClick={() => handleSave(true)}
                     disabled={saving || missing.length > 0}
                     className={cn(
                       "w-full flex items-center justify-center gap-3 py-4 rounded-2xl text-base font-bold shadow-xl transition-all active:scale-[0.98]",

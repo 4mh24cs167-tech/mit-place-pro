@@ -154,6 +154,9 @@ export class UpdateProfileDto {
   @Min(2000)
   @Max(2030)
   ugYearOfPassing?: number;
+
+  @IsOptional()
+  profileComplete?: boolean;
 }
 
 export class ApplyJobDto {
