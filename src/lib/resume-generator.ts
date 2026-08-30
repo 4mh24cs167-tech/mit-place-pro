@@ -1,9 +1,11 @@
 "use client";
 
 /**
- * Auto-generates a professional ATS-friendly PDF resume from student profile data
- * using html2pdf.js (already installed in the project).
+ * Auto-generates a professional ATS-friendly PDF resume using jsPDF directly.
+ * No html2pdf.js or CDN needed — pure jsPDF API calls.
  */
+
+import { jsPDF } from "jspdf";
 
 interface EducationRecord {
   qualificationType: string;
@@ -40,196 +42,231 @@ const QUAL_LABELS: Record<string, string> = {
   SSLC: "10th / SSLC", PUC: "12th / PUC", DIPLOMA: "Diploma", UG: "Undergraduate", PG: "Postgraduate",
 };
 
-function buildResumeHtml(data: ResumeData): string {
+const COLORS = {
+  primary: [45, 45, 107] as [number, number, number],
+  text: [51, 51, 51] as [number, number, number],
+  muted: [119, 119, 119] as [number, number, number],
+  line: [200, 200, 200] as [number, number, number],
+  skillBg: [238, 240, 248] as [number, number, number],
+};
+
+export async function generateResumePdf(data: ResumeData): Promise<Blob> {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const pageW = doc.internal.pageSize.getWidth();
+  const margin = 20;
+  const contentW = pageW - margin * 2;
+  let y = 20;
+
+  const checkPage = (needed: number) => {
+    if (y + needed > 280) { doc.addPage(); y = 20; }
+  };
+
+  // ─── Header ───
+  doc.setFontSize(24);
+  doc.setTextColor(...COLORS.primary);
+  doc.setFont("helvetica", "bold");
+  doc.text(data.fullName || "Student", margin, y);
+  y += 8;
+
+  doc.setFontSize(10);
+  doc.setTextColor(...COLORS.muted);
+  doc.setFont("helvetica", "normal");
+  const contactParts = [data.email, data.phone].filter(Boolean);
+  if (contactParts.length) {
+    doc.text(contactParts.join("  •  "), margin, y);
+    y += 5;
+  }
+
+  const linkParts = [];
+  if (data.linkedin) linkParts.push(`LinkedIn: ${data.linkedin}`);
+  if (data.github) linkParts.push(`GitHub: ${data.github}`);
+  if (linkParts.length) {
+    doc.setFontSize(8);
+    const linkText = linkParts.join("  •  ");
+    const lines = doc.splitTextToSize(linkText, contentW);
+    doc.text(lines, margin, y);
+    y += lines.length * 4;
+  }
+
+  // Header line
+  y += 2;
+  doc.setDrawColor(...COLORS.primary);
+  doc.setLineWidth(0.8);
+  doc.line(margin, y, pageW - margin, y);
+  y += 8;
+
+  // ─── Section Helper ───
+  const drawSection = (title: string) => {
+    checkPage(15);
+    doc.setFontSize(12);
+    doc.setTextColor(...COLORS.primary);
+    doc.setFont("helvetica", "bold");
+    doc.text(title.toUpperCase(), margin, y);
+    y += 1;
+    doc.setDrawColor(...COLORS.line);
+    doc.setLineWidth(0.3);
+    doc.line(margin, y, pageW - margin, y);
+    y += 6;
+  };
+
+  // ─── Career Objective ───
+  if (data.aboutMe) {
+    drawSection("Career Objective");
+    doc.setFontSize(10);
+    doc.setTextColor(...COLORS.text);
+    doc.setFont("helvetica", "normal");
+    const lines = doc.splitTextToSize(data.aboutMe, contentW);
+    checkPage(lines.length * 5);
+    doc.text(lines, margin, y);
+    y += lines.length * 5 + 4;
+  }
+
+  // ─── Education ───
+  const eduRecords = (data.educationRecords || [])
+    .sort((a, b) => (QUAL_ORDER[a.qualificationType] || 9) - (QUAL_ORDER[b.qualificationType] || 9));
+
+  if (eduRecords.length > 0) {
+    drawSection("Education");
+
+    for (const edu of eduRecords) {
+      checkPage(18);
+      const label = QUAL_LABELS[edu.qualificationType] || edu.qualificationType;
+      const score = edu.cgpa ? `CGPA: ${edu.cgpa}` : edu.percentage ? `${edu.percentage}%` : "";
+
+      doc.setFontSize(10);
+      doc.setTextColor(...COLORS.text);
+      doc.setFont("helvetica", "bold");
+      doc.text(label, margin, y);
+
+      if (score) {
+        doc.setFont("helvetica", "bold");
+        doc.text(score, pageW - margin, y, { align: "right" });
+      }
+      y += 4.5;
+
+      if (edu.collegeName) {
+        doc.setFontSize(9);
+        doc.setTextColor(...COLORS.muted);
+        doc.setFont("helvetica", "normal");
+        doc.text(edu.collegeName, margin, y);
+        if (edu.passingYear) {
+          doc.text(String(edu.passingYear), pageW - margin, y, { align: "right" });
+        }
+        y += 4;
+      }
+
+      const details = [edu.university || edu.board, edu.stream || edu.specialization || edu.courseName]
+        .filter(Boolean).join(" · ");
+      if (details) {
+        doc.setFontSize(8);
+        doc.setTextColor(...COLORS.muted);
+        doc.text(details, margin, y);
+        y += 4;
+      }
+      y += 2;
+    }
+    y += 2;
+  }
+
+  // ─── Skills ───
   const skillsList = Array.isArray(data.skills)
     ? data.skills
-    : data.skills
-    ? data.skills.split(",").map((s) => s.trim()).filter(Boolean)
-    : [];
+    : data.skills ? data.skills.split(",").map(s => s.trim()).filter(Boolean) : [];
+
+  if (skillsList.length > 0) {
+    drawSection("Skills");
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+
+    let xPos = margin;
+    for (const skill of skillsList) {
+      const textW = doc.getTextWidth(skill) + 8;
+      if (xPos + textW > pageW - margin) {
+        xPos = margin;
+        y += 7;
+        checkPage(8);
+      }
+      doc.setFillColor(...COLORS.skillBg);
+      doc.roundedRect(xPos, y - 3.5, textW, 6, 3, 3, "F");
+      doc.setTextColor(...COLORS.primary);
+      doc.text(skill, xPos + 4, y);
+      xPos += textW + 3;
+    }
+    y += 10;
+  }
+
+  // ─── Certifications ───
+  if ((data.certifications || []).length > 0) {
+    drawSection("Certifications");
+    doc.setFontSize(9);
+    doc.setTextColor(...COLORS.text);
+    doc.setFont("helvetica", "normal");
+    for (const cert of data.certifications!) {
+      checkPage(6);
+      const lines = doc.splitTextToSize(`•  ${cert}`, contentW - 4);
+      doc.text(lines, margin + 2, y);
+      y += lines.length * 4.5;
+    }
+    y += 4;
+  }
+
+  // ─── Languages ───
+  if ((data.languages || []).length > 0) {
+    drawSection("Languages Known");
+    doc.setFontSize(9);
+    doc.setTextColor(...COLORS.text);
+    doc.setFont("helvetica", "normal");
+    doc.text((data.languages || []).join(", "), margin, y);
+    y += 8;
+  }
+
+  // ─── Additional Info ───
+  if (data.category) {
+    drawSection("Additional Information");
+    doc.setFontSize(9);
+    doc.setTextColor(...COLORS.text);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Category: ${data.category}`, margin, y);
+    y += 8;
+  }
+
+  // ─── Footer ───
+  checkPage(12);
+  y = Math.max(y, 270);
+  doc.setDrawColor(...COLORS.line);
+  doc.setLineWidth(0.2);
+  doc.line(margin, y, pageW - margin, y);
+  y += 4;
+  doc.setFontSize(7);
+  doc.setTextColor(160, 160, 160);
+  doc.text("Generated via MITM PlacePro • Campus Placement Portal", pageW / 2, y, { align: "center" });
+
+  return doc.output("blob");
+}
+
+// ─── Preview HTML (for inline preview in the UI) ───
+export function previewResumeHtml(data: ResumeData): string {
+  const skillsList = Array.isArray(data.skills)
+    ? data.skills
+    : data.skills ? data.skills.split(",").map(s => s.trim()).filter(Boolean) : [];
 
   const eduRecords = (data.educationRecords || [])
     .sort((a, b) => (QUAL_ORDER[a.qualificationType] || 9) - (QUAL_ORDER[b.qualificationType] || 9));
 
   return `
     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 40px; color: #1a1a2e;">
-      <!-- Header -->
       <div style="border-bottom: 3px solid #2d2d6b; padding-bottom: 20px; margin-bottom: 24px;">
-        <h1 style="margin: 0; font-size: 28px; color: #2d2d6b; letter-spacing: 1px;">
-          ${data.fullName || "Student"}
-        </h1>
-        <div style="margin-top: 8px; font-size: 13px; color: #555;">
-          ${[data.email, data.phone].filter(Boolean).join(" • ")}
-        </div>
-        ${data.linkedin || data.github ? `
-        <div style="margin-top: 4px; font-size: 12px; color: #666;">
-          ${data.linkedin ? `LinkedIn: ${data.linkedin}` : ""}${data.linkedin && data.github ? " • " : ""}${data.github ? `GitHub: ${data.github}` : ""}
-        </div>` : ""}
+        <h1 style="margin: 0; font-size: 28px; color: #2d2d6b;">${data.fullName || "Student"}</h1>
+        <div style="margin-top: 8px; font-size: 13px; color: #555;">${[data.email, data.phone].filter(Boolean).join(" • ")}</div>
+        ${data.linkedin || data.github ? `<div style="margin-top: 4px; font-size: 12px; color: #666;">${[data.linkedin ? `LinkedIn: ${data.linkedin}` : "", data.github ? `GitHub: ${data.github}` : ""].filter(Boolean).join(" • ")}</div>` : ""}
       </div>
-
-      ${
-        data.aboutMe
-          ? `
-      <!-- Career Objective -->
-      <div style="margin-bottom: 24px;">
-        <h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">
-          Career Objective
-        </h2>
-        <p style="font-size: 13px; line-height: 1.6; color: #444; margin: 0;">
-          ${data.aboutMe}
-        </p>
-      </div>`
-          : ""
-      }
-
-      <!-- Education -->
-      ${eduRecords.length > 0 ? `
-      <div style="margin-bottom: 24px;">
-        <h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">
-          Education
-        </h2>
-        <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
-          ${eduRecords.map(edu => {
-            const label = QUAL_LABELS[edu.qualificationType] || edu.qualificationType;
-            const institution = edu.collegeName || "";
-            const details = [
-              edu.university || edu.board || "",
-              edu.stream || edu.specialization || edu.courseName || "",
-            ].filter(Boolean).join(" · ");
-            const score = edu.cgpa ? `CGPA: ${edu.cgpa}` : edu.percentage ? `${edu.percentage}%` : "";
-            const year = edu.passingYear ? `${edu.passingYear}` : "";
-            return `
-          <tr>
-            <td style="padding: 8px 0; vertical-align: top;">
-              <div style="font-weight: 600;">${label}</div>
-              ${institution ? `<div style="font-size: 12px; color: #666;">${institution}</div>` : ""}
-              ${details ? `<div style="font-size: 11px; color: #888;">${details}</div>` : ""}
-            </td>
-            <td style="padding: 8px 0; text-align: right; vertical-align: top; white-space: nowrap;">
-              ${score ? `<div style="font-weight: 600;">${score}</div>` : ""}
-              ${year ? `<div style="font-size: 11px; color: #888;">${year}</div>` : ""}
-            </td>
-          </tr>`;
-          }).join("")}
-        </table>
-      </div>` : ""}
-
-      ${
-        skillsList.length > 0
-          ? `
-      <!-- Skills -->
-      <div style="margin-bottom: 24px;">
-        <h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">
-          Skills
-        </h2>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-          ${skillsList
-            .map(
-              (skill) =>
-                `<span style="display: inline-block; padding: 4px 14px; background: #eef0f8; color: #2d2d6b; border-radius: 20px; font-size: 12px; font-weight: 500;">${skill}</span>`
-            )
-            .join("")}
-        </div>
-      </div>`
-          : ""
-      }
-
-      ${
-        (data.certifications || []).length > 0
-          ? `
-      <!-- Certifications -->
-      <div style="margin-bottom: 24px;">
-        <h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">
-          Certifications
-        </h2>
-        <ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #444;">
-          ${(data.certifications || []).map(c => `<li style="padding: 3px 0;">${c}</li>`).join("")}
-        </ul>
-      </div>`
-          : ""
-      }
-
-      ${
-        (data.languages || []).length > 0
-          ? `
-      <!-- Languages -->
-      <div style="margin-bottom: 24px;">
-        <h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">
-          Languages Known
-        </h2>
-        <div style="font-size: 13px; color: #444;">
-          ${(data.languages || []).join(", ")}
-        </div>
-      </div>`
-          : ""
-      }
-
-      ${
-        data.category
-          ? `
-      <!-- Additional Info -->
-      <div style="margin-bottom: 24px;">
-        <h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">
-          Additional Information
-        </h2>
-        <p style="font-size: 13px; color: #444; margin: 0;">Category: ${data.category}</p>
-      </div>`
-          : ""
-      }
-
-      <!-- Footer -->
-      <div style="margin-top: 32px; padding-top: 12px; border-top: 1px solid #eee; text-align: center;">
-        <p style="font-size: 11px; color: #999; margin: 0;">
-          Generated via MITM PlacePro • Campus Placement Portal
-        </p>
-      </div>
+      ${data.aboutMe ? `<div style="margin-bottom: 24px;"><h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">Career Objective</h2><p style="font-size: 13px; line-height: 1.6; color: #444; margin: 0;">${data.aboutMe}</p></div>` : ""}
+      ${eduRecords.length > 0 ? `<div style="margin-bottom: 24px;"><h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">Education</h2>${eduRecords.map(edu => `<div style="margin-bottom: 8px;"><strong>${QUAL_LABELS[edu.qualificationType] || edu.qualificationType}</strong>${edu.cgpa ? ` — CGPA: ${edu.cgpa}` : edu.percentage ? ` — ${edu.percentage}%` : ""}${edu.collegeName ? `<br/><span style="font-size: 12px; color: #666;">${edu.collegeName}</span>` : ""}${edu.passingYear ? ` <span style="font-size: 11px; color: #888;">(${edu.passingYear})</span>` : ""}</div>`).join("")}</div>` : ""}
+      ${skillsList.length > 0 ? `<div style="margin-bottom: 24px;"><h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">Skills</h2><div style="display: flex; flex-wrap: wrap; gap: 8px;">${skillsList.map(s => `<span style="display: inline-block; padding: 4px 14px; background: #eef0f8; color: #2d2d6b; border-radius: 20px; font-size: 12px;">${s}</span>`).join("")}</div></div>` : ""}
+      ${(data.certifications || []).length > 0 ? `<div style="margin-bottom: 24px;"><h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">Certifications</h2><ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #444;">${(data.certifications || []).map(c => `<li style="padding: 3px 0;">${c}</li>`).join("")}</ul></div>` : ""}
+      <div style="margin-top: 32px; padding-top: 12px; border-top: 1px solid #eee; text-align: center;"><p style="font-size: 11px; color: #999; margin: 0;">Generated via MITM PlacePro • Campus Placement Portal</p></div>
     </div>
   `;
-}
-
-// Load html2pdf.js from CDN to avoid Next.js module issues
-function loadHtml2Pdf(): Promise<any> {
-  return new Promise((resolve, reject) => {
-    if ((window as any).html2pdf) {
-      resolve((window as any).html2pdf);
-      return;
-    }
-    const script = document.createElement("script");
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js";
-    script.onload = () => resolve((window as any).html2pdf);
-    script.onerror = () => reject(new Error("Failed to load html2pdf.js"));
-    document.head.appendChild(script);
-  });
-}
-
-export async function generateResumePdf(data: ResumeData): Promise<Blob> {
-  const html2pdf = await loadHtml2Pdf();
-
-  const html = buildResumeHtml(data);
-
-  const container = document.createElement("div");
-  container.innerHTML = html;
-  document.body.appendChild(container);
-
-  try {
-    const blob: Blob = await html2pdf()
-      .set({
-        margin: [10, 10, 10, 10],
-        filename: `${(data.fullName || "resume").replace(/\s+/g, "_")}_Resume.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-      })
-      .from(container)
-      .outputPdf("blob");
-
-    return blob;
-  } finally {
-    document.body.removeChild(container);
-  }
-}
-
-export function previewResumeHtml(data: ResumeData): string {
-  return buildResumeHtml(data);
 }
 
 export function downloadResumePdf(blob: Blob, fileName: string) {
