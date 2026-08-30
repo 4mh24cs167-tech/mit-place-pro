@@ -88,6 +88,21 @@ export default function AdminStudentsPage() {
 
   const setAddField = (key: string, val: string) => setAddForm(p => ({ ...p, [key]: val }));
 
+  // Student detail modal state
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [loadingStudent, setLoadingStudent] = useState(false);
+
+  const openStudentDetail = async (id: string) => {
+    setLoadingStudent(true);
+    try {
+      const res = await adminApi.getStudent(id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setSelectedStudent((res as any).data);
+    } catch { alert("Failed to load student details"); }
+    finally { setLoadingStudent(false); }
+  };
+
   // Main loader for metadata
   const fetchMetadata = async () => {
     setIsLoading(true);
@@ -1060,7 +1075,7 @@ export default function AdminStudentsPage() {
                                         const statusCfg = getStatusConfig(student.placementStatus);
                                         const completionPct = student.profileComplete ? 100 : 35;
                                         return (
-                                          <div key={student.id} className="p-4 rounded-xl border border-border/60 bg-white hover:shadow-md transition-all group relative">
+                                          <div key={student.id} onClick={() => openStudentDetail(student.id)} className="p-4 rounded-xl border border-border/60 bg-white hover:shadow-md transition-all group relative cursor-pointer">
                                             {/* Delete Student */}
                                             <button
                                               onClick={(e) => {
@@ -1242,6 +1257,138 @@ export default function AdminStudentsPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ═══════ Student Detail Modal ═══════ */}
+        {(selectedStudent || loadingStudent) && (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setSelectedStudent(null)}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              {loadingStudent ? (
+                <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-indigo-500" /></div>
+              ) : selectedStudent && (
+                <div className="p-6 space-y-5">
+                  {/* Header */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center text-lg font-bold text-indigo-700">
+                        {getInitials(selectedStudent.fullName)}
+                      </div>
+                      <div>
+                        <h2 className="text-lg font-bold text-foreground">{selectedStudent.fullName}</h2>
+                        <p className="text-xs text-muted-foreground">{selectedStudent.usn} · {selectedStudent.department}</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setSelectedStudent(null)} className="p-2 rounded-lg hover:bg-muted"><X className="w-5 h-5" /></button>
+                  </div>
+
+                  {/* Personal Info */}
+                  <div className="bg-muted/30 rounded-xl p-4">
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase mb-3">Personal Information</h3>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div><span className="text-muted-foreground text-xs">Email</span><p className="font-medium">{selectedStudent.user?.email || "—"}</p></div>
+                      <div><span className="text-muted-foreground text-xs">Phone</span><p className="font-medium">{selectedStudent.phone || "—"}</p></div>
+                      <div><span className="text-muted-foreground text-xs">Date of Birth</span><p className="font-medium">{selectedStudent.dateOfBirth || "—"}</p></div>
+                      <div><span className="text-muted-foreground text-xs">Gender</span><p className="font-medium">{selectedStudent.gender || "—"}</p></div>
+                      <div><span className="text-muted-foreground text-xs">Category</span><p className="font-medium">{selectedStudent.category || "—"}</p></div>
+                      <div><span className="text-muted-foreground text-xs">Family Income</span><p className="font-medium">{selectedStudent.familyIncome || "—"}</p></div>
+                    </div>
+                  </div>
+
+                  {/* Education Records */}
+                  {selectedStudent.educationRecords?.length > 0 && (
+                    <div className="bg-muted/30 rounded-xl p-4">
+                      <h3 className="text-xs font-bold text-muted-foreground uppercase mb-3">Education</h3>
+                      <div className="space-y-3">
+                        {selectedStudent.educationRecords.map((edu: any) => (
+                          <div key={edu.id} className="flex items-center justify-between p-3 bg-white rounded-lg border border-border/40">
+                            <div>
+                              <p className="text-sm font-semibold">{edu.qualificationType}</p>
+                              {edu.collegeName && <p className="text-xs text-muted-foreground">{edu.collegeName}</p>}
+                              <p className="text-xs text-muted-foreground">
+                                {[edu.university || edu.board, edu.stream || edu.specialization].filter(Boolean).join(" · ")}
+                                {edu.passingYear ? ` · ${edu.passingYear}` : ""}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              {edu.percentage && <span className="text-sm font-bold text-indigo-600">{edu.percentage}%</span>}
+                              {edu.cgpa && <span className="text-sm font-bold text-indigo-600">CGPA {edu.cgpa}</span>}
+                              {edu.documentFileName && <p className="text-[10px] text-emerald-600 mt-1">📄 {edu.documentFileName}</p>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Skills & Certifications */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-muted/30 rounded-xl p-4">
+                      <h3 className="text-xs font-bold text-muted-foreground uppercase mb-2">Skills</h3>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(selectedStudent.profileData?.skills || []).map((s: string, i: number) => (
+                          <span key={i} className="text-[10px] px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full font-medium">{s}</span>
+                        ))}
+                        {(!selectedStudent.profileData?.skills?.length) && <p className="text-xs text-muted-foreground italic">No skills added</p>}
+                      </div>
+                    </div>
+                    <div className="bg-muted/30 rounded-xl p-4">
+                      <h3 className="text-xs font-bold text-muted-foreground uppercase mb-2">Certifications</h3>
+                      <div className="space-y-1">
+                        {(selectedStudent.profileData?.certifications || []).map((c: string, i: number) => (
+                          <p key={i} className="text-xs text-foreground">• {c}</p>
+                        ))}
+                        {(!selectedStudent.profileData?.certifications?.length) && <p className="text-xs text-muted-foreground italic">None</p>}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* About Me */}
+                  {selectedStudent.profileData?.aboutMe && (
+                    <div className="bg-muted/30 rounded-xl p-4">
+                      <h3 className="text-xs font-bold text-muted-foreground uppercase mb-2">About</h3>
+                      <p className="text-sm text-foreground">{selectedStudent.profileData.aboutMe}</p>
+                    </div>
+                  )}
+
+                  {/* Resume */}
+                  <div className="bg-muted/30 rounded-xl p-4">
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase mb-2">Resume</h3>
+                    {selectedStudent.resumeLink ? (
+                      selectedStudent.resumeLink.startsWith("uploaded:") ? (
+                        <a href={adminApi.getStudentResumeUrl(selectedStudent.id)} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors">
+                          📄 View Resume — {selectedStudent.resumeLink.replace("uploaded:", "")}
+                        </a>
+                      ) : (
+                        <a href={selectedStudent.resumeLink} target="_blank" rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition-colors">
+                          🔗 View Resume (External Link)
+                        </a>
+                      )
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">No resume uploaded</p>
+                    )}
+                  </div>
+
+                  {/* Placement Status */}
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-xl">
+                    <div>
+                      <span className="text-xs text-muted-foreground">Placement Status</span>
+                      <p className="text-sm font-bold capitalize">{selectedStudent.placementStatus || "Not Started"}</p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Profile</span>
+                      <p className="text-sm font-bold">{selectedStudent.profileComplete ? "✅ Complete" : "⏳ Incomplete"}</p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Semester</span>
+                      <p className="text-sm font-bold">{selectedStudent.semester || "—"}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

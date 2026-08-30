@@ -74,6 +74,13 @@ export class AdminController {
     return { success: true, data };
   }
 
+  @Get('students/:id/resume')
+  async getStudentResume(@Param('id') id: string, @Res() res: any) {
+    const doc = await this.adminService.getStudentResume(id);
+    res.set({ 'Content-Type': doc.type, 'Content-Disposition': `inline; filename="${doc.name}"` });
+    res.send(doc.data);
+  }
+
   @Post('students')
   async createStudent(
     @Body() dto: CreateStudentDto,

@@ -58,6 +58,33 @@ export default function AdminCompaniesPage() {
     hrPhone: "",
   });
 
+  // Company detail modal
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [selectedCompany, setSelectedCompany] = useState<any>(null);
+  const [loadingCompany, setLoadingCompany] = useState(false);
+  const [approvingCompany, setApprovingCompany] = useState(false);
+
+  const openCompanyDetail = async (id: string) => {
+    setLoadingCompany(true);
+    try {
+      const res = await adminApi.getCompany(id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setSelectedCompany((res as any).data);
+    } catch { alert("Failed to load company details"); }
+    finally { setLoadingCompany(false); }
+  };
+
+  const handleApproveFromModal = async () => {
+    if (!selectedCompany) return;
+    setApprovingCompany(true);
+    try {
+      await adminApi.approveCompany(selectedCompany.id);
+      setSelectedCompany({ ...selectedCompany, isApproved: true });
+      fetchCompanies();
+    } catch { alert("Failed to approve"); }
+    finally { setApprovingCompany(false); }
+  };
+
   const fetchCompanies = useCallback(async () => {
     try {
       setLoading(true);
@@ -211,7 +238,7 @@ export default function AdminCompaniesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {filtered.map((company) => (
-              <div key={company.id} className="i-card p-4 sm:p-6 group cursor-pointer">
+              <div key={company.id} onClick={() => openCompanyDetail(company.id)} className="i-card p-4 sm:p-6 group cursor-pointer">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-4">
                     <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center text-base sm:text-lg font-bold text-emerald-700 border border-emerald-200/50 flex-shrink-0">
@@ -512,6 +539,97 @@ export default function AdminCompaniesPage() {
                 Delete Company
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════ Company Detail Modal ═══════ */}
+      {(selectedCompany || loadingCompany) && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setSelectedCompany(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            {loadingCompany ? (
+              <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-emerald-500" /></div>
+            ) : selectedCompany && (
+              <div className="p-6 space-y-5">
+                {/* Header */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center text-lg font-bold text-emerald-700">
+                      {selectedCompany.name?.charAt(0)}
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-bold text-foreground">{selectedCompany.name}</h2>
+                      <p className="text-xs text-muted-foreground">{selectedCompany.sector || "—"}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setSelectedCompany(null)} className="p-2 rounded-lg hover:bg-muted"><X className="w-5 h-5" /></button>
+                </div>
+
+                {/* Status */}
+                <div className="flex items-center gap-3">
+                  {selectedCompany.isApproved ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-semibold">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Approved
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-semibold">
+                      ⏳ Pending Approval
+                    </span>
+                  )}
+                  {selectedCompany.profileComplete && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold">
+                      ✅ Profile Complete
+                    </span>
+                  )}
+                </div>
+
+                {/* Company Info */}
+                <div className="bg-muted/30 rounded-xl p-4">
+                  <h3 className="text-xs font-bold text-muted-foreground uppercase mb-3">Company Details</h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div><span className="text-muted-foreground text-xs">HQ City</span><p className="font-medium">{selectedCompany.hqCity || "—"}</p></div>
+                    <div><span className="text-muted-foreground text-xs">Website</span>
+                      {selectedCompany.website ? (
+                        <a href={selectedCompany.website} target="_blank" rel="noopener noreferrer" className="text-indigo-600 text-sm font-medium hover:underline block truncate">{selectedCompany.website}</a>
+                      ) : <p className="font-medium">—</p>}
+                    </div>
+                    <div><span className="text-muted-foreground text-xs">Founded</span><p className="font-medium">{selectedCompany.foundedYear || "—"}</p></div>
+                    <div><span className="text-muted-foreground text-xs">Employees</span><p className="font-medium">{selectedCompany.employeeCount || "—"}</p></div>
+                  </div>
+                </div>
+
+                {/* HR Contact */}
+                <div className="bg-muted/30 rounded-xl p-4">
+                  <h3 className="text-xs font-bold text-muted-foreground uppercase mb-3">HR Contact</h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div><span className="text-muted-foreground text-xs">Contact Person</span><p className="font-medium">{selectedCompany.hrName || "—"}</p></div>
+                    <div><span className="text-muted-foreground text-xs">Email</span><p className="font-medium truncate">{selectedCompany.email || selectedCompany.user?.email || "—"}</p></div>
+                    <div><span className="text-muted-foreground text-xs">Phone</span><p className="font-medium">{selectedCompany.hrPhone || "—"}</p></div>
+                    <div><span className="text-muted-foreground text-xs">Designation</span><p className="font-medium">{selectedCompany.hrDesignation || "—"}</p></div>
+                  </div>
+                </div>
+
+                {/* Description */}
+                {selectedCompany.description && (
+                  <div className="bg-muted/30 rounded-xl p-4">
+                    <h3 className="text-xs font-bold text-muted-foreground uppercase mb-2">Description</h3>
+                    <p className="text-sm text-foreground">{selectedCompany.description}</p>
+                  </div>
+                )}
+
+                {/* Approve Button */}
+                {!selectedCompany.isApproved && (
+                  <button
+                    onClick={handleApproveFromModal}
+                    disabled={approvingCompany}
+                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-lg hover:shadow-xl transition-all"
+                  >
+                    {approvingCompany ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                    Approve Company
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

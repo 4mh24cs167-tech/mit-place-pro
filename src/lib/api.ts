@@ -217,6 +217,11 @@ export const adminApi = {
     return apiFetch(`/api/v1/admin/companies?${query.toString()}`);
   },
   getCompany: (id: string) => apiFetch(`/api/v1/admin/companies/${id}`),
+  getStudentResumeUrl: (studentId: string) => {
+    const base = process.env.NEXT_PUBLIC_API_URL || '';
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : '';
+    return `${base}/api/v1/admin/students/${studentId}/resume?token=${token}`;
+  },
   approveCompany: (id: string) => apiFetch(`/api/v1/admin/companies/${id}/approve`, { method: 'PATCH' }),
   deleteCompany: (id: string) => apiFetch(`/api/v1/admin/companies/${id}`, { method: 'DELETE' }),
 

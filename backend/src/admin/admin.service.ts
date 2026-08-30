@@ -246,7 +246,25 @@ export class AdminService {
       relations: ['user'],
     });
     if (!student) throw new NotFoundException('Student not found');
-    return student;
+
+    // Also load education records
+    let educationRecords = [];
+    try {
+      const eduRepo = this.studentRepo.manager.getRepository('StudentEducation');
+      educationRecords = await eduRepo.find({
+        where: { studentId: student.id },
+        order: { createdAt: 'ASC' },
+        select: ['id', 'qualificationType', 'collegeName', 'courseName', 'university', 'board', 'stream', 'specialization', 'registrationNumber', 'startYear', 'passingYear', 'percentage', 'cgpa', 'documentFileName', 'documentDriveUrl'],
+      });
+    } catch { /* table may not exist yet */ }
+
+    return { ...student, educationRecords, resumeFileData: undefined };
+  }
+
+  async getStudentResume(studentId: string) {
+    const student = await this.studentRepo.findOne({ where: { id: studentId } });
+    if (!student || !student.resumeFileData) throw new NotFoundException('Resume not found');
+    return { data: student.resumeFileData, type: student.resumeFileType, name: student.resumeFileName };
   }
 
   async updateStudent(id: string, dto: UpdateStudentDto, actorId: string) {
