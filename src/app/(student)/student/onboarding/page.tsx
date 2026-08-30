@@ -207,15 +207,16 @@ export default function StudentOnboarding() {
             phone: form.phone,
             gender: form.gender,
             category: form.category,
-            dateOfBirth: form.dateOfBirth,
-            tenthPercent: sslc?.percentage ? Number(sslc.percentage) : undefined,
-            tenthBoard: sslc?.board,
-            twelfthPercent: puc?.percentage ? Number(puc.percentage) : diploma?.percentage ? Number(diploma.percentage) : undefined,
-            twelfthBoard: puc?.board || diploma?.board,
-            cgpa: form.cgpa ? Number(form.cgpa) : undefined,
-            backlogs: form.backlogs ? Number(form.backlogs) : undefined,
-            skills: form.skills,
             aboutMe: form.aboutMe,
+            skills: form.skills ? form.skills.split(",").map((s: string) => s.trim()).filter(Boolean) : [],
+            educationRecords: educations.map((e: any) => ({
+              qualificationType: e.level || e.qualificationType,
+              collegeName: e.collegeName, courseName: e.courseName, university: e.university,
+              board: e.board, stream: e.stream, specialization: e.specialization,
+              percentage: e.percentage ? Number(e.percentage) : undefined,
+              cgpa: e.cgpa ? Number(e.cgpa) : undefined,
+              passingYear: e.passingYear ? Number(e.passingYear) : undefined,
+            })),
           });
           downloadResumePdf(pdfBlob, `Resume_${Date.now()}.pdf`);
           await studentApi.updateProfile({
