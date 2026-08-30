@@ -186,8 +186,23 @@ function buildResumeHtml(data: ResumeData): string {
   `;
 }
 
+// Load html2pdf.js from CDN to avoid Next.js module issues
+function loadHtml2Pdf(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    if ((window as any).html2pdf) {
+      resolve((window as any).html2pdf);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js";
+    script.onload = () => resolve((window as any).html2pdf);
+    script.onerror = () => reject(new Error("Failed to load html2pdf.js"));
+    document.head.appendChild(script);
+  });
+}
+
 export async function generateResumePdf(data: ResumeData): Promise<Blob> {
-  const html2pdf = (await import("html2pdf.js")).default;
+  const html2pdf = await loadHtml2Pdf();
 
   const html = buildResumeHtml(data);
 
