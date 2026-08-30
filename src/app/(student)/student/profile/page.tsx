@@ -817,11 +817,14 @@ export default function StudentProfilePage() {
                                 const blob = await generateResumePdf({
                                   fullName: form.fullName, email: profile?.user?.email || "", phone: form.phone,
                                   gender: form.gender, category: form.category, aboutMe: form.aboutMe,
-                                  skills, certifications, department: profile?.department,
+                                  skills, certifications,
                                   educationRecords, linkedin: form.linkedin, github: form.github,
                                 });
-                                downloadResumePdf(blob, `${(form.fullName || "resume").replace(/\s+/g, "_")}_Resume.pdf`);
-                                showToast("success", "Resume downloaded!");
+                                const fileName = `${(form.fullName || "resume").replace(/\s+/g, "_")}_Resume.pdf`;
+                                const file = new File([blob], fileName, { type: "application/pdf" });
+                                await studentApi.uploadResume(file);
+                                setField("resumeLink", `uploaded:${fileName}`);
+                                showToast("success", "Resume generated & uploaded successfully!");
                               } catch {
                                 showToast("error", "Failed to generate resume");
                               } finally {
@@ -830,8 +833,8 @@ export default function StudentProfilePage() {
                             }}
                             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs font-semibold hover:opacity-90 transition-opacity"
                           >
-                            {generatingResume ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-                            Download as PDF
+                            {generatingResume ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                            Generate & Upload Resume
                           </button>
                         </div>
 
