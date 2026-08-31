@@ -96,12 +96,31 @@ export class StudentController {
     return { success: true, data };
   }
 
+  @Get('drives/:driveId/companies')
+  async getDriveCompanies(
+    @CurrentUser('id') userId: string,
+    @Param('driveId') driveId: string,
+  ) {
+    const data = await this.studentService.getDriveCompanies(userId, driveId);
+    return { success: true, data };
+  }
+
   @Post('drives/:driveId/register')
   async registerForDrive(
     @CurrentUser('id') userId: string,
     @Param('driveId') driveId: string,
   ) {
     const data = await this.studentService.registerForDrive(userId, driveId);
+    return { success: true, data };
+  }
+
+  @Post('drives/:driveId/attend/:jobId')
+  async attendDriveJob(
+    @CurrentUser('id') userId: string,
+    @Param('driveId') driveId: string,
+    @Param('jobId') jobId: string,
+  ) {
+    const data = await this.studentService.attendDriveJob(userId, driveId, jobId);
     return { success: true, data };
   }
 

@@ -313,6 +313,7 @@ export class AdminController {
       type: 'single' | 'multiple';
       jobId?: string;
       jobIds?: string[];
+      companyJobs?: Array<{ companyId: string; jobIds: string[] }>;
       batchIds?: string[];
       description?: string;
       driveDate?: string;

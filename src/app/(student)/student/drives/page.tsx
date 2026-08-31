@@ -8,8 +8,10 @@ import {
   Megaphone, Building2, Briefcase, CalendarDays, Loader2,
   CheckCircle2, AlertCircle, Clock, XCircle, ChevronRight,
   IndianRupee, GraduationCap, Send, Ban, AlertTriangle, MessageSquare, X,
+  Users,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import DriveCompaniesView from "./DriveCompaniesView";
 
 interface AvailableDrive {
   id: string;
@@ -25,6 +27,7 @@ interface AvailableDrive {
   alreadyRegistered: boolean;
   registrationStatus: string | null;
   createdAt: string;
+  companyCount?: number;
 }
 
 const regStatusConfig: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
@@ -44,6 +47,9 @@ export default function StudentDrivesPage() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [pendingFeedback, setPendingFeedback] = useState<{ driveId: string; driveTitle: string }[]>([]);
   const [showFeedbackGate, setShowFeedbackGate] = useState(false);
+
+  // Multi-company drive detail view
+  const [viewingDriveId, setViewingDriveId] = useState<string | null>(null);
 
   const fetchDrives = useCallback(async () => {
     try {
@@ -84,10 +90,18 @@ export default function StudentDrivesPage() {
       }
     } catch { /* continue with registration if check fails */ }
 
+    const drive = drives.find(d => d.id === driveId);
+    const isMulti = drive?.type === "multiple";
+
     try {
       setRegistering(driveId);
       await studentApi.registerForDrive(driveId);
-      setToast({ message: "Registration submitted! Awaiting admin approval.", type: "success" });
+      setToast({
+        message: isMulti
+          ? "You have joined this drive! View companies and their roles."
+          : "Registration submitted! Awaiting admin approval.",
+        type: "success",
+      });
       await fetchDrives();
     } catch (err) {
       setToast({
@@ -117,6 +131,26 @@ export default function StudentDrivesPage() {
 
   const openDrives = drives.filter((d) => !d.alreadyRegistered);
   const registeredDrives = drives.filter((d) => d.alreadyRegistered);
+
+  // If viewing a multi-company drive detail
+  if (viewingDriveId) {
+    return (
+      <div className="page-enter">
+        <Header
+          userName={user?.email?.split("@")[0] || "Student"}
+          userRole="Student"
+          greeting="Drive Companies"
+          subtitle="View participating companies and attend sessions"
+        />
+        <div className="px-4 sm:px-6 md:px-8 pb-10">
+          <DriveCompaniesView
+            driveId={viewingDriveId}
+            onBack={() => setViewingDriveId(null)}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-enter">
@@ -205,109 +239,152 @@ export default function StudentDrivesPage() {
                   Available Drives
                 </h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {openDrives.map((drive) => (
-                    <div
-                      key={drive.id}
-                      className="i-card overflow-hidden group hover:shadow-md transition-all duration-200"
-                    >
-                      {/* Card Header */}
-                      <div className="p-4 sm:p-5 border-b border-border/50">
-                        <div className="flex items-start gap-3">
-                          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center text-sm font-bold text-indigo-700 flex-shrink-0">
-                            {drive.company.charAt(0)}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-semibold text-foreground truncate">{drive.company}</h3>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                              <Briefcase className="w-3 h-3" />
-                              {drive.jobTitle}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                  {openDrives.map((drive) => {
+                    const isMulti = drive.type === "multiple";
 
-                      {/* Card Details */}
-                      <div className="p-4 sm:p-5 space-y-3">
-                        {drive.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2">{drive.description}</p>
+                    return (
+                      <div
+                        key={drive.id}
+                        className="i-card overflow-hidden group hover:shadow-md transition-all duration-200"
+                      >
+                        {/* Multi-company badge */}
+                        {isMulti && (
+                          <div className="bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-1.5 flex items-center gap-2">
+                            <Users className="w-3.5 h-3.5 text-white/80" />
+                            <span className="text-[10px] font-semibold text-white uppercase tracking-wider">
+                              Multi-Company Drive · {drive.companyCount || drive.company}
+                            </span>
+                          </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-2.5">
-                          {drive.driveDate && (
-                            <div className="flex items-center gap-2 text-xs">
-                              <CalendarDays className="w-3.5 h-3.5 text-blue-500" />
-                              <span className="text-foreground font-medium">
-                                {new Date(drive.driveDate).toLocaleDateString("en-IN", {
-                                  day: "numeric", month: "short", year: "numeric",
-                                })}
-                              </span>
+                        {/* Card Header */}
+                        <div className="p-4 sm:p-5 border-b border-border/50">
+                          <div className="flex items-start gap-3">
+                            <div className={cn(
+                              "w-11 h-11 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0",
+                              isMulti
+                                ? "bg-gradient-to-br from-indigo-500 to-violet-500 text-white"
+                                : "bg-gradient-to-br from-indigo-100 to-violet-100 text-indigo-700"
+                            )}>
+                              {isMulti ? (
+                                <Building2 className="w-5 h-5" />
+                              ) : (
+                                drive.company.charAt(0)
+                              )}
                             </div>
-                          )}
-                          {drive.ctcRange && (
-                            <div className="flex items-center gap-2 text-xs">
-                              <IndianRupee className="w-3.5 h-3.5 text-emerald-500" />
-                              <span className="text-foreground font-medium">{drive.ctcRange}</span>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm font-semibold text-foreground truncate">
+                                {isMulti ? drive.title : drive.company}
+                              </h3>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                {isMulti ? (
+                                  <>
+                                    <Building2 className="w-3 h-3" />
+                                    {drive.company}
+                                  </>
+                                ) : (
+                                  <>
+                                    <Briefcase className="w-3 h-3" />
+                                    {drive.jobTitle}
+                                  </>
+                                )}
+                              </p>
                             </div>
-                          )}
-                          {drive.departments.length > 0 && (
-                            <div className="flex items-center gap-2 text-xs col-span-2">
-                              <GraduationCap className="w-3.5 h-3.5 text-violet-500" />
-                              <span className="text-muted-foreground">{drive.departments.join(", ")}</span>
-                            </div>
-                          )}
+                          </div>
                         </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex gap-2 mt-2">
-                          <button
-                            onClick={() => handleRegister(drive.id)}
-                            disabled={registering === drive.id || declining === drive.id}
-                            className={cn(
-                              "flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold",
-                              "bg-gradient-to-r from-indigo-600 to-violet-600 text-white",
-                              "hover:from-indigo-700 hover:to-violet-700",
-                              "active:scale-[0.98] transition-all duration-150",
-                              "disabled:opacity-60 disabled:cursor-not-allowed",
-                              "flex items-center justify-center gap-2 shadow-sm"
+                        {/* Card Details */}
+                        <div className="p-4 sm:p-5 space-y-3">
+                          {drive.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-2">{drive.description}</p>
+                          )}
+
+                          <div className="grid grid-cols-2 gap-2.5">
+                            {drive.driveDate && (
+                              <div className="flex items-center gap-2 text-xs">
+                                <CalendarDays className="w-3.5 h-3.5 text-blue-500" />
+                                <span className="text-foreground font-medium">
+                                  {new Date(drive.driveDate).toLocaleDateString("en-IN", {
+                                    day: "numeric", month: "short", year: "numeric",
+                                  })}
+                                </span>
+                              </div>
                             )}
-                          >
-                            {registering === drive.id ? (
-                              <>
+                            {drive.ctcRange && (
+                              <div className="flex items-center gap-2 text-xs">
+                                <IndianRupee className="w-3.5 h-3.5 text-emerald-500" />
+                                <span className="text-foreground font-medium">{drive.ctcRange}</span>
+                              </div>
+                            )}
+                            {drive.departments.length > 0 && (
+                              <div className="flex items-center gap-2 text-xs col-span-2">
+                                <GraduationCap className="w-3.5 h-3.5 text-violet-500" />
+                                <span className="text-muted-foreground">{drive.departments.join(", ")}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Auto-approval note for multi-company */}
+                          {isMulti && (
+                            <div className="bg-blue-50 border border-blue-100 rounded-lg p-2">
+                              <p className="text-[10px] text-blue-700 font-medium">
+                                ✨ Instant join — no approval needed. View all companies after joining.
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Action Buttons */}
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() => handleRegister(drive.id)}
+                              disabled={registering === drive.id || declining === drive.id}
+                              className={cn(
+                                "flex-1 py-2.5 px-4 rounded-xl text-sm font-semibold",
+                                "bg-gradient-to-r from-indigo-600 to-violet-600 text-white",
+                                "hover:from-indigo-700 hover:to-violet-700",
+                                "active:scale-[0.98] transition-all duration-150",
+                                "disabled:opacity-60 disabled:cursor-not-allowed",
+                                "flex items-center justify-center gap-2 shadow-sm"
+                              )}
+                            >
+                              {registering === drive.id ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  {isMulti ? "Joining..." : "Registering..."}
+                                </>
+                              ) : (
+                                <>
+                                  <Send className="w-4 h-4" />
+                                  {isMulti ? "Join Drive" : "Attend Drive"}
+                                </>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleDecline(drive.id)}
+                              disabled={declining === drive.id || registering === drive.id}
+                              className={cn(
+                                "py-2.5 px-4 rounded-xl text-sm font-semibold",
+                                "bg-slate-100 text-slate-700 border border-slate-200",
+                                "hover:bg-slate-200 hover:border-slate-300",
+                                "active:scale-[0.98] transition-all duration-150",
+                                "disabled:opacity-60 disabled:cursor-not-allowed",
+                                "flex items-center justify-center gap-2"
+                              )}
+                            >
+                              {declining === drive.id ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                Registering...
-                              </>
-                            ) : (
-                              <>
-                                <Send className="w-4 h-4" />
-                                Attend Drive
-                              </>
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleDecline(drive.id)}
-                            disabled={declining === drive.id || registering === drive.id}
-                            className={cn(
-                              "py-2.5 px-4 rounded-xl text-sm font-semibold",
-                              "bg-slate-100 text-slate-700 border border-slate-200",
-                              "hover:bg-slate-200 hover:border-slate-300",
-                              "active:scale-[0.98] transition-all duration-150",
-                              "disabled:opacity-60 disabled:cursor-not-allowed",
-                              "flex items-center justify-center gap-2"
-                            )}
-                          >
-                            {declining === drive.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <>
-                                <Ban className="w-4 h-4" />
-                                Decline
-                              </>
-                            )}
-                          </button>
+                              ) : (
+                                <>
+                                  <Ban className="w-4 h-4" />
+                                  Decline
+                                </>
+                              )}
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -323,16 +400,37 @@ export default function StudentDrivesPage() {
                   {registeredDrives.map((drive) => {
                     const sc = regStatusConfig[drive.registrationStatus || "pending"] || regStatusConfig.pending;
                     const StatusIcon = sc.icon;
+                    const isMulti = drive.type === "multiple";
+                    const isApproved = drive.registrationStatus === "approved";
+
                     return (
-                      <div key={drive.id} className="i-card p-4 sm:p-5">
+                      <div
+                        key={drive.id}
+                        className={cn(
+                          "i-card p-4 sm:p-5",
+                          isMulti && isApproved && "cursor-pointer hover:shadow-md transition-all"
+                        )}
+                        onClick={() => {
+                          if (isMulti && isApproved) setViewingDriveId(drive.id);
+                        }}
+                      >
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-100 to-slate-100 flex items-center justify-center text-sm font-bold text-gray-600 flex-shrink-0">
-                              {drive.company.charAt(0)}
+                            <div className={cn(
+                              "w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0",
+                              isMulti
+                                ? "bg-gradient-to-br from-indigo-500 to-violet-500 text-white"
+                                : "bg-gradient-to-br from-gray-100 to-slate-100 text-gray-600"
+                            )}>
+                              {isMulti ? <Building2 className="w-4 h-4" /> : drive.company.charAt(0)}
                             </div>
                             <div>
-                              <h4 className="text-sm font-semibold text-foreground">{drive.company}</h4>
-                              <p className="text-xs text-muted-foreground">{drive.jobTitle}</p>
+                              <h4 className="text-sm font-semibold text-foreground">
+                                {isMulti ? drive.title : drive.company}
+                              </h4>
+                              <p className="text-xs text-muted-foreground">
+                                {isMulti ? drive.company : drive.jobTitle}
+                              </p>
                               {drive.driveDate && (
                                 <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1">
                                   <CalendarDays className="w-3 h-3" />
@@ -343,9 +441,16 @@ export default function StudentDrivesPage() {
                               )}
                             </div>
                           </div>
-                          <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border self-start sm:self-center", sc.bg, sc.color)}>
-                            <StatusIcon className="w-3.5 h-3.5" />
-                            {sc.label}
+                          <div className="flex items-center gap-2">
+                            <div className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border self-start sm:self-center", sc.bg, sc.color)}>
+                              <StatusIcon className="w-3.5 h-3.5" />
+                              {sc.label}
+                            </div>
+                            {isMulti && isApproved && (
+                              <div className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-full text-xs font-semibold text-indigo-700">
+                                View Companies <ChevronRight className="w-3.5 h-3.5" />
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>

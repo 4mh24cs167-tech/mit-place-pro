@@ -16,6 +16,8 @@ import { Notification } from '../entities/notification.entity';
 import { AuditLog } from '../entities/audit-log.entity';
 import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
+import { DriveCompanyJob } from '../entities/drive-company-job.entity';
+import { DriveAttendance } from '../entities/drive-attendance.entity';
 import { EmailLog } from '../entities/email-log.entity';
 import { StudentDriveFeedback, CompanyDriveFeedback } from '../entities/feedback.entity';
 import { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule, AssessmentSubItem, AssessmentCredential } from '../entities/assessment.entity';
@@ -40,6 +42,8 @@ import { InternshipService } from './internship.service';
       Drive,
       DriveRegistration,
       DriveSlot,
+      DriveCompanyJob,
+      DriveAttendance,
       EmailLog,
       StudentDriveFeedback,
       CompanyDriveFeedback,

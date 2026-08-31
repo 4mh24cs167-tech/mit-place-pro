@@ -13,6 +13,8 @@ export { PlacementPoster } from './placement-poster.entity';
 export { Notification } from './notification.entity';
 export { AuditLog } from './audit-log.entity';
 export { Drive, DriveRegistration, DriveSlot } from './drive.entity';
+export { DriveCompanyJob } from './drive-company-job.entity';
+export { DriveAttendance } from './drive-attendance.entity';
 export { RoundMeeting, MeetingGroup, MeetingAssignment } from './round-meeting.entity';
 export { EmailLog } from './email-log.entity';
 export { StudentDriveFeedback, CompanyDriveFeedback } from './feedback.entity';

@@ -11,6 +11,8 @@ import { Cv } from '../entities/cv.entity';
 import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
+import { DriveCompanyJob } from '../entities/drive-company-job.entity';
+import { DriveAttendance } from '../entities/drive-attendance.entity';
 import { MeetingAssignment } from '../entities/round-meeting.entity';
 import { StudentDriveFeedback, CompanyDriveFeedback } from '../entities/feedback.entity';
 import { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule, AssessmentSubItem } from '../entities/assessment.entity';
@@ -31,6 +33,8 @@ import { AdminModule } from '../admin/admin.module';
       Drive,
       DriveRegistration,
       DriveSlot,
+      DriveCompanyJob,
+      DriveAttendance,
       MeetingAssignment,
       StudentDriveFeedback,
       CompanyDriveFeedback,

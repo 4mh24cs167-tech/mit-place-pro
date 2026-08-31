@@ -10,6 +10,8 @@ import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { Student } from '../entities/student.entity';
 import { Drive, DriveSlot, DriveRegistration } from '../entities/drive.entity';
+import { DriveCompanyJob } from '../entities/drive-company-job.entity';
+import { DriveAttendance } from '../entities/drive-attendance.entity';
 import { RoundMeeting, MeetingGroup, MeetingAssignment } from '../entities/round-meeting.entity';
 import type { MeetingStatus } from '../entities/round-meeting.entity';
 import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto, SubmitRoundResultsDto, UpdateJobRoundsDto, CreateRoundMeetingDto, UpdateRoundMeetingDto } from './dto/company.dto';
@@ -30,6 +32,8 @@ export class CompanyService {
     @InjectRepository(Drive) private readonly driveRepo: Repository<Drive>,
     @InjectRepository(DriveSlot) private readonly driveSlotRepo: Repository<DriveSlot>,
     @InjectRepository(DriveRegistration) private readonly driveRegRepo: Repository<DriveRegistration>,
+    @InjectRepository(DriveCompanyJob) private readonly dcjRepo: Repository<DriveCompanyJob>,
+    @InjectRepository(DriveAttendance) private readonly attendanceRepo: Repository<DriveAttendance>,
     @InjectRepository(RoundMeeting) private readonly roundMeetingRepo: Repository<RoundMeeting>,
     @InjectRepository(MeetingGroup) private readonly meetingGroupRepo: Repository<MeetingGroup>,
     @InjectRepository(MeetingAssignment) private readonly meetingAssignmentRepo: Repository<MeetingAssignment>,
@@ -392,6 +396,21 @@ export class CompanyService {
       order: { createdAt: 'DESC' },
     });
 
+    // After existing drive lookup, also find drives via DriveCompanyJob
+    const dcjDriveIds = await this.dcjRepo.find({
+      where: { companyId: company.id },
+      select: ['driveId'],
+    });
+    const additionalDriveIds = dcjDriveIds.map(d => d.driveId).filter(id => !drives.some(d => d.id === id));
+    if (additionalDriveIds.length > 0) {
+      const additionalDrives = await this.driveRepo.find({
+        where: { id: In(additionalDriveIds) },
+        relations: ['job', 'slots'],
+        order: { createdAt: 'DESC' },
+      });
+      drives.push(...additionalDrives);
+    }
+
     // Collect all jobIds from d.jobIds across all matching drives
     const allJobIds = [...new Set(drives.flatMap((d) => d.jobIds || (d.jobId ? [d.jobId] : [])))];
     
@@ -443,6 +462,79 @@ export class CompanyService {
         createdAt: drive.createdAt,
       };
     });
+  }
+
+  async getDriveAttendees(userId: string, driveId: string) {
+    const company = await this.companyRepo.findOne({ where: { userId } });
+    if (!company) throw new NotFoundException('Company profile not found');
+
+    // Verify company is part of this drive
+    const dcjs = await this.dcjRepo.find({
+      where: { driveId, companyId: company.id },
+      relations: ['job'],
+    });
+    
+    // Also check single-company drives
+    if (dcjs.length === 0) {
+      const drive = await this.driveRepo.findOne({ where: { id: driveId } });
+      if (!drive) throw new NotFoundException('Drive not found');
+      // Fall back to checking if any of company's jobs are in the drive
+      const companyJobs = await this.jobRepo.find({ where: { companyId: company.id } });
+      const companyJobIds = companyJobs.map(j => j.id);
+      const driveJobIds = drive.jobIds && drive.jobIds.length > 0 ? drive.jobIds : (drive.jobId ? [drive.jobId] : []);
+      const overlap = driveJobIds.filter(id => companyJobIds.includes(id));
+      if (overlap.length === 0) throw new ForbiddenException('You are not part of this drive');
+    }
+
+    // Get all attendance records for this company in this drive
+    const attendances = await this.attendanceRepo.find({
+      where: { driveId, companyId: company.id },
+      relations: ['job'],
+    });
+
+    if (attendances.length === 0) return { jobs: [], totalAttendees: 0 };
+
+    // Get student details
+    const studentIds = [...new Set(attendances.map(a => a.studentId))];
+    const students = await this.studentRepo.find({
+      where: { id: In(studentIds) },
+      relations: ['user', 'batch'],
+    });
+    const studentMap = new Map(students.map(s => [s.id, s]));
+
+    // Group by job
+    const jobMap = new Map<string, { jobId: string; jobTitle: string; students: Array<{ studentId: string; fullName: string; usn: string; department: string; cgpa: number | null; email: string; phone: string | null; semester: number | null; resumeLink: string | null; driveLink: string | null; attendedAt: Date }> }>();
+
+    for (const att of attendances) {
+      if (!jobMap.has(att.jobId)) {
+        jobMap.set(att.jobId, {
+          jobId: att.jobId,
+          jobTitle: att.job?.title || 'Unknown',
+          students: [],
+        });
+      }
+      const student = studentMap.get(att.studentId);
+      if (student) {
+        jobMap.get(att.jobId)!.students.push({
+          studentId: student.id,
+          fullName: student.fullName,
+          usn: student.usn,
+          department: student.department,
+          cgpa: student.cgpa,
+          email: student.user?.email || '',
+          phone: student.phone,
+          semester: student.semester,
+          resumeLink: student.resumeLink,
+          driveLink: student.driveLink,
+          attendedAt: att.createdAt,
+        });
+      }
+    }
+
+    return {
+      jobs: Array.from(jobMap.values()),
+      totalAttendees: studentIds.length,
+    };
   }
 
   // ─── Bulk Round Results ─────────────────────────

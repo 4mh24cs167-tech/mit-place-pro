@@ -11,6 +11,9 @@ import { Notification } from '../entities/notification.entity';
 import { Drive, DriveRegistration, DriveSlot } from '../entities/drive.entity';
 import { MeetingAssignment } from '../entities/round-meeting.entity';
 import { StudentEducation, QualificationType } from '../entities/student-education.entity';
+import { DriveCompanyJob } from '../entities/drive-company-job.entity';
+import { DriveAttendance } from '../entities/drive-attendance.entity';
+import { Company } from '../entities/company.entity';
 import { UpdateProfileDto, ApplyJobDto, CreateEducationDto, UpdateEducationDto } from './dto/student.dto';
 
 @Injectable()
@@ -28,6 +31,8 @@ export class StudentService {
     @InjectRepository(DriveSlot) private readonly driveSlotRepo: Repository<DriveSlot>,
     @InjectRepository(MeetingAssignment) private readonly meetingAssignmentRepo: Repository<MeetingAssignment>,
     @InjectRepository(StudentEducation) private readonly educationRepo: Repository<StudentEducation>,
+    @InjectRepository(DriveCompanyJob) private readonly dcjRepo: Repository<DriveCompanyJob>,
+    @InjectRepository(DriveAttendance) private readonly attendanceRepo: Repository<DriveAttendance>,
   ) {}
 
   // ─── Profile ────────────────────────────────────
@@ -400,6 +405,18 @@ export class StudentService {
     });
     const registeredDriveIds = new Set(existingRegs.map((r) => r.driveId));
 
+    // For multi-company drives, get all DriveCompanyJob entries
+    const multiDrives = matchingDrives.filter(d => d.type === 'multiple');
+    const multiDriveIds = multiDrives.map(d => d.id);
+    let multiDcjMap = new Map<string, Set<string>>(); // driveId -> Set of companyIds
+    if (multiDriveIds.length > 0) {
+      const dcjs = await this.dcjRepo.find({ where: { driveId: In(multiDriveIds) } });
+      for (const dcj of dcjs) {
+        if (!multiDcjMap.has(dcj.driveId)) multiDcjMap.set(dcj.driveId, new Set());
+        multiDcjMap.get(dcj.driveId)!.add(dcj.companyId);
+      }
+    }
+
     return matchingDrives.map((drive) => {
       const registered = registeredDriveIds.has(drive.id);
       const reg = existingRegs.find((r) => r.driveId === drive.id);
@@ -408,7 +425,14 @@ export class StudentService {
       const jobIds = drive.jobIds && drive.jobIds.length > 0 ? drive.jobIds : (drive.jobId ? [drive.jobId] : []);
       const matchedJobs = jobIds.map((id) => allJobsMap.get(id)).filter(Boolean) as Job[];
       
-      const companyName = matchedJobs[0]?.company?.name || drive.job?.company?.name || 'Unknown';
+      let companyCount = 1;
+      let companyName = matchedJobs[0]?.company?.name || drive.job?.company?.name || 'Unknown';
+      if (drive.type === 'multiple') {
+        const uniqueCIds = multiDcjMap.get(drive.id) || new Set();
+        companyCount = uniqueCIds.size || 1;
+        companyName = `${companyCount} Companies`;
+      }
+
       const jobTitles = matchedJobs.length > 0 
         ? matchedJobs.map((j) => j.title).join(', ') 
         : (drive.job?.title || 'Unknown');
@@ -432,6 +456,7 @@ export class StudentService {
         driveDate: drive.driveDate,
         departments: drive.departments,
         description: drive.description,
+        companyCount,
         company: companyName,
         jobTitle: jobTitles,
         ctcRange,
@@ -485,21 +510,27 @@ export class StudentService {
       }
     }
 
-    // Create pending registration
+    // Create pending registration (or approved if multiple)
+    const status = drive.type === 'multiple' ? 'approved' : 'pending';
     const registration = await this.driveRegRepo.save({
       driveId,
       studentId: student.id,
-      status: 'pending' as const,
+      status: status as 'pending' | 'approved',
     });
 
     const companyName = jobs[0]?.company?.name || drive.job?.company?.name || 'A company';
+
+    let message = 'You have registered for this drive. Your registration is pending admin approval.';
+    if (drive.type === 'multiple') {
+      message = 'You have joined this drive. You can now view companies and attend their sessions.';
+    }
 
     return {
       id: registration.id,
       driveTitle: drive.title,
       company: companyName,
-      status: 'pending',
-      message: 'You have registered for this drive. Your registration is pending admin approval.',
+      status,
+      message,
     };
   }
 
@@ -603,6 +634,112 @@ export class StudentService {
         })) : [], // Only show slots if approved
       };
     });
+  }
+
+  async attendDriveJob(userId: string, driveId: string, jobId: string) {
+    const student = await this.studentRepo.findOne({ where: { userId } });
+    if (!student) throw new NotFoundException('Student profile not found');
+
+    // Verify drive exists and student is registered+approved
+    const registration = await this.driveRegRepo.findOne({
+      where: { driveId, studentId: student.id, status: 'approved' },
+    });
+    if (!registration) throw new BadRequestException('You must join this drive first');
+
+    // Verify this job is part of this drive
+    const dcj = await this.dcjRepo.findOne({
+      where: { driveId, jobId },
+      relations: ['company'],
+    });
+    if (!dcj) throw new NotFoundException('This job is not part of this drive');
+
+    // Check if already attending
+    const existing = await this.attendanceRepo.findOne({
+      where: { driveId, studentId: student.id, jobId },
+    });
+    if (existing) throw new ConflictException('You are already attending this job');
+
+    // Create attendance record
+    const attendance = await this.attendanceRepo.save({
+      driveId,
+      studentId: student.id,
+      jobId,
+      companyId: dcj.companyId,
+    });
+
+    return {
+      id: attendance.id,
+      message: 'You are now attending this company session.',
+      companyName: dcj.company?.name || 'Company',
+    };
+  }
+
+  async getDriveCompanies(userId: string, driveId: string) {
+    const student = await this.studentRepo.findOne({ where: { userId } });
+    if (!student) throw new NotFoundException('Student profile not found');
+
+    // Verify student is registered for this drive
+    const registration = await this.driveRegRepo.findOne({
+      where: { driveId, studentId: student.id },
+    });
+    if (!registration) throw new BadRequestException('You are not registered for this drive');
+
+    const drive = await this.driveRepo.findOne({ where: { id: driveId } });
+    if (!drive) throw new NotFoundException('Drive not found');
+
+    // Get all company+job entries for this drive
+    const dcjs = await this.dcjRepo.find({
+      where: { driveId },
+      relations: ['company', 'job'],
+    });
+
+    // Get student's existing attendances for this drive
+    const myAttendances = await this.attendanceRepo.find({
+      where: { driveId, studentId: student.id },
+    });
+    const attendedJobIds = new Set(myAttendances.map(a => a.jobId));
+
+    // Group by company
+    const companyMap = new Map<string, { companyId: string; companyName: string; companyWebsite: string | null; companyDescription: string | null; companyLogo: string | null; jobs: Array<{ id: string; title: string; description: string; ctcMinLpa: number | null; ctcMaxLpa: number | null; workMode: string | null; workLocation: string | null; requiredSkills: string[]; allowedDepartments: string[]; totalVacancies: number; jobType: string; attending: boolean }> }>();
+
+    for (const dcj of dcjs) {
+      if (!companyMap.has(dcj.companyId)) {
+        companyMap.set(dcj.companyId, {
+          companyId: dcj.companyId,
+          companyName: dcj.company?.name || 'Unknown',
+          companyWebsite: dcj.company?.website || null,
+          companyDescription: dcj.company?.description || null,
+          companyLogo: dcj.company?.name?.charAt(0) || '?',
+          jobs: [],
+        });
+      }
+      const entry = companyMap.get(dcj.companyId)!;
+      const job = dcj.job;
+      if (job) {
+        entry.jobs.push({
+          id: job.id,
+          title: job.title,
+          description: job.description,
+          ctcMinLpa: job.ctcMinLpa,
+          ctcMaxLpa: job.ctcMaxLpa,
+          workMode: job.workMode,
+          workLocation: job.workLocation,
+          requiredSkills: job.requiredSkills || [],
+          allowedDepartments: job.allowedDepartments || [],
+          totalVacancies: job.totalVacancies,
+          jobType: job.jobType || 'placement',
+          attending: attendedJobIds.has(job.id),
+        });
+      }
+    }
+
+    return {
+      driveId: drive.id,
+      driveTitle: drive.title,
+      driveDate: drive.driveDate,
+      description: drive.description,
+      companies: Array.from(companyMap.values()),
+    };
   }
 
   // ─── Meetings ──────────────────────────────────────

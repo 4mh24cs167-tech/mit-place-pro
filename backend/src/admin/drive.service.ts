@@ -9,6 +9,9 @@ import { Notification } from '../entities/notification.entity';
 import { AuditLog } from '../entities/audit-log.entity';
 import { EmailService } from './email.service';
 import { Application } from '../entities/application.entity';
+import { Company } from '../entities/company.entity';
+import { DriveCompanyJob } from '../entities/drive-company-job.entity';
+import { DriveAttendance } from '../entities/drive-attendance.entity';
 
 @Injectable()
 export class DriveService {
@@ -24,6 +27,9 @@ export class DriveService {
     @InjectRepository(Notification) private readonly notificationRepo: Repository<Notification>,
     @InjectRepository(AuditLog) private readonly auditRepo: Repository<AuditLog>,
     @InjectRepository(Application) private readonly applicationRepo: Repository<Application>,
+    @InjectRepository(Company) private readonly companyRepo: Repository<Company>,
+    @InjectRepository(DriveCompanyJob) private readonly dcjRepo: Repository<DriveCompanyJob>,
+    @InjectRepository(DriveAttendance) private readonly attendanceRepo: Repository<DriveAttendance>,
     private readonly emailService: EmailService,
   ) {}
 
@@ -33,12 +39,20 @@ export class DriveService {
     type: 'single' | 'multiple';
     jobId?: string;
     jobIds?: string[];
+    companyJobs?: Array<{ companyId: string; jobIds: string[] }>;
     batchIds?: string[];
     description?: string;
     driveDate?: string;
     departments?: string[];
   }, actorId: string) {
-    const jobIds = data.jobIds && data.jobIds.length > 0 ? data.jobIds : (data.jobId ? [data.jobId] : []);
+    let jobIds = data.jobIds && data.jobIds.length > 0 ? data.jobIds : (data.jobId ? [data.jobId] : []);
+    let dcjEntriesData: Array<{ companyId: string; jobIds: string[] }> = [];
+
+    if (data.type === 'multiple' && data.companyJobs && data.companyJobs.length > 0) {
+      jobIds = data.companyJobs.flatMap(cj => cj.jobIds);
+      dcjEntriesData = data.companyJobs;
+    }
+
     if (jobIds.length === 0) throw new BadRequestException('No job specified');
 
     // Fetch all jobs
@@ -50,8 +64,18 @@ export class DriveService {
       ? data.departments 
       : [...new Set(jobs.flatMap(j => j.allowedDepartments || []))];
 
+    let title = data.title;
+    if (!title) {
+      if (data.type === 'multiple' && dcjEntriesData.length > 0) {
+        const uniqueCompanies = [...new Set(jobs.map(j => j.company?.name).filter(Boolean))];
+        title = `Multi-Company Drive — ${uniqueCompanies.join(', ')}`;
+      } else {
+        title = `${primaryJob.company?.name || 'Company'} - ${jobs.map(j => j.title).join(', ')}`;
+      }
+    }
+
     const drive = await this.driveRepo.save({
-      title: data.title || `${primaryJob.company?.name || 'Company'} - ${jobs.map(j => j.title).join(', ')}`,
+      title,
       type: data.type,
       jobId: primaryJob.id,
       jobIds: jobIds,
@@ -61,6 +85,17 @@ export class DriveService {
       departments,
       batchIds: data.batchIds || [],
     });
+
+    if (data.type === 'multiple' && dcjEntriesData.length > 0) {
+      const dcjEntries = dcjEntriesData.flatMap(cj =>
+        cj.jobIds.map(jobId => ({
+          driveId: drive.id,
+          companyId: cj.companyId,
+          jobId,
+        }))
+      );
+      await this.dcjRepo.save(dcjEntries);
+    }
 
     // Find eligible students and NOTIFY them (opt-in workflow, no auto-registration)
     const studentQuery = this.studentRepo.createQueryBuilder('s')
@@ -156,6 +191,22 @@ export class DriveService {
       allJobsMap = new Map(jobs.map((j) => [j.id, j]));
     }
 
+    // Fetch DriveCompanyJob for multiple drives
+    const multiDriveIds = results.filter(d => d.type === 'multiple').map(d => d.id);
+    const dcjMap = new Map<string, { companies: Set<string>, companyCount: number }>();
+    if (multiDriveIds.length > 0) {
+      const dcjs = await this.dcjRepo.find({ where: { driveId: In(multiDriveIds) } });
+      for (const dcj of dcjs) {
+        if (!dcjMap.has(dcj.driveId)) {
+          dcjMap.set(dcj.driveId, { companies: new Set(), companyCount: 0 });
+        }
+        dcjMap.get(dcj.driveId)!.companies.add(dcj.companyId);
+      }
+      for (const val of dcjMap.values()) {
+        val.companyCount = val.companies.size;
+      }
+    }
+
     // Batch-load registration status counts in a single query
     const driveIds = results.map((d) => d.id);
     let statusCounts: Array<{ drive_id: string; status: string; cnt: string }> = [];
@@ -194,10 +245,18 @@ export class DriveService {
       const jobIds = d.jobIds && d.jobIds.length > 0 ? d.jobIds : (d.jobId ? [d.jobId] : []);
       const matchedJobs = jobIds.map((id) => allJobsMap.get(id)).filter(Boolean) as Job[];
       
-      const companyName = matchedJobs[0]?.company?.name || d.job?.company?.name || 'Unknown';
-      const jobTitles = matchedJobs.length > 0 
+      let companyName = matchedJobs[0]?.company?.name || d.job?.company?.name || 'Unknown';
+      let jobTitles = matchedJobs.length > 0 
         ? matchedJobs.map((j) => j.title).join(', ') 
         : (d.job?.title || 'Unknown');
+      let companyCount = 1;
+
+      if (d.type === 'multiple' && dcjMap.has(d.id)) {
+        const mcData = dcjMap.get(d.id)!;
+        companyName = `${mcData.companyCount} Companies`;
+        companyCount = mcData.companyCount;
+        jobTitles = matchedJobs.map(j => j.title).join(', ');
+      }
 
       return {
         id: d.id,
@@ -208,6 +267,7 @@ export class DriveService {
         departments: d.departments,
         batchIds: d.batchIds || [],
         company: companyName,
+        companyCount,
         jobTitle: jobTitles,
         jobId: d.jobId || jobIds[0] || null,
         jobIds: jobIds,
@@ -234,10 +294,47 @@ export class DriveService {
       ? await this.jobRepo.find({ where: { id: In(jobIds) }, relations: ['company'] }) 
       : [];
 
-    const companyName = matchedJobs[0]?.company?.name || drive.job?.company?.name || 'Unknown';
-    const jobTitles = matchedJobs.length > 0 
+    let companyName = matchedJobs[0]?.company?.name || drive.job?.company?.name || 'Unknown';
+    let jobTitles = matchedJobs.length > 0 
       ? matchedJobs.map((j) => j.title).join(', ') 
       : (drive.job?.title || 'Unknown');
+
+    let companyJobsResult: Array<{ companyId: string, companyName: string, jobs: any[] }> = [];
+    let attendanceCountsResult: Record<string, number> = {};
+
+    if (drive.type === 'multiple') {
+      const dcjs = await this.dcjRepo.find({
+        where: { driveId },
+        relations: ['company', 'job'],
+      });
+      
+      const cjMap = new Map<string, { companyId: string, companyName: string, jobs: any[] }>();
+      for (const dcj of dcjs) {
+        if (!cjMap.has(dcj.companyId)) {
+          cjMap.set(dcj.companyId, {
+            companyId: dcj.companyId,
+            companyName: dcj.company?.name || 'Unknown',
+            jobs: []
+          });
+        }
+        if (dcj.job) {
+          cjMap.get(dcj.companyId)!.jobs.push(dcj.job);
+        }
+      }
+      companyJobsResult = Array.from(cjMap.values());
+      
+      if (companyJobsResult.length > 0) {
+        companyName = `${companyJobsResult.length} Companies`;
+      }
+
+      const attendances = await this.attendanceRepo.find({ where: { driveId } });
+      for (const att of attendances) {
+        if (!attendanceCountsResult[att.jobId]) {
+          attendanceCountsResult[att.jobId] = 0;
+        }
+        attendanceCountsResult[att.jobId]++;
+      }
+    }
 
     const registrations = await this.regRepo.find({
       where: { driveId },
@@ -306,6 +403,8 @@ export class DriveService {
       jobId: drive.jobId || jobIds[0] || null,
       jobIds: jobIds,
       jobs: matchedJobs.map(j => ({ id: j.id, title: j.title })),
+      companyJobs: companyJobsResult,
+      attendanceCounts: attendanceCountsResult,
       registrations: enrichedRegs,
       slots: drive.slots || [],
       totalEligible,

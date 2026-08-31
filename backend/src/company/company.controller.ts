@@ -126,6 +126,15 @@ export class CompanyController {
     return { success: true, data };
   }
 
+  @Get('drives/:driveId/attendees')
+  async getDriveAttendees(
+    @CurrentUser('id') userId: string,
+    @Param('driveId') driveId: string,
+  ) {
+    const data = await this.companyService.getDriveAttendees(userId, driveId);
+    return { success: true, data };
+  }
+
   // ─── Attendance & Results ─────────────────────
   @Patch('attendance')
   async markAttendance(

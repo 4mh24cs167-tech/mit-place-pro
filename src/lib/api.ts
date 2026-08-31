@@ -299,6 +299,7 @@ export const adminApi = {
   getDrive: (id: string) => apiFetch(`/api/v1/admin/drives/${id}`),
   createDrive: (data: {
     title: string; type: 'single' | 'multiple'; jobId?: string; jobIds?: string[];
+    companyJobs?: Array<{ companyId: string; jobIds: string[] }>;
     description?: string; driveDate?: string; departments?: string[]; batchIds?: string[];
   }) => apiFetch('/api/v1/admin/drives', { method: 'POST', body: data }),
   rejectDriveStudents: (driveId: string, studentIds: string[], reason?: string) =>
@@ -364,6 +365,8 @@ export const studentApi = {
   getAvailableDrives: () => apiFetch('/api/v1/student/drives/available'),
   registerForDrive: (driveId: string) => apiFetch(`/api/v1/student/drives/${driveId}/register`, { method: 'POST' }),
   declineDrive: (driveId: string) => apiFetch(`/api/v1/student/drives/${driveId}/decline`, { method: 'POST' }),
+  attendDriveJob: (driveId: string, jobId: string) => apiFetch(`/api/v1/student/drives/${driveId}/attend/${jobId}`, { method: 'POST' }),
+  getDriveCompanies: (driveId: string) => apiFetch(`/api/v1/student/drives/${driveId}/companies`),
   getDriveAllocations: () => apiFetch('/api/v1/student/drives'),
   getNotifications: () => apiFetch('/api/v1/student/notifications'),
   markNotificationRead: (id: string) => apiFetch(`/api/v1/student/notifications/${id}/read`, { method: 'PATCH' }),
@@ -420,6 +423,7 @@ export const companyApi = {
   getAvailability: (jobId: string) => apiFetch(`/api/v1/company/jobs/${jobId}/availability`),
   getCandidates: (jobId: string) => apiFetch(`/api/v1/company/jobs/${jobId}/candidates`),
   getDrives: () => apiFetch('/api/v1/company/drives'),
+  getDriveAttendees: (driveId: string) => apiFetch(`/api/v1/company/drives/${driveId}/attendees`),
   markAttendance: (slotId: string, attendance: string) => apiFetch('/api/v1/company/attendance', { method: 'PATCH', body: { slotId, attendance } }),
   markRoundResult: (slotId: string, result: string) => apiFetch('/api/v1/company/round-result', { method: 'PATCH', body: { slotId, result } }),
   submitRoundResults: (jobId: string, round: number, selectedStudentIds: string[]) =>
