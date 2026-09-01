@@ -21,7 +21,7 @@ export default function StudentLayout({
   useEffect(() => {
     if (authLoading) return;
     if (!user || user.role !== "student") {
-      setCheckingProfile(false);
+      router.replace("/login");
       return;
     }
 
@@ -32,8 +32,8 @@ export default function StudentLayout({
         const data = (res as any)?.data;
         setProfileComplete(!!data?.profileComplete);
       } catch {
-        // If profile fails to load, allow access (don't lock them out on API failure)
-        setProfileComplete(true);
+        // On API failure, assume profile is incomplete — safer than granting access
+        setProfileComplete(false);
       } finally {
         setCheckingProfile(false);
       }

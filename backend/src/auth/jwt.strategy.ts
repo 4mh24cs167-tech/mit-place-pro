@@ -19,7 +19,13 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET') || 'fallback-secret',
+      secretOrKey: (() => {
+        const secret = configService.get<string>('JWT_SECRET');
+        if (!secret || secret.length < 16) {
+          throw new Error('FATAL: JWT_SECRET environment variable is missing or too short (min 16 chars)');
+        }
+        return secret;
+      })(),
     });
   }
 

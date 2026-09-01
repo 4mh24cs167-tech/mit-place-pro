@@ -24,7 +24,11 @@ import { EmailService } from '../admin/email.service';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET') || 'fallback-secret',
+        secret: (() => {
+          const s = config.get<string>('JWT_SECRET');
+          if (!s || s.length < 16) throw new Error('FATAL: JWT_SECRET is missing or too short');
+          return s;
+        })(),
         signOptions: { expiresIn: '15m' as const },
       }),
     }),

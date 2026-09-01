@@ -3,6 +3,12 @@ import * as bcrypt from 'bcryptjs';
 import * as dotenv from 'dotenv';
 dotenv.config();
 
+// ── Production safety guard ──
+if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_SEED_IN_PROD) {
+  console.error('❌ FATAL: Seeding is forbidden in production. Set ALLOW_SEED_IN_PROD=1 to override.');
+  process.exit(1);
+}
+
 // ── Import ALL entities so synchronize: true creates every table ──
 import { User } from './entities/user.entity';
 import { Student } from './entities/student.entity';
@@ -64,12 +70,15 @@ async function seed() {
   console.log('👤 Creating admin & principal users...');
   const adminId = uuid();
   const principalId = uuid();
-  const password = 'Place@2026';
+  const password = process.env.INITIAL_ADMIN_PASSWORD || 'Place@2026';
 
-  await qr.query(`INSERT INTO users (id, email, password_hash, role, must_change_password, is_active) VALUES
-    ('${adminId}',     'admin@mitm.edu.in',     '${hash(password)}', 'admin',     false, true),
-    ('${principalId}', 'principal@mitm.edu.in',  '${hash(password)}', 'principal', false, true)
-  `);
+  await qr.query(
+    `INSERT INTO users (id, email, password_hash, role, must_change_password, is_active) VALUES ($1, $2, $3, $4, $5, $6), ($7, $8, $9, $10, $11, $12)`,
+    [
+      adminId, process.env.INITIAL_ADMIN_EMAIL || 'admin@mitm.edu.in', hash(password), 'admin', true, true,
+      principalId, process.env.INITIAL_PRINCIPAL_EMAIL || 'principal@mitm.edu.in', hash(password), 'principal', true, true,
+    ]
+  );
 
   // ── Seed default departments ──
   console.log('🏛️  Seeding default departments...');
@@ -83,10 +92,12 @@ async function seed() {
     { code: 'AI&ML', name: 'Artificial Intelligence & Machine Learning' },
     { code: 'AI&DS', name: 'Artificial Intelligence & Data Science' },
   ];
-  const deptValues = departments
-    .map((d) => `('${uuid()}', '${d.code}', '${d.name}', true)`)
-    .join(',\n    ');
-  await qr.query(`INSERT INTO departments (id, code, name, is_active) VALUES\n    ${deptValues}`);
+  for (const d of departments) {
+    await qr.query(
+      `INSERT INTO departments (id, code, name, is_active) VALUES ($1, $2, $3, $4)`,
+      [uuid(), d.code, d.name, true]
+    );
+  }
 
   // ══════════════════════════════════════════════════
   //  SUMMARY

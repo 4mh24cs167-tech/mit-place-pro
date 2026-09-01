@@ -84,7 +84,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
         entities,
-        synchronize: true, // TODO: set back to false after internship_permissions table is created
+        synchronize: false,
         ssl: { rejectUnauthorized: false },
         logging: config.get('NODE_ENV') === 'development',
         // Connection pool tuning for 50K users
