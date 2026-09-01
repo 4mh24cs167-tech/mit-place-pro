@@ -1,7 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, ManyToOne, JoinColumn, Unique, Index } from 'typeorm';
 import { User } from './user.entity';
 
 @Entity('companies')
+@Unique(['userId'])
+@Index('idx_companies_user_id', ['userId'])
+@Index('idx_companies_is_approved', ['isApproved'])
 export class Company {
   @PrimaryGeneratedColumn('uuid')
   id: string;

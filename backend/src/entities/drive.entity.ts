@@ -1,9 +1,10 @@
 import {
   Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn,
-  ManyToOne, JoinColumn, OneToMany, Index,
+  ManyToOne, JoinColumn, OneToMany, Index, Unique,
 } from 'typeorm';
 import { Company } from './company.entity';
 import { Job } from './job.entity';
+import { Student } from './student.entity';
 
 export type DriveType = 'single' | 'multiple';
 export type DriveStatus = 'draft' | 'open' | 'screening' | 'scheduled' | 'completed' | 'cancelled';
@@ -63,6 +64,7 @@ export class Drive {
 export type RegistrationStatus = 'pending' | 'approved' | 'rejected' | 'declined';
 
 @Entity('drive_registrations')
+@Unique(['driveId', 'studentId'])
 @Index('idx_drive_reg_drive_id', ['driveId'])
 @Index('idx_drive_reg_student_id', ['studentId'])
 @Index('idx_drive_reg_drive_status', ['driveId', 'status'])
@@ -79,6 +81,10 @@ export class DriveRegistration {
 
   @Column({ type: 'uuid', name: 'student_id' })
   studentId: string;
+
+  @ManyToOne(() => Student, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'student_id' })
+  student: Student;
 
   @Column({ type: 'varchar', length: 20, default: 'pending' })
   status: RegistrationStatus;

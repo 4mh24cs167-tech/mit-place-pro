@@ -33,9 +33,11 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto) {
-    const user = await this.userRepo.findOne({
-      where: { email: dto.email.toLowerCase() },
-    });
+    const user = await this.userRepo
+      .createQueryBuilder('user')
+      .addSelect('user.passwordHash')
+      .where('user.email = :email', { email: dto.email.toLowerCase() })
+      .getOne();
 
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Invalid credentials');
@@ -67,7 +69,11 @@ export class AuthService {
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {
-    const user = await this.userRepo.findOne({ where: { id: userId } });
+    const user = await this.userRepo
+      .createQueryBuilder('user')
+      .addSelect('user.passwordHash')
+      .where('user.id = :id', { id: userId })
+      .getOne();
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
@@ -123,9 +129,12 @@ export class AuthService {
 
   // ── Verify OTP ─────────────────────────────────────────────
   async verifyOtp(dto: VerifyOtpDto) {
-    const user = await this.userRepo.findOne({
-      where: { email: dto.email.toLowerCase(), isActive: true },
-    });
+    const user = await this.userRepo
+      .createQueryBuilder('user')
+      .addSelect('user.resetOtp')
+      .where('user.email = :email', { email: dto.email.toLowerCase() })
+      .andWhere('user.isActive = :isActive', { isActive: true })
+      .getOne();
 
     if (!user || !user.resetOtp || !user.resetOtpExpiresAt) {
       throw new BadRequestException('Invalid or expired OTP');
@@ -149,9 +158,12 @@ export class AuthService {
 
   // ── Reset Password with OTP ────────────────────────────────
   async resetPassword(dto: ResetPasswordDto) {
-    const user = await this.userRepo.findOne({
-      where: { email: dto.email.toLowerCase(), isActive: true },
-    });
+    const user = await this.userRepo
+      .createQueryBuilder('user')
+      .addSelect('user.resetOtp')
+      .where('user.email = :email', { email: dto.email.toLowerCase() })
+      .andWhere('user.isActive = :isActive', { isActive: true })
+      .getOne();
 
     if (!user || !user.resetOtp || !user.resetOtpExpiresAt) {
       throw new BadRequestException('Invalid or expired OTP');

@@ -15,12 +15,20 @@ async function bootstrap() {
   // Gzip compression — reduces payload size by ~70% for JSON responses
   app.use(compression({ threshold: 1024 }));
 
-  // CORS
-  const corsOrigins = (process.env.CORS_ORIGIN || 'http://localhost:3000')
-    .split(',')
-    .map((o) => o.trim());
+  // CORS — strict origin whitelist
+  const allowedOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
+    : process.env.NODE_ENV === 'production'
+      ? ['https://mitm-placepro.vercel.app']
+      : ['http://localhost:3000'];
   app.enableCors({
-    origin: corsOrigins,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Blocked by CORS'));
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });

@@ -17,7 +17,7 @@ export class User {
   @Column({ type: 'varchar', length: 255, unique: true })
   email: string;
 
-  @Column({ type: 'varchar', length: 255, name: 'password_hash' })
+  @Column({ type: 'varchar', length: 255, name: 'password_hash', select: false })
   passwordHash: string;
 
   @Column({ type: 'enum', enum: UserRole })
@@ -32,7 +32,7 @@ export class User {
   @Column({ type: 'timestamptz', nullable: true, name: 'last_login_at' })
   lastLoginAt: Date | null;
 
-  @Column({ type: 'varchar', length: 6, nullable: true, name: 'reset_otp' })
+  @Column({ type: 'varchar', length: 6, nullable: true, name: 'reset_otp', select: false })
   resetOtp: string | null;
 
   @Column({ type: 'timestamptz', nullable: true, name: 'reset_otp_expires_at' })
