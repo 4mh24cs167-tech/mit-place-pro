@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
-import { Repository, Like, ILike, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
+import { Repository, Like, ILike, Between, MoreThanOrEqual, LessThanOrEqual, In } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
 import { User, UserRole } from '../entities/user.entity';
 import { Student } from '../entities/student.entity';
@@ -611,28 +611,30 @@ export class AdminService {
   }
 
   async bulkApprove(jobId: string, dto: BulkApproveDto, actorId: string) {
-    const job = await this.jobRepo.findOne({ where: { id: jobId } });
+    const job = await this.jobRepo.findOne({ where: { id: jobId }, relations: ['company'] });
     if (!job) throw new NotFoundException('Job not found');
 
+    const applications = await this.applicationRepo.find({
+      where: { jobId, studentId: In(dto.studentIds) },
+    });
+
+    const students = await this.studentRepo.find({
+      where: { id: In(dto.studentIds) },
+    });
+
+    const studentMap = new Map(students.map(s => [s.id, s]));
+    const notificationsToSave: any[] = [];
+    const appsToSave: any[] = [];
     const results: Array<{ studentId: string; status: string }> = [];
-    for (const studentId of dto.studentIds) {
-      const app = await this.applicationRepo.findOne({
-        where: { jobId, studentId },
-      });
 
-      if (!app) {
-        results.push({ studentId, status: 'not_found' });
-        continue;
-      }
-
+    for (const app of applications) {
       app.adminApproved = dto.approved;
       app.adminApprovedAt = new Date();
-      await this.applicationRepo.save(app);
+      appsToSave.push(app);
 
-      // Send notification to student
-      const student = await this.studentRepo.findOne({ where: { id: studentId } });
+      const student = studentMap.get(app.studentId);
       if (student && dto.approved) {
-        await this.notificationRepo.save({
+        notificationsToSave.push({
           userId: student.userId,
           type: 'shortlisted',
           title: `Shortlisted for ${job.title}`,
@@ -646,7 +648,7 @@ export class AdminService {
         }
       }
 
-      results.push({ studentId, status: dto.approved ? 'approved' : 'rejected' });
+      results.push({ studentId: app.studentId, status: dto.approved ? 'approved' : 'rejected' });
     }
 
     await this.auditRepo.save({
