@@ -17,6 +17,7 @@ import { DriveRegistration } from '../entities/drive.entity';
 import { EmailLog } from '../entities/email-log.entity';
 import { EmailService } from './email.service';
 import { CreateStudentDto, CreateCompanyDto, BulkApproveDto, UpdateStudentDto, PaginationDto } from './dto/admin.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class AdminService {
@@ -37,6 +38,7 @@ export class AdminService {
     @InjectRepository(EmailLog) private readonly emailLogRepo: Repository<EmailLog>,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   // ─── Dashboard Stats (fully parallelized) ──────
@@ -564,13 +566,12 @@ export class AdminService {
       newValue: { companyName: company.name, email: company.user?.email } as unknown as Record<string, unknown>,
     });
 
-    // Send approval email to company
-    try {
-      if (company.user?.email) {
-        await this.emailService.sendCompanyApprovalEmail(company.user.email, company.name);
-      }
-    } catch (e) {
-      this.logger.warn(`Failed to send company approval email: ${(e as Error).message}`);
+    // Send approval email to company (async via event emitter)
+    if (company.user?.email) {
+      this.eventEmitter.emit('email.company_approved', {
+        email: company.user.email,
+        companyName: company.name,
+      });
     }
     
     return { message: `Company '${company.name}' has been approved.` };

@@ -16,6 +16,7 @@ import { RoundMeeting, MeetingGroup, MeetingAssignment } from '../entities/round
 import type { MeetingStatus } from '../entities/round-meeting.entity';
 import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto, SubmitRoundResultsDto, UpdateJobRoundsDto, CreateRoundMeetingDto, UpdateRoundMeetingDto } from './dto/company.dto';
 import { EmailService } from '../admin/email.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class CompanyService {
@@ -39,6 +40,7 @@ export class CompanyService {
     @InjectRepository(MeetingAssignment) private readonly meetingAssignmentRepo: Repository<MeetingAssignment>,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   // ─── Helper ──────────────────────────────────────
@@ -597,9 +599,10 @@ export class CompanyService {
             metadata: { jobId, applicationId: app.id, round },
           });
 
-          // Email (fire-and-forget)
+          // Email (async via event emitter)
           if (app.student.user?.email) {
-            this.emailService.sendRoundSelectedEmail({
+            this.eventEmitter.emit('email.round_selected', {
+              type: 'round_selected',
               email: app.student.user.email,
               studentName: app.student.fullName,
               jobTitle: job.title,
@@ -607,7 +610,7 @@ export class CompanyService {
               roundNumber: round,
               totalRounds: job.numRounds,
               loginUrl,
-            }).catch((e) => this.logger.error('Email send failed', e));
+            });
           }
         }
       } else {
@@ -624,16 +627,17 @@ export class CompanyService {
             metadata: { jobId, applicationId: app.id, round },
           });
 
-          // Email (fire-and-forget)
+          // Email (async via event emitter)
           if (app.student.user?.email) {
-            this.emailService.sendRoundRejectedEmail({
+            this.eventEmitter.emit('email.round_rejected', {
+              type: 'round_rejected',
               email: app.student.user.email,
               studentName: app.student.fullName,
               jobTitle: job.title,
               companyName: company.name,
               roundNumber: round,
               loginUrl,
-            }).catch((e) => this.logger.error('Email send failed', e));
+            });
           }
         }
       }
@@ -700,7 +704,7 @@ export class CompanyService {
           });
 
           if (app.student.user?.email) {
-            this.emailService.sendMeetingScheduledEmail({
+            this.eventEmitter.emit('email.meeting_scheduled', {
               email: app.student.user.email,
               studentName: app.student.fullName,
               jobTitle: job.title,
@@ -713,7 +717,7 @@ export class CompanyService {
               instructions: dto.instructions || null,
               groupName: null,
               loginUrl,
-            }).catch((e) => this.logger.error('Meeting email failed', e));
+            });
           }
         }
       }
@@ -749,7 +753,7 @@ export class CompanyService {
               });
 
               if (app.student.user?.email) {
-                this.emailService.sendMeetingScheduledEmail({
+                this.eventEmitter.emit('email.meeting_scheduled', {
                   email: app.student.user.email,
                   studentName: app.student.fullName,
                   jobTitle: job.title,
@@ -762,7 +766,7 @@ export class CompanyService {
                   instructions: dto.instructions || null,
                   groupName: groupConfig.groupName,
                   loginUrl,
-                }).catch((e) => this.logger.error('Meeting email failed', e));
+                });
               }
             }
           }
@@ -792,7 +796,7 @@ export class CompanyService {
             });
 
             if (app.student.user?.email) {
-              this.emailService.sendMeetingScheduledEmail({
+              this.eventEmitter.emit('email.meeting_scheduled', {
                 email: app.student.user.email,
                 studentName: app.student.fullName,
                 jobTitle: job.title,
@@ -805,7 +809,7 @@ export class CompanyService {
                 instructions: dto.instructions || null,
                 groupName: null,
                 loginUrl,
-              }).catch((e) => this.logger.error('Meeting email failed', e));
+              });
             }
           }
         }

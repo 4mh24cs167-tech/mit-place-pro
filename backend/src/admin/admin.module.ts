@@ -25,6 +25,7 @@ import { InternshipPermission } from '../entities/internship-permission.entity';
 import { FeedbackService } from './feedback.service';
 import { AssessmentService } from './assessment.service';
 import { InternshipService } from './internship.service';
+import { EmailEventListener } from './email-event.listener';
 
 @Module({
   imports: [
@@ -57,7 +58,7 @@ import { InternshipService } from './internship.service';
     ]),
   ],
   controllers: [AdminController],
-  providers: [AdminService, BulkUploadService, DriveService, EmailService, FeedbackService, AssessmentService, InternshipService],
-  exports: [EmailService, FeedbackService, AssessmentService, InternshipService],
+  providers: [AdminService, BulkUploadService, DriveService, EmailService, EmailEventListener, FeedbackService, AssessmentService, InternshipService],
+  exports: [EmailService, EmailEventListener, FeedbackService, AssessmentService, InternshipService],
 })
 export class AdminModule {}
