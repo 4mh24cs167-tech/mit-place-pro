@@ -127,8 +127,8 @@ export default function StudentDashboardPage() {
       />
 
       <div className="px-4 sm:px-6 md:px-8 pb-10">
-        {/* WhatsApp Group Banner — shown when profile is complete */}
-        {profile && (profile as Record<string, unknown>)?.profileComplete && (
+        {/* WhatsApp Group Banner */}
+        {!loading && (
           <div className="mb-6 rounded-2xl overflow-hidden bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg shadow-green-500/20">
             <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 p-4 sm:p-5">
               {/* QR Code */}
