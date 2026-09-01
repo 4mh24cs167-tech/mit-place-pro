@@ -1,5 +1,6 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/layout/Header";
 import { studentApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
@@ -16,8 +17,6 @@ import {
   FileText,
   Loader2,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 
 interface Interview {
   company?: string;
@@ -49,53 +48,34 @@ const activityColors = {
 };
 
 export default function StudentDashboardPage() {
-  const router = useRouter();
   const { user } = useAuth();
-  const [interviews, setInterviews] = useState<Interview[]>([]);
-  const [applications, setApplications] = useState<unknown[]>([]);
-  const [profile, setProfile] = useState<Record<string, unknown> | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [interviewRes, appRes, profileRes] = await Promise.allSettled([
-        studentApi.getInterviews(),
-        studentApi.getApplications(),
-        studentApi.getProfile(),
-      ]);
+  const { data: interviews = [] } = useQuery({
+    queryKey: ["student", "interviews"],
+    queryFn: async () => {
+      const res = await studentApi.getInterviews();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (res as any)?.data || [];
+    },
+  });
 
-      if (interviewRes.status === "fulfilled") {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const data = (interviewRes.value as any)?.data;
-        setInterviews(Array.isArray(data) ? data : []);
-      }
-      if (appRes.status === "fulfilled") {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const data = (appRes.value as any)?.data;
-        setApplications(Array.isArray(data) ? data : []);
-      }
-      if (profileRes.status === "fulfilled") {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const profileData = (profileRes.value as any)?.data || null;
-        setProfile(profileData);
-        
-        // After getting profile data
-        if (profileData && profileData.profileComplete === false) {
-          router.push('/student/onboarding');
-          return;
-        }
-      }
-    } catch {
-      // handled per-request
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { data: applications = [] } = useQuery({
+    queryKey: ["student", "applications"],
+    queryFn: async () => {
+      const res = await studentApi.getApplications();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (res as any)?.data || [];
+    },
+  });
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const { data: profile = null, isLoading: loading } = useQuery({
+    queryKey: ["student", "profile"],
+    queryFn: async () => {
+      const res = await studentApi.getProfile();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (res as any)?.data || null;
+    },
+  });
 
   // Derived stats
   const stats: AppStats = {

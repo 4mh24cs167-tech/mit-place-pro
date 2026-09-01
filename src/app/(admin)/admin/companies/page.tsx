@@ -20,7 +20,8 @@ import {
   Trash2,
   AlertTriangle,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Company {
   id: string;
@@ -39,8 +40,6 @@ interface Company {
 
 export default function AdminCompaniesPage() {
   const { user } = useAuth();
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [sectorFilter, setSectorFilter] = useState("all");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -56,6 +55,17 @@ export default function AdminCompaniesPage() {
     hrEmail: "",
     hrName: "",
     hrPhone: "",
+  });
+
+  const { data: companies = [], isLoading: loading, refetch: fetchCompanies } = useQuery<Company[]>({
+    queryKey: ["admin", "companies", searchQuery],
+    queryFn: async () => {
+      const res = await adminApi.listCompanies({ search: searchQuery });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = (res as any)?.data;
+      return Array.isArray(data) ? data : (data?.data || []);
+    },
+    refetchInterval: 30000,
   });
 
   // Company detail modal
@@ -84,30 +94,6 @@ export default function AdminCompaniesPage() {
     } catch { alert("Failed to approve"); }
     finally { setApprovingCompany(false); }
   };
-
-  const fetchCompanies = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await adminApi.listCompanies({ search: searchQuery || undefined });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const list = (res as any)?.data || (res as any)?.companies || [];
-      setCompanies(Array.isArray(list) ? list : []);
-    } catch {
-      setCompanies([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [searchQuery]);
-
-  useEffect(() => {
-    fetchCompanies();
-  }, [fetchCompanies]);
-
-  // Auto-refresh every 30s
-  useEffect(() => {
-    const id = setInterval(fetchCompanies, 30000);
-    return () => clearInterval(id);
-  }, [fetchCompanies]);
 
   const [createdCredentials, setCreatedCredentials] = useState<{
     email: string;
