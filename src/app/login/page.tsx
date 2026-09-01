@@ -188,12 +188,12 @@ export default function LoginPage() {
             <div className="h-px flex-1 bg-border" />
           </div>
           <div className="flex gap-3 mt-4">
-            <a
-              href="/register/student"
-              className="flex-1 text-center py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+            <button
+              onClick={() => router.push("/register/student")}
+              className="flex-1 py-2.5 rounded-xl border border-border bg-white text-foreground hover:bg-muted font-medium text-sm transition-colors"
             >
-              Register as Student
-            </a>
+              Register as Job Aspirant
+            </button>
             <a
               href="/register/company"
               className="flex-1 text-center py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors"
