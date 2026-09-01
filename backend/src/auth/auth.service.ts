@@ -108,11 +108,12 @@ export class AuthService {
 
     // Generate 6-digit OTP
     const otp = crypto.randomInt(100000, 999999).toString();
+    const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex').slice(0, 6);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Save OTP to user record
+    // Save hashed OTP to user record
     await this.userRepo.update(user.id, {
-      resetOtp: otp,
+      resetOtp: hashedOtp,
       resetOtpExpiresAt: expiresAt,
     });
 
@@ -149,7 +150,8 @@ export class AuthService {
       throw new BadRequestException('OTP has expired. Please request a new one.');
     }
 
-    if (user.resetOtp !== dto.otp) {
+    const hashedInput = crypto.createHash('sha256').update(dto.otp).digest('hex').slice(0, 6);
+    if (user.resetOtp !== hashedInput) {
       throw new BadRequestException('Invalid OTP');
     }
 
@@ -177,7 +179,8 @@ export class AuthService {
       throw new BadRequestException('OTP has expired. Please request a new one.');
     }
 
-    if (user.resetOtp !== dto.otp) {
+    const hashedInput = crypto.createHash('sha256').update(dto.otp).digest('hex').slice(0, 6);
+    if (user.resetOtp !== hashedInput) {
       throw new BadRequestException('Invalid OTP');
     }
 
