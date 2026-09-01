@@ -157,6 +157,28 @@ export default function CompanyDashboardPage() {
       />
 
       <div className="px-4 sm:px-6 md:px-8 pb-10">
+        
+        {/* WhatsApp Banner */}
+        <div className="mb-8 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl flex flex-col sm:flex-row items-center gap-6 shadow-sm">
+          <div className="flex-shrink-0 bg-white p-2 rounded-xl border border-emerald-100 shadow-sm">
+            <img src="/whatsapp-qr.jpg" alt="WhatsApp QR Code" className="w-24 h-24 object-contain rounded-lg" />
+          </div>
+          <div className="flex-1 text-center sm:text-left">
+            <h3 className="text-lg font-bold text-emerald-900 mb-1">Join the Official WhatsApp Group</h3>
+            <p className="text-sm text-emerald-700 mb-4">
+              Scan the QR code or click the button to join the MITM SRP Job Fair WhatsApp group for important updates and communication.
+            </p>
+            <a 
+              href="https://chat.whatsapp.com/JrpzXtGDdGPHCdAl527Ig8" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-xl transition-colors text-sm"
+            >
+              Join WhatsApp Group
+            </a>
+          </div>
+        </div>
+
         {/* Stats row */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-8 mb-6 sm:mb-8 -mt-2">
           <div className="hidden sm:block flex-1" />

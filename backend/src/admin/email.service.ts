@@ -498,6 +498,11 @@ export class EmailService {
         Your company <strong>${companyName}</strong> has been approved by the admin on MITM PlacePro.
         You can now access your company dashboard and start posting jobs.
       </p>
+      <p style="font-size:14px;color:#4a4a68;line-height:1.7;margin:0 0 24px;">
+        Please join our official WhatsApp group for important updates and communication:
+        <br/><br/>
+        <a href="https://chat.whatsapp.com/JrpzXtGDdGPHCdAl527Ig8" style="color:#059669;font-weight:600;text-decoration:none;">Join WhatsApp Group</a>
+      </p>
       <div style="text-align:center;margin:24px 0;">
         <a href="https://mit-place-pro-five.vercel.app/login" style="display:inline-block;background:linear-gradient(135deg,#059669,#10b981);color:#fff;text-decoration:none;padding:14px 32px;border-radius:10px;font-weight:600;font-size:14px;">Go to Dashboard →</a>
       </div>
