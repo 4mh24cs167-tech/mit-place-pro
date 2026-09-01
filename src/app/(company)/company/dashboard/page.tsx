@@ -19,8 +19,9 @@ import {
   FileText,
   GraduationCap,
 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 interface Job {
   id: string;
@@ -40,74 +41,60 @@ interface Candidate {
 export default function CompanyDashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isPendingApproval, setIsPendingApproval] = useState(false);
+  const queryClient = useQueryClient();
   const [showCreateJob, setShowCreateJob] = useState(false);
   const [jobForm, setJobForm] = useState({ title: "", description: "", location: "", ctcMinLpa: "", ctcMaxLpa: "", minCgpa: "", openPositions: "1", eligibleDepartments: "" });
   const [jobSaving, setJobSaving] = useState(false);
   const [jobError, setJobError] = useState("");
   const [jobSuccess, setJobSuccess] = useState("");
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      try {
-        const profileRes = await companyApi.getProfile();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const profileData = (profileRes as any)?.data;
-        if (profileData) {
-          if (profileData.profileComplete === false) {
-            // Profile completion is handled by the layout modal (Figure 1)
-            // No need to redirect to the redundant onboarding page (Figure 2)
-          }
-          if (profileData.isApproved === false) {
-            setIsPendingApproval(true);
-            setLoading(false);
-            return;
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch profile", err);
-      }
-
-      const jobRes = await companyApi.getJobs();
+  // ─── React Query: Profile ──────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profileData } = useQuery<any>({
+    queryKey: ["company", "profile"],
+    queryFn: async () => {
+      const res = await companyApi.getProfile();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const jobData = (jobRes as any)?.data;
-      const jobList: Job[] = Array.isArray(jobData) ? jobData : [];
-      setJobs(jobList);
+      return (res as any)?.data;
+    },
+  });
 
-      // Load top candidates from first job
-      if (jobList.length > 0) {
-        try {
-          const candRes = await companyApi.getCandidates(jobList[0].id);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const candData = (candRes as any)?.data;
-          if (Array.isArray(candData)) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            setCandidates(candData.slice(0, 5).map((c: any) => ({
-              name: c.studentName || "Candidate",
-              dept: c.department || "—",
-              ats: c.atsScore || 0,
-              status: c.finalResult || "pending",
-            })));
-          }
-        } catch {
-          // non-critical
-        }
-      }
-    } catch {
-      // handled
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const isPendingApproval = profileData?.isApproved === false;
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  // ─── React Query: Jobs ─────────────────────────
+  const { data: jobs = [], isLoading: loading } = useQuery<Job[]>({
+    queryKey: ["company", "jobs"],
+    queryFn: async () => {
+      const res = await companyApi.getJobs();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = (res as any)?.data;
+      return Array.isArray(data) ? data : [];
+    },
+    enabled: !isPendingApproval,
+  });
+
+  // ─── React Query: Top Candidates ───────────────
+  const { data: candidates = [] } = useQuery<Candidate[]>({
+    queryKey: ["company", "candidates", jobs[0]?.id],
+    queryFn: async () => {
+      const candRes = await companyApi.getCandidates(jobs[0].id);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const candData = (candRes as any)?.data;
+      if (!Array.isArray(candData)) return [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return candData.slice(0, 5).map((c: any) => ({
+        name: c.studentName || "Candidate",
+        dept: c.department || "—",
+        ats: c.atsScore || 0,
+        status: c.finalResult || "pending",
+      }));
+    },
+    enabled: !isPendingApproval && jobs.length > 0,
+  });
+
+  const fetchData = () => {
+    queryClient.invalidateQueries({ queryKey: ["company"] });
+  };
 
   // Pipeline from jobs
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
