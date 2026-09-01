@@ -12,7 +12,7 @@ export default function CompanyLayout({
   children: React.ReactNode;
 }) {
   const [profileComplete, setProfileComplete] = useState<boolean | null>(null);
-  const [profileData, setProfileData] = useState<Record<string, string> | null>(null);
+  const [profileData, setProfileData] = useState<any | null>(null);
 
   useEffect(() => {
     const checkProfile = async () => {
@@ -44,7 +44,7 @@ export default function CompanyLayout({
 
   return (
     <div className="min-h-screen bg-background purple-glow">
-      <Sidebar role="company" />
+      <Sidebar role="company" isApproved={profileData?.isApproved !== false} />
       <main className="md:ml-[72px] pb-20 md:pb-0">{children}</main>
       {!profileComplete && (
         <CompanyOnboarding

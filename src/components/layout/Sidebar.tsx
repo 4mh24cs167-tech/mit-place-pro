@@ -32,6 +32,7 @@ import { useState, useEffect } from "react";
 
 interface SidebarProps {
   role: "admin" | "company" | "student" | "principal";
+  isApproved?: boolean;
 }
 
 const navConfigs = {
@@ -77,7 +78,7 @@ const navConfigs = {
   ],
 };
 
-export default function Sidebar({ role }: SidebarProps) {
+export default function Sidebar({ role, isApproved = true }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = useAuth();
@@ -107,15 +108,18 @@ export default function Sidebar({ role }: SidebarProps) {
           {navItems.slice(0, 4).map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            const isDisabled = !isApproved && role === "company" && item.href !== "/company/dashboard";
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={isDisabled ? "#" : item.href}
+                onClick={(e) => isDisabled && e.preventDefault()}
                 className={cn(
                   "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all min-w-[52px]",
                   isActive
                     ? "text-indigo-600"
-                    : "text-muted-foreground"
+                    : "text-muted-foreground",
+                  isDisabled && "opacity-40 cursor-not-allowed"
                 )}
               >
                 <Icon className={cn("w-5 h-5", isActive && "stroke-[2.5]")} />
@@ -148,15 +152,18 @@ export default function Sidebar({ role }: SidebarProps) {
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                const isDisabled = !isApproved && role === "company" && item.href !== "/company/dashboard";
                 return (
                   <Link
                     key={item.href}
-                    href={item.href}
+                    href={isDisabled ? "#" : item.href}
+                    onClick={(e) => isDisabled && e.preventDefault()}
                     className={cn(
                       "flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all",
                       isActive
                         ? "bg-indigo-50 text-indigo-600"
-                        : "text-muted-foreground hover:bg-muted"
+                        : "text-muted-foreground hover:bg-muted",
+                      isDisabled && "opacity-40 cursor-not-allowed hover:bg-transparent"
                     )}
                   >
                     <Icon className="w-5 h-5" />
@@ -182,17 +189,20 @@ export default function Sidebar({ role }: SidebarProps) {
           const Icon = item.icon;
           const isActive =
             pathname === item.href || pathname.startsWith(item.href + "/");
+          const isDisabled = !isApproved && role === "company" && item.href !== "/company/dashboard";
 
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={isDisabled ? "#" : item.href}
               title={item.label}
+              onClick={(e) => isDisabled && e.preventDefault()}
               className={cn(
                 "w-10 h-10 flex items-center justify-center rounded-xl transition-all duration-200 group relative",
                 isActive
                   ? "bg-foreground text-white shadow-md"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                isDisabled && "opacity-40 cursor-not-allowed hover:bg-transparent hover:text-muted-foreground"
               )}
             >
               <Icon className="w-[18px] h-[18px]" />
