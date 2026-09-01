@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import Header from "@/components/layout/Header";
 import { studentApi } from "@/lib/api";
@@ -149,10 +150,10 @@ export default function StudentDashboardPage() {
               ))
             )}
           </div>
-          <a href="/student/jobs" className="i-btn-dark w-full sm:w-auto justify-center">
+          <Link href="/student/jobs" className="i-btn-dark w-full sm:w-auto justify-center">
             <Plus className="w-4 h-4" />
             Browse Jobs
-          </a>
+          </Link>
         </div>
 
         {/* Two-column layout */}
@@ -280,14 +281,14 @@ export default function StudentDashboardPage() {
                 { label: "Update Your CV", icon: FileText, href: "/student/cv" },
                 { label: "Complete Profile", icon: SlidersHorizontal, href: "/student/profile" },
               ].map((action) => (
-                <a key={action.label} href={action.href}
+                <Link key={action.label} href={action.href}
                   className="flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted/30 transition-colors">
                   <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center">
                     <action.icon className="w-4 h-4 text-indigo-600" />
                   </div>
                   <span className="text-sm font-medium text-foreground">{action.label}</span>
                   <ArrowUpRight className="w-4 h-4 text-muted-foreground ml-auto" />
-                </a>
+                </Link>
               ))}
             </div>
           </div>
