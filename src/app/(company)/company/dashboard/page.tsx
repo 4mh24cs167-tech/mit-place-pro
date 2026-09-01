@@ -60,8 +60,8 @@ export default function CompanyDashboardPage() {
         const profileData = (profileRes as any)?.data;
         if (profileData) {
           if (profileData.profileComplete === false) {
-            router.push('/company/onboarding');
-            return;
+            // Profile completion is handled by the layout modal (Figure 1)
+            // No need to redirect to the redundant onboarding page (Figure 2)
           }
           if (profileData.isApproved === false) {
             setIsPendingApproval(true);
