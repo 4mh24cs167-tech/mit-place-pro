@@ -224,7 +224,7 @@ export default function StudentDashboardPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {interviews.map((interview, i) => (
+                {interviews.map((interview: Interview, i: number) => (
                   <div key={i} className="p-4 rounded-xl border border-border hover:bg-muted/30 transition-colors">
                     <div className="flex items-start justify-between">
                       <div>
@@ -277,7 +277,7 @@ export default function StudentDashboardPage() {
               </div>
             ) : (
               <div className="space-y-0">
-                {recentActivity.map((item, i) => (
+                {recentActivity.map((item: Activity, i: number) => (
                   <div key={i} className="flex items-start gap-3 relative py-4 border-b border-border last:border-0">
                     <div className="flex flex-col items-center">
                       <div className={cn(
