@@ -1,6 +1,6 @@
-# 🔐 MITM PlacePro - Security Implementation Report
+# 🔐 UdyogaMITra - Security Implementation Report
 
-This document outlines the security architecture, authentication mechanisms, authorization rules, data protection policies, and vulnerability mitigations implemented in **MITM PlacePro**.
+This document outlines the security architecture, authentication mechanisms, authorization rules, data protection policies, and vulnerability mitigations implemented in **UdyogaMITra**.
 
 ---
 
@@ -18,7 +18,7 @@ This document outlines the security architecture, authentication mechanisms, aut
 ## 1. Authentication Mechanism
 
 ### JWT Strategy
-MITM PlacePro uses JSON Web Tokens (JWT) for stateless, secure user sessions.
+UdyogaMITra uses JSON Web Tokens (JWT) for stateless, secure user sessions.
 - **Token Generation**: Occurs upon successful authentication at `/auth/login`.
 - **Payload Configuration**:
   ```json
@@ -82,7 +82,7 @@ async listStudents() { ... }
 
 ## 4. File Upload Security
 
-MITM PlacePro supports file uploads for Student Photos (Avatar) and Student Resumes.
+UdyogaMITra supports file uploads for Student Photos (Avatar) and Student Resumes.
 
 ### Protections Implemented
 - **Base64 Encoding**: Student profile photos are stored directly in the database as Base64 strings. While this impacts database storage size, it eliminates the execution risk of untrusted images on the filesystem (Remote Code Execution via file inclusion).

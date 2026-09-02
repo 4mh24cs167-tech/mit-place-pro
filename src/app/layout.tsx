@@ -3,7 +3,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "MITM PlacePro — Campus Placement Portal",
+  title: "UdyogaMITra — Placement Portal",
   description:
     "The official placement management platform for MITM College. Connect students with top tech companies seamlessly.",
   keywords: [
@@ -15,16 +15,16 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "MITM Placement Cell" }],
   openGraph: {
-    title: "MITM PlacePro — Campus Placement Portal",
+    title: "UdyogaMITra — Placement Portal",
     description: "The official placement management platform for MITM College. Connect students with top tech companies seamlessly.",
     url: "https://mitm-placepro.vercel.app",
-    siteName: "MITM PlacePro",
+    siteName: "UdyogaMITra",
     images: [
       {
-        url: "https://mitm-placepro.vercel.app/mitm-logo.png",
+        url: "https://mitm-placepro.vercel.app/udyogamitra-logo.jpg",
         width: 800,
         height: 600,
-        alt: "MITM PlacePro Banner",
+        alt: "UdyogaMITra Banner",
       },
     ],
     locale: "en_IN",
@@ -32,9 +32,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "MITM PlacePro",
+    title: "UdyogaMITra",
     description: "MITM College Official Placement Portal.",
-    images: ["https://mitm-placepro.vercel.app/mitm-logo.png"],
+    images: ["https://mitm-placepro.vercel.app/udyogamitra-logo.jpg"],
   },
 };
 

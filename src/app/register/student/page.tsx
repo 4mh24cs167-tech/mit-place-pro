@@ -77,7 +77,7 @@ export default function StudentRegisterPage() {
             <GraduationCap className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Student Registration</h1>
-          <p className="text-muted-foreground mt-1">Create your MITM PlacePro account</p>
+          <p className="text-muted-foreground mt-1">Create your UdyogaMITra account</p>
         </div>
 
         {/* Progress Steps */}

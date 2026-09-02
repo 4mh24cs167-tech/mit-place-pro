@@ -107,7 +107,7 @@ function buildOfferLetterHtml(data: OfferLetterData): string {
 
       <!-- Footer -->
       <div style="margin-top: 50px; padding-top: 15px; border-top: 1px solid #eee; text-align: center;">
-        <p style="font-size: 10px; color: #aaa; margin: 0;">This offer letter was generated via MITM PlacePro — Campus Placement Portal</p>
+        <p style="font-size: 10px; color: #aaa; margin: 0;">This offer letter was generated via UdyogaMITra</p>
         <p style="font-size: 10px; color: #aaa; margin: 2px 0 0;">Maharaja Institute of Technology, Mysuru</p>
       </div>
     </div>

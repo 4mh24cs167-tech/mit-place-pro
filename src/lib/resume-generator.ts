@@ -239,7 +239,7 @@ export async function generateResumePdf(data: ResumeData): Promise<Blob> {
   y += 4;
   doc.setFontSize(7);
   doc.setTextColor(160, 160, 160);
-  doc.text("Generated via MITM PlacePro • Campus Placement Portal", pageW / 2, y, { align: "center" });
+  doc.text("Generated via UdyogaMITra", pageW / 2, y, { align: "center" });
 
   return doc.output("blob");
 }
@@ -264,7 +264,7 @@ export function previewResumeHtml(data: ResumeData): string {
       ${eduRecords.length > 0 ? `<div style="margin-bottom: 24px;"><h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">Education</h2>${eduRecords.map(edu => `<div style="margin-bottom: 8px;"><strong>${QUAL_LABELS[edu.qualificationType] || edu.qualificationType}</strong>${edu.cgpa ? ` — CGPA: ${edu.cgpa}` : edu.percentage ? ` — ${edu.percentage}%` : ""}${edu.collegeName ? `<br/><span style="font-size: 12px; color: #666;">${edu.collegeName}</span>` : ""}${edu.passingYear ? ` <span style="font-size: 11px; color: #888;">(${edu.passingYear})</span>` : ""}</div>`).join("")}</div>` : ""}
       ${skillsList.length > 0 ? `<div style="margin-bottom: 24px;"><h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">Skills</h2><div style="display: flex; flex-wrap: wrap; gap: 8px;">${skillsList.map(s => `<span style="display: inline-block; padding: 4px 14px; background: #eef0f8; color: #2d2d6b; border-radius: 20px; font-size: 12px;">${s}</span>`).join("")}</div></div>` : ""}
       ${(data.certifications || []).length > 0 ? `<div style="margin-bottom: 24px;"><h2 style="font-size: 16px; color: #2d2d6b; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #ddd; padding-bottom: 6px; margin-bottom: 10px;">Certifications</h2><ul style="margin: 0; padding-left: 20px; font-size: 13px; color: #444;">${(data.certifications || []).map(c => `<li style="padding: 3px 0;">${c}</li>`).join("")}</ul></div>` : ""}
-      <div style="margin-top: 32px; padding-top: 12px; border-top: 1px solid #eee; text-align: center;"><p style="font-size: 11px; color: #999; margin: 0;">Generated via MITM PlacePro • Campus Placement Portal</p></div>
+      <div style="margin-top: 32px; padding-top: 12px; border-top: 1px solid #eee; text-align: center;"><p style="font-size: 11px; color: #999; margin: 0;">Generated via UdyogaMITra</p></div>
     </div>
   `;
 }

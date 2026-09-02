@@ -1,6 +1,6 @@
-# 🏛️ MITM PlacePro - System Architecture
+# 🏛️ UdyogaMITra - System Architecture
 
-This document provides a detailed overview of the system architecture, data models, design patterns, and application flows of the **MITM PlacePro** Placement Management System.
+This document provides a detailed overview of the system architecture, data models, design patterns, and application flows of the **UdyogaMITra** Placement Management System.
 
 ---
 
@@ -17,7 +17,7 @@ This document provides a detailed overview of the system architecture, data mode
 
 ## 1. System Topology
 
-MITM PlacePro follows a decoupled, client-server Architecture:
+UdyogaMITra follows a decoupled, client-server Architecture:
 
 ```
                   ┌──────────────────────────────┐
@@ -101,7 +101,7 @@ Below is a detailed representation of the 18 main TypeORM entities within the da
 Loading thousands of student submissions complete with deep relational tables (User, Batch, Student) frequently crashed the Render API due to 512MB RAM constraints (Out of Memory). 
 
 **Design Solution**:
-Rather than mapping TypeORM relation arrays globally inside `findOne`, MITM PlacePro separates the parent Assessment fetch from the submissions loading. Submissions are loaded via a specialized `QueryBuilder` that selects only key columns needed for the admin layout:
+Rather than mapping TypeORM relation arrays globally inside `findOne`, UdyogaMITra separates the parent Assessment fetch from the submissions loading. Submissions are loaded via a specialized `QueryBuilder` that selects only key columns needed for the admin layout:
 ```typescript
 this.submissionRepo.createQueryBuilder("sub")
   .select(["sub.id", "sub.status", "sub.score", "student.usn", "student.fullName"])
@@ -122,7 +122,7 @@ The onboarding utility allows placement officers to upload thousands of student 
 
 ## 5. Frontend Design & Directory Structure
 
-MITM PlacePro utilizes Next.js App Router for layout scoping and rendering:
+UdyogaMITra utilizes Next.js App Router for layout scoping and rendering:
 
 - **Auth Group (`(auth)/`)**: Manages public login and change password routes.
 - **Admin Group (`(admin)/`)**: Admin tools mapping students, companies, drives, assessments, batches, and email logs.

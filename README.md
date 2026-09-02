@@ -1,4 +1,4 @@
-# 🎓 MITM PlacePro
+# 🎓 UdyogaMITra
 
 <div align="center">
 
@@ -38,7 +38,7 @@
 
 ## 🔭 Overview
 
-MITM PlacePro digitizes the entire campus placement lifecycle — from student onboarding to final selection — replacing manual spreadsheets and email chains with a modern, real-time web application. It connects three key stakeholders:
+UdyogaMITra digitizes the entire campus placement lifecycle — from student onboarding to final selection — replacing manual spreadsheets and email chains with a modern, real-time web application. It connects three key stakeholders:
 
 | Role | Portal | Description |
 |------|--------|-------------|
@@ -652,6 +652,6 @@ Configured via `render.yaml`:
 
 Built with ❤️ by [Yashas](https://github.com/yashas1519-pixel)
 
-**MITM PlacePro** — Streamlining campus placements, one drive at a time.
+**UdyogaMITra** — Streamlining campus placements, one drive at a time.
 
 </div>

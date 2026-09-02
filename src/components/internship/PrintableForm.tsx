@@ -199,7 +199,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
             <div style={{ position: 'absolute', top: 0, right: 0, width: 200, height: 200, background: 'rgba(255,255,255,0.03)', borderRadius: '0 0 0 200px' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <img src="/mitm-logo.png" alt="MIT" style={{ width: 42, height: 42, borderRadius: 99, border: '2px solid rgba(255,255,255,0.3)', objectFit: 'contain', background: '#fff' }} />
+                <img src="/udyogamitra-logo.jpg" alt="MIT" style={{ width: 42, height: 42, borderRadius: 99, border: '2px solid rgba(255,255,255,0.3)', objectFit: 'contain', background: '#fff' }} />
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 0.3 }}>Maharaja Institute of Technology</div>
                   <div style={{ fontSize: 8, opacity: 0.7, marginTop: 1 }}>Mysore | Belawadi, Srirangapatna Taluk, Mandya – 571477</div>
@@ -372,7 +372,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
           {/* FOOTER */}
           <div style={{ background: C.navy, color: '#fff', padding: '8px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'absolute', bottom: 0, left: 0, right: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <img src="/mitm-logo.png" alt="MIT" style={{ width: 22, height: 22, borderRadius: 99, objectFit: 'contain', background: '#fff' }} />
+              <img src="/udyogamitra-logo.jpg" alt="MIT" style={{ width: 22, height: 22, borderRadius: 99, objectFit: 'contain', background: '#fff' }} />
               <div>
                 <div style={{ fontSize: 9, fontWeight: 700 }}>Maharaja Institute of Technology Mysore</div>
                 <div style={{ fontSize: 7, opacity: 0.6 }}>Belawadi, Srirangapatna Taluk, Mandya – 571477</div>
@@ -391,7 +391,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
           {/* Mini Header */}
           <div style={{ background: `linear-gradient(135deg, ${C.navy}, ${C.purple})`, color: '#fff', padding: '14px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <img src="/mitm-logo.png" alt="MIT" style={{ width: 30, height: 30, borderRadius: 99, objectFit: 'contain', background: '#fff' }} />
+              <img src="/udyogamitra-logo.jpg" alt="MIT" style={{ width: 30, height: 30, borderRadius: 99, objectFit: 'contain', background: '#fff' }} />
               <div>
                 <div style={{ fontSize: 12, fontWeight: 700 }}>Department Verification</div>
                 <div style={{ fontSize: 8, opacity: 0.7 }}>Office Use Only — Page 2</div>
@@ -483,7 +483,7 @@ export default function PrintableForm({ form }: PrintableFormProps) {
           {/* Footer */}
           <div style={{ background: C.navy, color: '#fff', padding: '8px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'absolute', bottom: 0, left: 0, right: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <img src="/mitm-logo.png" alt="MIT" style={{ width: 22, height: 22, borderRadius: 99, objectFit: 'contain', background: '#fff' }} />
+              <img src="/udyogamitra-logo.jpg" alt="MIT" style={{ width: 22, height: 22, borderRadius: 99, objectFit: 'contain', background: '#fff' }} />
               <div><div style={{ fontSize: 9, fontWeight: 700 }}>Maharaja Institute of Technology Mysore</div><div style={{ fontSize: 7, opacity: 0.6 }}>Belawadi, Srirangapatna Taluk, Mandya – 571477</div></div>
             </div>
             <div style={{ fontSize: 7, opacity: 0.6, textAlign: 'right' }}>

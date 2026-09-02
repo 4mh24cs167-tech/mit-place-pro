@@ -54,10 +54,9 @@ export default function LoginPage() {
         <div className="relative z-10 flex flex-col p-12 w-full h-full">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <img src="/mitm-logo.png" alt="MITM Logo" className="w-12 h-12 rounded-2xl object-cover border border-white/10" />
+            <img src="/udyogamitra-logo.jpg" alt="UdyogaMITra Logo" className="w-12 h-12 rounded-2xl object-cover border border-white/10" />
             <div>
-              <span className="text-xl font-bold text-white tracking-tight">MITM PlacePro</span>
-              <p className="text-xs text-white/40">Campus Placement Portal</p>
+              <span className="text-xl font-bold text-white tracking-tight">UdyogaMITra</span>
             </div>
           </div>
 
@@ -82,10 +81,9 @@ export default function LoginPage() {
         <div className="w-full max-w-[420px]">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-3 mb-10">
-            <img src="/mitm-logo.png" alt="MITM Logo" className="w-11 h-11 rounded-2xl object-cover" />
+            <img src="/udyogamitra-logo.jpg" alt="UdyogaMITra Logo" className="w-11 h-11 rounded-2xl object-cover" />
             <div>
-              <span className="text-xl font-bold text-foreground tracking-tight">MITM PlacePro</span>
-              <p className="text-xs text-muted-foreground">Campus Placement Portal</p>
+              <span className="text-xl font-bold text-foreground tracking-tight">UdyogaMITra</span>
             </div>
           </div>
 
@@ -190,7 +188,7 @@ export default function LoginPage() {
           <div className="flex gap-3 mt-4">
             <button
               onClick={() => router.push("/register/student")}
-              className="flex-1 py-2.5 rounded-xl border border-border bg-white text-foreground hover:bg-muted font-medium text-sm transition-colors"
+              className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium text-foreground hover:bg-secondary transition-colors"
             >
               Register as Job Aspirant
             </button>
@@ -227,10 +225,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <p className="text-[11px] text-muted-foreground text-center mt-8">
-            MITM College, Mysuru · Placement Cell Portal
-          </p>
-          <p className="text-[10px] text-muted-foreground/60 text-center mt-1">
-            Developed by Yashas N, Varshith V, Vishesh G Devanur, Vinod Patel, Bhavish S, Yashavanth B N — CSE Department &amp; Shreyas M — ISE Department
+            MITM College, Mysuru · UdyogaMITra
           </p>
         </div>
       </div>

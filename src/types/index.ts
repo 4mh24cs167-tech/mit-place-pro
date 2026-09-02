@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════
-// MITM PlacePro — TypeScript Type Definitions
+// UdyogaMITra — TypeScript Type Definitions
 // ═══════════════════════════════════════════
 
 export type UserRole = "admin" | "company" | "student" | "principal";

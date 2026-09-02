@@ -169,8 +169,8 @@ export default function ChangePasswordPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
-          <img src="/mitm-logo.png" alt="MITM Logo" className="w-11 h-11 rounded-2xl object-cover" />
-          <span className="text-xl font-bold text-foreground tracking-tight">MITM PlacePro</span>
+          <img src="/udyogamitra-logo.jpg" alt="MITM Logo" className="w-11 h-11 rounded-2xl object-cover" />
+          <span className="text-xl font-bold text-foreground tracking-tight">UdyogaMITra</span>
         </div>
 
         {/* Card */}
@@ -418,7 +418,7 @@ export default function ChangePasswordPage() {
         </div>
 
         <p className="text-[11px] text-muted-foreground text-center mt-6">
-          MITM College, Mysuru · Placement Cell Portal
+          MITM College, Mysuru · UdyogaMITra
         </p>
       </div>
     </div>

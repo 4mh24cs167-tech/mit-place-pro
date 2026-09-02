@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════
-// MITM PlacePro — Constants & Mock Data
+// UdyogaMITra — Constants & Mock Data
 // ═══════════════════════════════════════════
 
 export const DEPARTMENTS = [

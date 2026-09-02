@@ -86,7 +86,7 @@ export default function CompanyRegisterPage() {
             <Building2 className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">Company Registration</h1>
-          <p className="text-muted-foreground mt-1">Register your company on MITM PlacePro</p>
+          <p className="text-muted-foreground mt-1">Register your company on UdyogaMITra</p>
         </div>
 
         {/* Progress Steps */}

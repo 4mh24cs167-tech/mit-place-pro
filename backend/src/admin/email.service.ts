@@ -18,14 +18,14 @@ export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private transporter: nodemailer.Transporter;
   private readonly logoUrl: string;
-  private readonly fromName = 'MITM PlacePro';
+  private readonly fromName = 'UdyogaMITra';
 
   constructor(
     private readonly configService: ConfigService,
     @InjectRepository(EmailLog) private readonly emailLogRepo: Repository<EmailLog>,
   ) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'https://mitm-placepro.vercel.app');
-    this.logoUrl = `${frontendUrl}/mitm-logo.png`;
+    this.logoUrl = `${frontendUrl}/udyogamitra-logo.jpg`;
     this.initTransporter();
   }
 
@@ -89,7 +89,7 @@ export class EmailService {
   <!-- Header with Logo -->
   <tr><td style="background:${headerBg};padding:28px 32px;text-align:center;">
     <img src="${this.logoUrl}" alt="MITM Logo" width="64" height="64" style="display:block;margin:0 auto 12px;border-radius:12px;background:rgba(255,255,255,0.15);padding:4px;" />
-    <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">MITM PlacePro</h1>
+    <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.5px;">UdyogaMITra</h1>
     <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:13px;">${title}</p>
   </td></tr>
   <!-- Body -->
@@ -97,7 +97,7 @@ export class EmailService {
   <!-- Footer -->
   <tr><td style="padding:20px 32px;background:#f8f9fa;border-top:1px solid #e5e7eb;text-align:center;">
     <p style="margin:0;font-size:11px;color:#9ca3af;">Maharaja Institute of Technology, Mysuru</p>
-    <p style="margin:4px 0 0;font-size:11px;color:#9ca3af;">This is an automated email from MITM PlacePro. Please do not reply.</p>
+    <p style="margin:4px 0 0;font-size:11px;color:#9ca3af;">This is an automated email from UdyogaMITra. Please do not reply.</p>
   </td></tr>
 </table>
 </td></tr></table>
@@ -220,7 +220,7 @@ export class EmailService {
     const body = `
       <p style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0 0 16px;">Welcome, ${hrName || companyName}!</p>
       <p style="font-size:14px;color:#4a4a68;line-height:1.7;margin:0 0 24px;">
-        Your company <strong>${companyName}</strong> has been registered on the MITM PlacePro portal for campus recruitment.
+        Your company <strong>${companyName}</strong> has been registered on the UdyogaMITra portal for campus recruitment.
         Below are your login credentials to access the company dashboard.
       </p>
 
@@ -258,8 +258,8 @@ export class EmailService {
 
     return this.sendEmail({
       to: credentials.email,
-      subject: `🎓 Welcome to MITM PlacePro — Your Company Login Credentials`,
-      html: this.wrapHtml('Welcome to MITM PlacePro', 'linear-gradient(135deg,#6366f1,#8b5cf6)', body),
+      subject: `🎓 Welcome to UdyogaMITra — Your Company Login Credentials`,
+      html: this.wrapHtml('Welcome to UdyogaMITra', 'linear-gradient(135deg,#6366f1,#8b5cf6)', body),
     }, 'company_credentials');
   }
 
@@ -292,7 +292,7 @@ export class EmailService {
 
     return this.sendEmail({
       to: email,
-      subject: '🔐 Your Password Reset OTP — MITM PlacePro',
+      subject: '🔐 Your Password Reset OTP — UdyogaMITra',
       html: this.wrapHtml('Password Reset', 'linear-gradient(135deg,#6366f1,#8b5cf6)', body),
     }, 'otp_reset');
   }
@@ -339,7 +339,7 @@ export class EmailService {
     return this.sendEmail({
       to: data.email,
       subject: isFinal
-        ? `🎉 Congratulations! You're placed at ${companyName} — MITM PlacePro`
+        ? `🎉 Congratulations! You're placed at ${companyName} — UdyogaMITra`
         : `✅ Round ${data.roundNumber} Cleared — ${jobTitle} at ${companyName}`,
       html: this.wrapHtml(title, headerBg, body),
     }, 'round_selected');
@@ -527,7 +527,7 @@ export class EmailService {
     const body = `
       <p style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0 0 16px;">Hello ${safeCompanyName},</p>
       <p style="font-size:14px;color:#4a4a68;line-height:1.7;margin:0 0 24px;">
-        Great news! Your company profile <strong>${safeCompanyName}</strong> has been officially approved by the admin team on MITM PlacePro.
+        Great news! Your company profile <strong>${safeCompanyName}</strong> has been officially approved by the admin team on UdyogaMITra.
       </p>
       <p style="font-size:14px;color:#4a4a68;line-height:1.7;margin:0 0 24px;">
         You can now access your company dashboard and start posting jobs.
@@ -542,7 +542,7 @@ export class EmailService {
 
     return this.sendEmail({
       to: email,
-      subject: '✅ Your Company Has Been Approved — MITM PlacePro',
+      subject: '✅ Your Company Has Been Approved — UdyogaMITra',
       html: this.wrapHtml('Company Approved!', 'linear-gradient(135deg,#059669,#10b981)', body),
     }, 'other');
   }
@@ -598,13 +598,13 @@ export class EmailService {
   async sendDirectTestEmail(toEmail: string): Promise<{ success: boolean; message: string; error?: string }> {
     const success = await this.sendEmail({
       to: toEmail,
-      subject: '🎓 MITM PlacePro SMTP Connection Test',
+      subject: '🎓 UdyogaMITra SMTP Connection Test',
       html: this.wrapHtml(
         'SMTP Diagnostic Test',
         'linear-gradient(135deg,#3b82f6,#1d4ed8)',
         `<p style="font-size:16px;color:#1a1a2e;">Hello!</p>
          <p style="font-size:14px;color:#4a4a68;line-height:1.7;">
-           This is a direct connection validation email triggered from the MITM PlacePro admin controls.
+           This is a direct connection validation email triggered from the UdyogaMITra admin controls.
            If you are reading this, your outbound connection is fully active!
          </p>
          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin:20px 0;font-size:13px;color:#166534;">

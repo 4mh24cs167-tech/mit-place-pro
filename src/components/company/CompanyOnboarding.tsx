@@ -118,7 +118,7 @@ export default function CompanyOnboarding({ initialData, onComplete }: CompanyOn
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">Welcome to PlacePro!</h2>
+              <h2 className="text-lg font-bold text-white">Welcome to UdyogaMITra!</h2>
               <p className="text-xs text-white/80">Let&apos;s set up your company profile</p>
             </div>
           </div>
