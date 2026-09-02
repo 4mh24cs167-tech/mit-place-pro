@@ -54,7 +54,7 @@ export default function LoginPage() {
         <div className="relative z-10 flex flex-col p-12 w-full h-full">
           {/* Logo */}
           <div className="flex items-center gap-4">
-            <img src="/udyogamitra-logo.jpg" alt="UdyogaMITra Logo" className="w-16 h-16 rounded-full object-cover" />
+            <img src="/udyogamitra-logo.png" alt="UdyogaMITra Logo" className="w-16 h-16 rounded-full object-cover" />
             <span className="text-2xl font-bold text-white tracking-tight">UdyogaMITra</span>
           </div>
 
@@ -79,7 +79,7 @@ export default function LoginPage() {
         <div className="w-full max-w-[420px]">
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center justify-center gap-4 mb-10">
-            <img src="/udyogamitra-logo.jpg" alt="UdyogaMITra Logo" className="w-14 h-14 rounded-full object-cover" />
+            <img src="/udyogamitra-logo.png" alt="UdyogaMITra Logo" className="w-14 h-14 rounded-full object-cover" />
             <span className="text-2xl font-bold text-foreground tracking-tight">UdyogaMITra</span>
           </div>
 

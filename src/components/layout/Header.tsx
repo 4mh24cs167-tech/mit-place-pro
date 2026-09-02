@@ -27,7 +27,7 @@ export default function Header({
       <div className="flex items-center justify-between mb-4 sm:mb-8">
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <img src="/udyogamitra-logo.jpg" alt="UdyogaMITra Logo" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover" />
+          <img src="/udyogamitra-logo.png" alt="UdyogaMITra Logo" className="w-9 h-9 sm:w-10 sm:h-10 rounded-full object-cover" />
           <span className="text-sm sm:text-base font-bold text-foreground tracking-tight">
             UdyogaMITra
           </span>
