@@ -419,18 +419,22 @@ export class CompanyService {
     });
 
     // After existing drive lookup, also find drives via DriveCompanyJob
-    const dcjDriveIds = await this.dcjRepo.find({
-      where: { companyId: company.id },
-      select: ['driveId'],
-    });
-    const additionalDriveIds = dcjDriveIds.map(d => d.driveId).filter(id => !drives.some(d => d.id === id));
-    if (additionalDriveIds.length > 0) {
-      const additionalDrives = await this.driveRepo.find({
-        where: { id: In(additionalDriveIds) },
-        relations: ['job', 'slots'],
-        order: { createdAt: 'DESC' },
+    try {
+      const dcjDriveIds = await this.dcjRepo.find({
+        where: { companyId: company.id },
+        select: ['driveId'],
       });
-      drives.push(...additionalDrives);
+      const additionalDriveIds = dcjDriveIds.map(d => d.driveId).filter(id => !drives.some(d => d.id === id));
+      if (additionalDriveIds.length > 0) {
+        const additionalDrives = await this.driveRepo.find({
+          where: { id: In(additionalDriveIds) },
+          relations: ['job', 'slots'],
+          order: { createdAt: 'DESC' },
+        });
+        drives.push(...additionalDrives);
+      }
+    } catch (err) {
+      this.logger.warn('DriveCompanyJob query failed (table may not exist yet): ' + (err instanceof Error ? err.message : String(err)));
     }
 
     // Collect all jobIds from d.jobIds across all matching drives
@@ -491,10 +495,15 @@ export class CompanyService {
     if (!company) throw new NotFoundException('Company profile not found');
 
     // Verify company is part of this drive
-    const dcjs = await this.dcjRepo.find({
-      where: { driveId, companyId: company.id },
-      relations: ['job'],
-    });
+    let dcjs: DriveCompanyJob[] = [];
+    try {
+      dcjs = await this.dcjRepo.find({
+        where: { driveId, companyId: company.id },
+        relations: ['job'],
+      });
+    } catch {
+      // Table may not exist yet — fall through to single-company check
+    }
     
     // Also check single-company drives
     if (dcjs.length === 0) {
@@ -509,10 +518,15 @@ export class CompanyService {
     }
 
     // Get all attendance records for this company in this drive
-    const attendances = await this.attendanceRepo.find({
-      where: { driveId, companyId: company.id },
-      relations: ['job'],
-    });
+    let attendances: DriveAttendance[] = [];
+    try {
+      attendances = await this.attendanceRepo.find({
+        where: { driveId, companyId: company.id },
+        relations: ['job'],
+      });
+    } catch {
+      // Table may not exist yet
+    }
 
     if (attendances.length === 0) return { jobs: [], totalAttendees: 0 };
 
