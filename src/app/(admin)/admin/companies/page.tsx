@@ -104,33 +104,75 @@ export default function AdminCompaniesPage() {
     companyName: string;
   } | null>(null);
 
-  const downloadCompanyPdf = () => {
+  const downloadCompanyPdf = async () => {
     if (!selectedCompany) return;
     const doc = new jsPDF();
     const c = selectedCompany;
     
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(20);
-    doc.text(c.name, 20, 20);
+    let startY = 20;
+
+    // Try to load and embed the company logo
+    if (c.logoS3Key) {
+      try {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject();
+          img.src = c.logoS3Key;
+        });
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0);
+        const imgData = canvas.toDataURL("image/png");
+        doc.addImage(imgData, "PNG", 20, 15, 25, 25);
+        startY = 22;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(20);
+        doc.text(c.name, 50, startY);
+        doc.setFontSize(11);
+        doc.setFont("helvetica", "normal");
+        doc.text(c.sector || "", 50, startY + 8);
+        startY = 50;
+      } catch {
+        // Logo load failed, just show name
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(20);
+        doc.text(c.name, 20, startY);
+        startY = 35;
+      }
+    } else {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.text(c.name, 20, startY);
+      startY = 35;
+    }
     
     doc.setFont("helvetica", "normal");
     doc.setFontSize(12);
     
-    let y = 35;
+    let y = startY;
     const addLine = (label: string, value: string | undefined | null) => {
       doc.setFont("helvetica", "bold");
       doc.text(`${label}:`, 20, y);
       doc.setFont("helvetica", "normal");
-      doc.text(value || "N/A", 60, y);
+      doc.text(value || "N/A", 70, y);
       y += 10;
     };
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Company Details", 20, y);
+    doc.line(20, y + 2, 190, y + 2);
+    y += 12;
 
     addLine("Sector", c.sector);
     addLine("HQ City", c.hqCity);
     addLine("Website", c.website);
     addLine("Annual Turnover", c.annualTurnoverRange);
     
-    y += 10;
+    y += 5;
     doc.setFont("helvetica", "bold");
     doc.text("HR Contact Details", 20, y);
     doc.line(20, y + 2, 190, y + 2);
@@ -141,7 +183,7 @@ export default function AdminCompaniesPage() {
     addLine("HR Email", c.email || c.user?.email);
 
     if (c.description) {
-      y += 10;
+      y += 5;
       doc.setFont("helvetica", "bold");
       doc.text("Description", 20, y);
       doc.setFont("helvetica", "normal");

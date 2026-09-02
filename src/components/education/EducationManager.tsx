@@ -77,7 +77,7 @@ function getRemoveWarning(qual: QualType, existing: QualType[]): string | null {
 /* ═══════════════════════════════════════════════════ */
 /* Main Component                                      */
 /* ═══════════════════════════════════════════════════ */
-export default function EducationManager({ editing = true }: { editing?: boolean }) {
+export default function EducationManager({ editing = true, onRecordsChange }: { editing?: boolean; onRecordsChange?: (records: EducationRecord[]) => void }) {
   const [records, setRecords] = useState<EducationRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState<string | null>(null);
@@ -94,9 +94,11 @@ export default function EducationManager({ editing = true }: { editing?: boolean
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const res: any = await studentApi.getEducations();
-      setRecords(res?.data || []);
+      const data = res?.data || [];
+      setRecords(data);
+      onRecordsChange?.(data);
     } catch { /* ignore */ } finally { setLoading(false); }
-  }, []);
+  }, [onRecordsChange]);
 
   useEffect(() => { fetchRecords(); }, [fetchRecords]);
   const existingTypes = records.map((r) => r.qualificationType);

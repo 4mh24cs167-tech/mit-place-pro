@@ -601,7 +601,7 @@ export default function StudentProfilePage() {
             {/* Education & Qualifications */}
             <div className="i-card p-5 sm:p-6">
               <SectionHeader icon={GraduationCap} title="Education & Qualifications" />
-              <EducationManager editing={editing} />
+              <EducationManager editing={editing} onRecordsChange={setEducationRecords} />
             </div>
 
             {/* Skills */}
