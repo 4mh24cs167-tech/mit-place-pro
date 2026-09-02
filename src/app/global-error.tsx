@@ -16,15 +16,15 @@ export default function GlobalError({
   return (
     <html>
       <body>
-        <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb', fontFamily: 'sans-serif' }}>
+        <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #f5f3ff 0%, #ede9fe 30%, #f0f0ff 60%, #f5f3ff 100%)', fontFamily: 'sans-serif' }}>
           <div style={{ textAlign: 'center', padding: '40px', backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', maxWidth: '400px' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#111827', margin: '0 0 8px 0' }}>Critical Error</h2>
-            <p style={{ color: '#4b5563', margin: '0 0 24px 0', lineHeight: '1.5' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#1a1a2e', margin: '0 0 8px 0' }}>Critical Error</h2>
+            <p style={{ color: '#6b7280', margin: '0 0 24px 0', lineHeight: '1.5' }}>
               The application encountered a critical error. Please try reloading the page.
             </p>
             <button 
               onClick={() => reset()}
-              style={{ backgroundColor: '#2563eb', color: 'white', padding: '12px 24px', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', width: '100%' }}
+              style={{ background: 'linear-gradient(to right, #4f46e5, #7c3aed)', color: 'white', padding: '12px 24px', border: 'none', borderRadius: '12px', fontWeight: '600', cursor: 'pointer', width: '100%' }}
             >
               Try again
             </button>
@@ -34,4 +34,3 @@ export default function GlobalError({
     </html>
   );
 }
-

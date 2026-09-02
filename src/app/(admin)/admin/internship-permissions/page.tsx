@@ -157,7 +157,7 @@ export default function InternshipPermissionsPage() {
   const totalCount = filteredForms.length;
 
   return (
-    <div className="page-enter min-h-screen bg-neutral-50/50 pb-24 sm:pb-10">
+    <div className="page-enter min-h-screen pb-24 sm:pb-10">
       <Header userName={user?.email || "Admin"} userRole="Administrator" />
 
       <div className="px-4 sm:px-6 md:px-8 max-w-7xl mx-auto mt-6">

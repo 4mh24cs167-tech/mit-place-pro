@@ -149,7 +149,7 @@ export default function CompanyDashboardPage() {
       <Header
         userName={user?.email?.split("@")[0] || "Company User"}
         userRole="Company"
-        greeting={`Good morning!`}
+        greeting={(() => { const h = new Date().getHours(); return h < 12 ? "Good morning!" : h < 17 ? "Good afternoon!" : "Good evening!"; })()}
         subtitle="Let's make this day productive."
       />
 

@@ -122,7 +122,7 @@ export default function StudentDashboardPage() {
       <Header
         userName={userName}
         userRole="Student"
-        greeting={`Good morning, ${firstName}!`}
+        greeting={(() => { const h = new Date().getHours(); return h < 12 ? `Good morning, ${firstName}!` : h < 17 ? `Good afternoon, ${firstName}!` : `Good evening, ${firstName}!`; })()}
         subtitle="Let's make this day productive."
       />
 
