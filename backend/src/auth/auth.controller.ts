@@ -8,7 +8,7 @@ import { Auth, CurrentUser } from './auth.decorators';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ default: { limit: 100, ttl: 60000 } })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto) {
@@ -27,7 +27,7 @@ export class AuthController {
   }
 
   // ── Public: Forgot Password (Send OTP) ──────────────────
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
@@ -36,7 +36,7 @@ export class AuthController {
   }
 
   // ── Public: Verify OTP ──────────────────────────────────
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
   async verifyOtp(@Body() dto: VerifyOtpDto) {
@@ -45,7 +45,7 @@ export class AuthController {
   }
 
   // ── Public: Reset Password with OTP ─────────────────────
-  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() dto: ResetPasswordDto) {
@@ -54,7 +54,7 @@ export class AuthController {
   }
 
   // ── Public: Registration - Send OTP ─────────────────────
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('register/send-otp')
   @HttpCode(HttpStatus.OK)
   async registerSendOtp(@Body() dto: RegisterSendOtpDto) {
@@ -63,7 +63,7 @@ export class AuthController {
   }
 
   // ── Public: Registration - Verify OTP ───────────────────
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('register/verify-otp')
   @HttpCode(HttpStatus.OK)
   async registerVerifyOtp(@Body() dto: RegisterVerifyOtpDto) {

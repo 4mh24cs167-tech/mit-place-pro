@@ -454,7 +454,7 @@ export class AdminService {
 
     // Generate random password
     const rawPassword = Math.random().toString(36).slice(-10) + 'A1!';
-    const salt = await bcrypt.genSalt(12);
+    const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(rawPassword, salt);
 
     const user = await this.userRepo.save({

@@ -86,7 +86,7 @@ export class AuthService {
       throw new UnauthorizedException('Current password is incorrect');
     }
 
-    const salt = await bcrypt.genSalt(12);
+    const salt = await bcrypt.genSalt(10);
     const newHash = await bcrypt.hash(dto.newPassword, salt);
 
     await this.userRepo.update(userId, {
@@ -204,7 +204,7 @@ export class AuthService {
     if (!user) throw new BadRequestException('User not found');
 
     // Hash new password
-    const salt = await bcrypt.genSalt(12);
+    const salt = await bcrypt.genSalt(10);
     const newHash = await bcrypt.hash(dto.newPassword, salt);
 
     // Update password and clear OTP
@@ -316,7 +316,7 @@ export class AuthService {
     }
 
     // Hash password
-    const salt = await bcrypt.genSalt(12);
+    const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(dto.password, salt);
 
     await this.userRepo.manager.transaction(async (manager) => {
@@ -425,7 +425,7 @@ export class AuthService {
     }
 
     // Hash password
-    const salt = await bcrypt.genSalt(12);
+    const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(dto.password, salt);
 
     await this.userRepo.manager.transaction(async (manager) => {

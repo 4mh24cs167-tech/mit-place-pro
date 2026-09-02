@@ -9,11 +9,11 @@ export enum UserRole {
 
 @Entity('users')
 @Index('idx_users_role', ['role'])
-@Index('idx_users_email', ['email'])
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index('idx_users_email', { unique: true })
   @Column({ type: 'varchar', length: 255, unique: true })
   email: string;
 
