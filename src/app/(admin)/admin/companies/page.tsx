@@ -24,6 +24,7 @@ import {
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import jsPDF from "jspdf";
+import * as XLSX from "xlsx";
 
 interface Company {
   id: string;
@@ -195,6 +196,41 @@ export default function AdminCompaniesPage() {
     doc.save(`${c.name.replace(/\s+/g, '_')}_Details.pdf`);
   };
 
+  const downloadAllCompaniesExcel = () => {
+    if (!companies || companies.length === 0) return;
+
+    const rows = companies.map((c, idx) => ({
+      "S.No": idx + 1,
+      "Company Name": c.name || "",
+      "Sector": c.sector || "",
+      "HQ City": c.hqCity || "",
+      "Website": c.website || "",
+      "HR Name": c.hrName || "",
+      "HR Email": c.email || "",
+      "Description": c.description || "",
+      "Profile Complete": c.profileComplete ? "Yes" : "No",
+      "Approved": c.isApproved ? "Yes" : "No",
+      "Active": c.isActive !== false ? "Yes" : "No",
+      "Jobs Posted": c._count?.jobs ?? 0,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+
+    // Auto-size columns
+    const colWidths = Object.keys(rows[0]).map((key) => {
+      const maxLen = Math.max(
+        key.length,
+        ...rows.map((r) => String(r[key as keyof typeof r] ?? "").length)
+      );
+      return { wch: Math.min(maxLen + 2, 50) };
+    });
+    ws["!cols"] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Companies");
+    XLSX.writeFile(wb, `All_Companies_${new Date().toISOString().split("T")[0]}.xlsx`);
+  };
+
   const handleAddCompany = async () => {
     if (!formData.name || !formData.hrEmail) {
       setAddError("Company name and HR email are required");
@@ -278,6 +314,15 @@ export default function AdminCompaniesPage() {
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
+            <button
+              onClick={downloadAllCompaniesExcel}
+              disabled={loading || companies.length === 0}
+              className="flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-xl bg-white border-2 border-emerald-200 text-emerald-700 text-xs sm:text-sm font-semibold hover:bg-emerald-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Download Excel</span>
+              <span className="sm:hidden">Excel</span>
+            </button>
             <button
               onClick={() => setShowAddModal(true)}
               className="flex items-center gap-1.5 px-3 sm:px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 text-white text-xs sm:text-sm font-semibold shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all ml-auto"
