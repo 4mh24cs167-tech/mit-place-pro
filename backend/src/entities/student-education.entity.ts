@@ -68,7 +68,7 @@ export class StudentEducation {
   @Column({ type: 'varchar', length: 50, nullable: true, name: 'document_file_type' })
   documentFileType: string | null;
 
-  @Column({ type: 'bytea', nullable: true, name: 'document_file_data' })
+  @Column({ type: 'bytea', nullable: true, name: 'document_file_data', select: false })
   documentFileData: Buffer | null;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })

@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, In } from 'typeorm';
 import * as XLSX from 'xlsx';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { User, UserRole } from '../entities/user.entity';
 import { Student } from '../entities/student.entity';
 import { Batch } from '../entities/batch.entity';
@@ -80,9 +81,7 @@ export class BulkUploadService {
       });
     }
 
-    // ── Step 2: Pre-hash password ONCE (all students in same dept+batch get the same password) ──
-    const rawPassword = `${dept || 'STUDENT'}${batch}`;
-    const passwordHash = await bcrypt.hash(rawPassword, 10);
+
 
     // ── Step 3: Collect all USNs and emails from the Excel to do BULK duplicate check ──
     const excelUsns: string[] = [];
@@ -214,61 +213,66 @@ export class BulkUploadService {
       for (let chunkStart = 0; chunkStart < validRows.length; chunkStart += CHUNK_SIZE) {
         const chunk = validRows.slice(chunkStart, chunkStart + CHUNK_SIZE);
 
-        // Build bulk user INSERT
-        const userValues: string[] = [];
-        const userIds: string[] = [];
+        // Build parameterized user INSERT
+        const userParams: unknown[] = [];
+        const userPlaceholders: string[] = [];
+        let paramIdx = 1;
 
         for (const row of chunk) {
           const userId = crypto.randomUUID();
-          userIds.push(userId);
-          // Escape single quotes in email
-          const safeEmail = row.email.replace(/'/g, "''");
-          userValues.push(
-            `('${userId}', '${safeEmail}', '${passwordHash}', 'student', true, true)`,
+          (row as Record<string, unknown>)._userId = userId;
+          
+          const rawPassword = crypto.randomBytes(4).toString('hex'); // 8 char random password
+          const passwordHash = await bcrypt.hash(rawPassword, 10);
+          (row as Record<string, unknown>)._rawPassword = rawPassword;
+
+          userPlaceholders.push(
+            `($${paramIdx++}, $${paramIdx++}, $${paramIdx++}, 'student', true, true)`,
           );
+          userParams.push(userId, row.email, passwordHash);
         }
 
         await queryRunner.query(
-          `INSERT INTO users (id, email, password_hash, role, must_change_password, is_active) VALUES ${userValues.join(', ')}`,
+          `INSERT INTO users (id, email, password_hash, role, must_change_password, is_active) VALUES ${userPlaceholders.join(', ')}`,
+          userParams,
         );
 
-        // Build bulk student INSERT
-        const studentValues: string[] = [];
+        // Build parameterized student INSERT
+        const studentParams: unknown[] = [];
+        const studentPlaceholders: string[] = [];
+        paramIdx = 1;
 
-        for (let j = 0; j < chunk.length; j++) {
-          const row = chunk[j];
-          const userId = userIds[j];
+        for (const row of chunk) {
+          const userId = (row as Record<string, unknown>)._userId as string;
           const studentId = crypto.randomUUID();
-          const safeUsn = row.usn.replace(/'/g, "''");
-          const safeName = row.fullName.replace(/'/g, "''");
-          const safeDept = row.department.replace(/'/g, "''");
-          const safePhone = row.phone ? `'${row.phone.replace(/'/g, "''")}'` : 'NULL';
-          const safeCgpa = row.cgpa != null ? row.cgpa : 'NULL';
-          const safeTenth = row.tenthPercent != null ? row.tenthPercent : 'NULL';
-          const safeTwelfth = row.twelfthPercent != null ? row.twelfthPercent : 'NULL';
-          const safeGender = row.gender ? `'${row.gender.replace(/'/g, "''")}'` : 'NULL';
-          const safeCategory = row.category ? `'${row.category.replace(/'/g, "''")}'` : 'NULL';
-          const safeBatchId = matchedBatch ? `'${matchedBatch.id}'` : 'NULL';
-          const safeSemester = matchedBatch?.currentSemester ?? 'NULL';
+          const batchId = matchedBatch ? matchedBatch.id : null;
+          const semester = matchedBatch?.currentSemester ?? null;
 
-          studentValues.push(
-            `('${studentId}', '${userId}', '${safeUsn}', '${safeName}', '${safeDept}', ` +
-            `${safeBatchId}, ${safeSemester}, ${safePhone}, ${safeCgpa}, ` +
-            `${safeTenth}, ${safeTwelfth}, ${row.backlogs}, ` +
-            `${safeGender}, ${safeCategory}, false, 'none', '{}')`,
+          studentPlaceholders.push(
+            `($${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, ` +
+            `$${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, ` +
+            `$${paramIdx++}, $${paramIdx++}, $${paramIdx++}, ` +
+            `$${paramIdx++}, $${paramIdx++}, false, 'none', '{}')`,
+          );
+          studentParams.push(
+            studentId, userId, row.usn, row.fullName, row.department,
+            batchId, semester, row.phone || null, row.cgpa ?? null,
+            row.tenthPercent ?? null, row.twelfthPercent ?? null, row.backlogs ?? 0,
+            row.gender || null, row.category || null,
           );
 
           result.credentials.push({
             usn: row.usn,
             email: row.email,
-            temporaryPassword: rawPassword,
+            temporaryPassword: (row as Record<string, unknown>)._rawPassword as string,
           });
         }
 
         await queryRunner.query(
           `INSERT INTO students (id, user_id, usn, full_name, department, ` +
           `batch_id, semester, phone, cgpa, tenth_percent, twelfth_percent, backlogs, ` +
-          `gender, category, profile_complete, placement_status, profile_data) VALUES ${studentValues.join(', ')}`,
+          `gender, category, profile_complete, placement_status, profile_data) VALUES ${studentPlaceholders.join(', ')}`,
+          studentParams,
         );
 
         result.created += chunk.length;

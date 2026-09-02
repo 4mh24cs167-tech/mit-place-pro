@@ -21,3 +21,4 @@ export { StudentDriveFeedback, CompanyDriveFeedback } from './feedback.entity';
 export { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule, AssessmentSubItem, AssessmentCredential } from './assessment.entity';
 export { InternshipPermission } from './internship-permission.entity';
 export { StudentEducation, QualificationType } from './student-education.entity';
+export { OtpRecord } from './otp.entity';

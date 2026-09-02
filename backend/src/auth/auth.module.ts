@@ -9,6 +9,7 @@ import { Student } from '../entities/student.entity';
 import { Department } from '../entities/department.entity';
 import { Company } from '../entities/company.entity';
 import { Batch } from '../entities/batch.entity';
+import { OtpRecord } from '../entities/otp.entity';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
@@ -18,7 +19,7 @@ import { EmailService } from '../admin/email.service';
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([User, EmailLog, Student, Department, Company, Batch]),
+    TypeOrmModule.forFeature([User, EmailLog, Student, Department, Company, Batch, OtpRecord]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -38,3 +39,4 @@ import { EmailService } from '../admin/email.service';
   exports: [AuthService, JwtStrategy, PassportModule],
 })
 export class AuthModule {}
+

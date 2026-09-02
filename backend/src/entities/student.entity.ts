@@ -86,7 +86,7 @@ export class Student {
   @Column({ type: 'varchar', length: 500, nullable: true, name: 'resume_link' })
   resumeLink: string | null;
 
-  @Column({ type: 'bytea', nullable: true, name: 'resume_file_data' })
+  @Column({ type: 'bytea', nullable: true, name: 'resume_file_data', select: false })
   resumeFileData: Buffer | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true, name: 'resume_file_name' })

@@ -31,8 +31,10 @@ import { StudentDriveFeedback, CompanyDriveFeedback } from './entities';
 import { Assessment, AssessmentLink, AssessmentSubmission, AssessmentSchedule, AssessmentSubItem, AssessmentCredential } from './entities';
 import { InternshipPermission } from './entities';
 import { StudentEducation } from './entities';
+import { OtpRecord } from './entities';
 
 const entities = [
+  OtpRecord,
   User,
   Student,
   Batch,

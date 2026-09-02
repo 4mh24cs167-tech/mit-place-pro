@@ -210,9 +210,10 @@ export class StudentController {
 
   @Get('internship-permissions/:id')
   async getInternshipPermission(
+    @CurrentUser('id') userId: string,
     @Param('id') id: string,
   ) {
-    const data = await this.internshipService.getFormById(id);
+    const data = await this.internshipService.getFormById(id, userId);
     return { success: true, data };
   }
 
@@ -266,7 +267,7 @@ export class StudentController {
 
   /* ─── Resume Upload / Download ─────────────────── */
   @Post('resume/upload')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 2 * 1024 * 1024 } }))
   async uploadResume(
     @CurrentUser('id') userId: string,
     @UploadedFile() file: Express.Multer.File,

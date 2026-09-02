@@ -200,14 +200,27 @@ export class EmailService {
     }
   }
 
+  private escapeHtml(unsafe: string | undefined | null): string {
+    if (!unsafe) return '';
+    return unsafe
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
   // ═══════════════════════════════════════════════════
   // 1. Company Welcome / Credentials Email
   // ═══════════════════════════════════════════════════
   async sendCompanyCredentials(credentials: CompanyCredentials): Promise<boolean> {
+    const hrName = this.escapeHtml(credentials.hrName);
+    const companyName = this.escapeHtml(credentials.companyName);
+
     const body = `
-      <p style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0 0 16px;">Welcome, ${credentials.hrName || credentials.companyName}!</p>
+      <p style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0 0 16px;">Welcome, ${hrName || companyName}!</p>
       <p style="font-size:14px;color:#4a4a68;line-height:1.7;margin:0 0 24px;">
-        Your company <strong>${credentials.companyName}</strong> has been registered on the MITM PlacePro portal for campus recruitment.
+        Your company <strong>${companyName}</strong> has been registered on the MITM PlacePro portal for campus recruitment.
         Below are your login credentials to access the company dashboard.
       </p>
 
@@ -292,13 +305,17 @@ export class EmailService {
     companyName: string; roundNumber: number; totalRounds: number; loginUrl: string;
   }): Promise<boolean> {
     const isFinal = data.roundNumber >= data.totalRounds;
+    
+    const studentName = this.escapeHtml(data.studentName);
+    const jobTitle = this.escapeHtml(data.jobTitle);
+    const companyName = this.escapeHtml(data.companyName);
 
     const body = `
-      <p style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0 0 16px;">Hi ${data.studentName},</p>
+      <p style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0 0 16px;">Hi ${studentName},</p>
       <p style="font-size:14px;color:#4a4a68;line-height:1.7;margin:0 0 24px;">
         ${isFinal
-          ? `We are thrilled to inform you that you have been <strong>selected</strong> for the <strong>${data.jobTitle}</strong> role at <strong>${data.companyName}</strong>! 🎓`
-          : `Great news! You have <strong>cleared Round ${data.roundNumber}</strong> for the <strong>${data.jobTitle}</strong> position at <strong>${data.companyName}</strong>.`
+          ? `We are thrilled to inform you that you have been <strong>selected</strong> for the <strong>${jobTitle}</strong> role at <strong>${companyName}</strong>! 🎓`
+          : `Great news! You have <strong>cleared Round ${data.roundNumber}</strong> for the <strong>${jobTitle}</strong> position at <strong>${companyName}</strong>.`
         }
       </p>
       <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;padding:20px;margin:0 0 24px;text-align:center;">
@@ -322,8 +339,8 @@ export class EmailService {
     return this.sendEmail({
       to: data.email,
       subject: isFinal
-        ? `🎉 Congratulations! You're placed at ${data.companyName} — MITM PlacePro`
-        : `✅ Round ${data.roundNumber} Cleared — ${data.jobTitle} at ${data.companyName}`,
+        ? `🎉 Congratulations! You're placed at ${companyName} — MITM PlacePro`
+        : `✅ Round ${data.roundNumber} Cleared — ${jobTitle} at ${companyName}`,
       html: this.wrapHtml(title, headerBg, body),
     }, 'round_selected');
   }
@@ -335,10 +352,14 @@ export class EmailService {
     email: string; studentName: string; jobTitle: string;
     companyName: string; roundNumber: number; loginUrl: string;
   }): Promise<boolean> {
+    const studentName = this.escapeHtml(data.studentName);
+    const jobTitle = this.escapeHtml(data.jobTitle);
+    const companyName = this.escapeHtml(data.companyName);
+
     const body = `
-      <p style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0 0 16px;">Hi ${data.studentName},</p>
+      <p style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0 0 16px;">Hi ${studentName},</p>
       <p style="font-size:14px;color:#4a4a68;line-height:1.7;margin:0 0 24px;">
-        Thank you for participating in Round ${data.roundNumber} for the <strong>${data.jobTitle}</strong> position at <strong>${data.companyName}</strong>.
+        Thank you for participating in Round ${data.roundNumber} for the <strong>${jobTitle}</strong> position at <strong>${companyName}</strong>.
         After careful evaluation, we regret to inform you that you have not been selected to advance to the next round.
       </p>
       <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:12px;padding:20px;margin:0 0 24px;">
@@ -353,7 +374,7 @@ export class EmailService {
 
     return this.sendEmail({
       to: data.email,
-      subject: `Round ${data.roundNumber} Result — ${data.jobTitle} at ${data.companyName}`,
+      subject: `Round ${data.roundNumber} Result — ${jobTitle} at ${companyName}`,
       html: this.wrapHtml(`Round ${data.roundNumber} Update`, 'linear-gradient(135deg,#6366f1,#8b5cf6)', body),
     }, 'round_rejected');
   }
@@ -368,6 +389,10 @@ export class EmailService {
     if (data.emails.length === 0) return 0;
     const loginUrl = this.configService.get<string>('FRONTEND_URL', 'https://mitm-placepro.vercel.app');
 
+    const companyName = this.escapeHtml(data.companyName);
+    const driveName = this.escapeHtml(data.driveName);
+    const description = this.escapeHtml(data.description);
+
     const body = `
       <p style="font-size:16px;font-weight:600;color:#1a1a2e;margin:0 0 16px;">Hello Students,</p>
       <p style="font-size:14px;color:#4a4a68;line-height:1.7;margin:0 0 24px;">
@@ -376,10 +401,10 @@ export class EmailService {
 
       <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;padding:24px;margin:0 0 24px;">
         <p style="margin:0 0 4px;font-size:11px;color:#065f46;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Company</p>
-        <p style="margin:0 0 16px;font-size:20px;font-weight:700;color:#1a1a2e;">${data.companyName}</p>
+        <p style="margin:0 0 16px;font-size:20px;font-weight:700;color:#1a1a2e;">${companyName}</p>
 
         <p style="margin:0 0 4px;font-size:11px;color:#065f46;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Drive Name</p>
-        <p style="margin:0 0 16px;font-size:16px;font-weight:600;color:#4f46e5;">${data.driveName}</p>
+        <p style="margin:0 0 16px;font-size:16px;font-weight:600;color:#4f46e5;">${driveName}</p>
 
         ${data.driveDate ? `
           <p style="margin:0 0 4px;font-size:11px;color:#065f46;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Date</p>
@@ -392,9 +417,9 @@ export class EmailService {
         ` : ''}
       </div>
 
-      ${data.description ? `
+      ${description ? `
         <p style="font-size:14px;color:#4a4a68;line-height:1.7;margin:0 0 24px;background:#f9fafb;padding:14px 18px;border-radius:8px;border-left:4px solid #4f46e5;">
-          ${data.description}
+          ${description}
         </p>
       ` : ''}
 
@@ -416,7 +441,7 @@ export class EmailService {
       const batch = data.emails.slice(i, i + batchSize);
       const success = await this.sendEmail({
         to: batch,
-        subject: `🚀 New Drive: ${data.companyName} — ${data.driveName}`,
+        subject: `🚀 New Drive: ${companyName} — ${driveName}`,
         html: htmlContent,
       }, 'drive_announcement');
       if (success) {
@@ -443,19 +468,25 @@ export class EmailService {
     };
     const typeLabel = typeLabels[data.meetingType] || 'Meeting';
 
+    const studentName = this.escapeHtml(data.studentName);
+    const jobTitle = this.escapeHtml(data.jobTitle);
+    const companyName = this.escapeHtml(data.companyName);
+    const groupName = this.escapeHtml(data.groupName);
+    const instructions = this.escapeHtml(data.instructions);
+
     const body = `
-      <p style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0 0 16px;">Hi ${data.studentName},</p>
+      <p style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0 0 16px;">Hi ${studentName},</p>
       <p style="font-size:14px;color:#4a4a68;line-height:1.7;margin:0 0 24px;">
-        A <strong>${typeLabel}</strong> has been scheduled for <strong>${data.jobTitle}</strong> at <strong>${data.companyName}</strong> — Round ${data.roundNumber}.
+        A <strong>${typeLabel}</strong> has been scheduled for <strong>${jobTitle}</strong> at <strong>${companyName}</strong> — Round ${data.roundNumber}.
       </p>
 
       <div style="background:#f0f4ff;border:1px solid #c7d2fe;border-radius:12px;padding:20px;margin:0 0 24px;">
         <p style="margin:0 0 4px;font-size:11px;color:#4338ca;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Meeting Type</p>
         <p style="margin:0 0 16px;font-size:16px;font-weight:700;color:#1a1a2e;">${typeLabel}</p>
 
-        ${data.groupName ? `
+        ${groupName ? `
           <p style="margin:0 0 4px;font-size:11px;color:#4338ca;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Your Group</p>
-          <p style="margin:0 0 16px;font-size:14px;font-weight:600;color:#1a1a2e;">👥 ${data.groupName}</p>
+          <p style="margin:0 0 16px;font-size:14px;font-weight:600;color:#1a1a2e;">👥 ${groupName}</p>
         ` : ''}
 
         ${data.scheduledDate ? `
@@ -469,10 +500,10 @@ export class EmailService {
         ` : ''}
       </div>
 
-      ${data.instructions ? `
+      ${instructions ? `
         <div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:14px 18px;margin:0 0 24px;">
           <p style="margin:0 0 4px;font-size:11px;color:#92400e;text-transform:uppercase;letter-spacing:1px;font-weight:600;">Instructions</p>
-          <p style="margin:0;font-size:13px;color:#78350f;line-height:1.6;">${data.instructions}</p>
+          <p style="margin:0;font-size:13px;color:#78350f;line-height:1.6;">${instructions}</p>
         </div>
       ` : ''}
 
@@ -492,13 +523,14 @@ export class EmailService {
   // Company Approval Notification
   // ═══════════════════════════════════════════════════
   async sendCompanyApprovalEmail(email: string, companyName: string): Promise<boolean> {
+    const safeCompanyName = this.escapeHtml(companyName);
     const body = `
-      <p style="font-size:16px;font-weight:600;color:#1a1a2e;margin:0 0 8px;">Congratulations!</p>
+      <p style="font-size:18px;font-weight:600;color:#1a1a2e;margin:0 0 16px;">Hello ${safeCompanyName},</p>
       <p style="font-size:14px;color:#4a4a68;line-height:1.7;margin:0 0 24px;">
-        Your company <strong>${companyName}</strong> has been approved by the admin on MITM PlacePro.
-        You can now access your company dashboard and start posting jobs.
+        Great news! Your company profile <strong>${safeCompanyName}</strong> has been officially approved by the admin team on MITM PlacePro.
       </p>
       <p style="font-size:14px;color:#4a4a68;line-height:1.7;margin:0 0 24px;">
+        You can now access your company dashboard and start posting jobs.
         Please join our official WhatsApp group for important updates and communication:
         <br/><br/>
         <a href="https://chat.whatsapp.com/JrpzXtGDdGPHCdAl527Ig8" style="color:#059669;font-weight:600;text-decoration:none;">Join WhatsApp Group</a>

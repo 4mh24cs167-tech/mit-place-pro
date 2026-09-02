@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import compression from 'compression';
 import { AppModule } from './app.module';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -41,6 +42,9 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // Global Exception Filter
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');

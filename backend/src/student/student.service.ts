@@ -123,22 +123,17 @@ export class StudentService {
       student.profileData = { ...(student.profileData || {}), ugYearOfPassing: dto.ugYearOfPassing };
     }
 
-    // Profile completeness — either explicitly set from frontend or auto-calculated
-    if (dto.profileComplete === true) {
-      student.profileComplete = true;
-    } else if (dto.profileComplete === undefined) {
-      // Auto-check basic mandatory fields
-      const mandatoryFields = [
-        student.fullName,
-        student.phone,
-        student.dateOfBirth,
-        student.gender,
-      ];
-      const basicComplete = mandatoryFields.every((f) => f !== null && f !== undefined && f !== '');
-      // Don't downgrade if already complete
-      if (!student.profileComplete) {
-        student.profileComplete = basicComplete;
-      }
+    // Auto-check basic mandatory fields
+    const mandatoryFields = [
+      student.fullName,
+      student.phone,
+      student.dateOfBirth,
+      student.gender,
+    ];
+    const basicComplete = mandatoryFields.every((f) => f !== null && f !== undefined && f !== '');
+    // Don't downgrade if already complete
+    if (!student.profileComplete) {
+      student.profileComplete = basicComplete;
     }
 
     await this.studentRepo.save(student);
@@ -960,6 +955,7 @@ export class StudentService {
     const student = await this.getStudentByUserId(userId);
     const record = await this.educationRepo.findOne({
       where: { id: eduId, studentId: student.id },
+      select: ['id', 'documentFileData', 'documentFileType', 'documentFileName'],
     });
     if (!record || !record.documentFileData) throw new NotFoundException('Document not found');
     return { data: record.documentFileData, type: record.documentFileType, name: record.documentFileName };
@@ -987,7 +983,10 @@ export class StudentService {
   }
 
   async getResume(userId: string) {
-    const student = await this.studentRepo.findOne({ where: { user: { id: userId } } });
+    const student = await this.studentRepo.findOne({
+      where: { user: { id: userId } },
+      select: ['id', 'resumeFileData', 'resumeFileType', 'resumeFileName'],
+    });
     if (!student || !student.resumeFileData) throw new NotFoundException('Resume not found');
     return { data: student.resumeFileData, type: student.resumeFileType, name: student.resumeFileName };
   }

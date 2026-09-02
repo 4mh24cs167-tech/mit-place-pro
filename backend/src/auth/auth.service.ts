@@ -9,13 +9,14 @@ import { Student } from '../entities/student.entity';
 import { Company } from '../entities/company.entity';
 import { Department } from '../entities/department.entity';
 import { Batch } from '../entities/batch.entity';
+import { OtpRecord } from '../entities/otp.entity';
 import { LoginDto, ChangePasswordDto, ForgotPasswordDto, VerifyOtpDto, ResetPasswordDto, RegisterSendOtpDto, RegisterVerifyOtpDto, RegisterStudentDto, RegisterCompanyDto } from './dto/auth.dto';
 import { EmailService } from '../admin/email.service';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
-  private readonly registrationOtps = new Map<string, { otp: string; expiresAt: Date; fullName?: string }>();
+
 
   constructor(
     @InjectRepository(User)
@@ -28,6 +29,8 @@ export class AuthService {
     private readonly companyRepo: Repository<Company>,
     @InjectRepository(Batch)
     private readonly batchRepo: Repository<Batch>,
+    @InjectRepository(OtpRecord)
+    private readonly otpRepo: Repository<OtpRecord>,
     private readonly jwtService: JwtService,
     private readonly emailService: EmailService,
   ) {}
@@ -108,19 +111,24 @@ export class AuthService {
 
     // Generate 6-digit OTP
     const otp = crypto.randomInt(100000, 999999).toString();
-    const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex').slice(0, 6);
+    const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex'); // Full 64 chars
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Save hashed OTP to user record
-    await this.userRepo.update(user.id, {
-      resetOtp: hashedOtp,
-      resetOtpExpiresAt: expiresAt,
-    });
+    // Remove any existing OTP for this email
+    await this.otpRepo.delete({ email: email });
+
+    // Save hashed OTP to OTP records
+    await this.otpRepo.save(this.otpRepo.create({
+      email: email,
+      otpHash: hashedOtp,
+      expiresAt: expiresAt,
+      failedAttempts: 0,
+    }));
 
     // Send OTP via email
     const sent = await this.emailService.sendOtpEmail(user.email, otp);
     if (!sent) {
-      this.logger.warn(`OTP email delivery failed for ${user.email}. OTP: ${otp}`);
+      this.logger.warn(`OTP email delivery failed for ${user.email}`); // Removed plaintext OTP
     }
 
     this.logger.log(`OTP generated for ${user.email}, expires at ${expiresAt.toISOString()}`);
@@ -130,28 +138,31 @@ export class AuthService {
 
   // ── Verify OTP ─────────────────────────────────────────────
   async verifyOtp(dto: VerifyOtpDto) {
-    const user = await this.userRepo
-      .createQueryBuilder('user')
-      .addSelect('user.resetOtp')
-      .where('user.email = :email', { email: dto.email.toLowerCase() })
-      .andWhere('user.isActive = :isActive', { isActive: true })
-      .getOne();
+    const email = dto.email.toLowerCase();
+    const otpRecord = await this.otpRepo.findOne({ where: { email } });
 
-    if (!user || !user.resetOtp || !user.resetOtpExpiresAt) {
-      throw new BadRequestException('Invalid or expired OTP');
+    if (!otpRecord) {
+      throw new BadRequestException('No OTP found or it has expired');
     }
 
-    if (new Date() > user.resetOtpExpiresAt) {
-      // Clear expired OTP
-      await this.userRepo.update(user.id, {
-        resetOtp: null,
-        resetOtpExpiresAt: null,
-      });
+    if (new Date() > otpRecord.expiresAt) {
+      await this.otpRepo.delete({ id: otpRecord.id });
       throw new BadRequestException('OTP has expired. Please request a new one.');
     }
 
-    const hashedInput = crypto.createHash('sha256').update(dto.otp).digest('hex').slice(0, 6);
-    if (user.resetOtp !== hashedInput) {
+    if (otpRecord.failedAttempts >= 5) {
+      await this.otpRepo.delete({ id: otpRecord.id });
+      throw new BadRequestException('Too many failed attempts. Please request a new OTP.');
+    }
+
+    const hashedInput = crypto.createHash('sha256').update(dto.otp).digest('hex');
+    try {
+      if (!crypto.timingSafeEqual(Buffer.from(otpRecord.otpHash, 'hex'), Buffer.from(hashedInput, 'hex'))) {
+        await this.otpRepo.increment({ id: otpRecord.id }, 'failedAttempts', 1);
+        throw new BadRequestException('Invalid OTP');
+      }
+    } catch {
+      await this.otpRepo.increment({ id: otpRecord.id }, 'failedAttempts', 1);
       throw new BadRequestException('Invalid OTP');
     }
 
@@ -160,29 +171,36 @@ export class AuthService {
 
   // ── Reset Password with OTP ────────────────────────────────
   async resetPassword(dto: ResetPasswordDto) {
-    const user = await this.userRepo
-      .createQueryBuilder('user')
-      .addSelect('user.resetOtp')
-      .where('user.email = :email', { email: dto.email.toLowerCase() })
-      .andWhere('user.isActive = :isActive', { isActive: true })
-      .getOne();
+    const email = dto.email.toLowerCase();
+    const otpRecord = await this.otpRepo.findOne({ where: { email } });
 
-    if (!user || !user.resetOtp || !user.resetOtpExpiresAt) {
-      throw new BadRequestException('Invalid or expired OTP');
+    if (!otpRecord) {
+      throw new BadRequestException('No OTP found or it has expired');
     }
 
-    if (new Date() > user.resetOtpExpiresAt) {
-      await this.userRepo.update(user.id, {
-        resetOtp: null,
-        resetOtpExpiresAt: null,
-      });
+    if (new Date() > otpRecord.expiresAt) {
+      await this.otpRepo.delete({ id: otpRecord.id });
       throw new BadRequestException('OTP has expired. Please request a new one.');
     }
 
-    const hashedInput = crypto.createHash('sha256').update(dto.otp).digest('hex').slice(0, 6);
-    if (user.resetOtp !== hashedInput) {
+    if (otpRecord.failedAttempts >= 5) {
+      await this.otpRepo.delete({ id: otpRecord.id });
+      throw new BadRequestException('Too many failed attempts. Please request a new OTP.');
+    }
+
+    const hashedInput = crypto.createHash('sha256').update(dto.otp).digest('hex');
+    try {
+      if (!crypto.timingSafeEqual(Buffer.from(otpRecord.otpHash, 'hex'), Buffer.from(hashedInput, 'hex'))) {
+        await this.otpRepo.increment({ id: otpRecord.id }, 'failedAttempts', 1);
+        throw new BadRequestException('Invalid OTP');
+      }
+    } catch {
+      await this.otpRepo.increment({ id: otpRecord.id }, 'failedAttempts', 1);
       throw new BadRequestException('Invalid OTP');
     }
+
+    const user = await this.userRepo.findOne({ where: { email } });
+    if (!user) throw new BadRequestException('User not found');
 
     // Hash new password
     const salt = await bcrypt.genSalt(12);
@@ -192,9 +210,9 @@ export class AuthService {
     await this.userRepo.update(user.id, {
       passwordHash: newHash,
       mustChangePassword: false,
-      resetOtp: null,
-      resetOtpExpiresAt: null,
     });
+    
+    await this.otpRepo.delete({ id: otpRecord.id });
 
     this.logger.log(`Password reset successfully for ${user.email}`);
 
@@ -213,15 +231,24 @@ export class AuthService {
 
     // Generate 6-digit OTP
     const otp = crypto.randomInt(100000, 999999).toString();
+    const hashedOtp = crypto.createHash('sha256').update(otp).digest('hex'); // Full 64 chars
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Store in memory map
-    this.registrationOtps.set(email, { otp, expiresAt });
+    // Remove any existing OTP for this email
+    await this.otpRepo.delete({ email: email });
+
+    // Store in DB
+    await this.otpRepo.save(this.otpRepo.create({
+      email: email,
+      otpHash: hashedOtp,
+      expiresAt: expiresAt,
+      failedAttempts: 0,
+    }));
 
     // Send OTP via email
     const sent = await this.emailService.sendOtpEmail(email, otp);
     if (!sent) {
-      this.logger.warn(`Registration OTP email delivery failed for ${email}. OTP: ${otp}`);
+      this.logger.warn(`Registration OTP email delivery failed for ${email}`);
     }
 
     this.logger.log(`Registration OTP generated for ${email}`);
@@ -231,18 +258,30 @@ export class AuthService {
   // ── Registration: Verify OTP ──────────────────────────────
   async verifyRegistrationOtp(dto: RegisterVerifyOtpDto) {
     const email = dto.email.toLowerCase();
-    const stored = this.registrationOtps.get(email);
+    const otpRecord = await this.otpRepo.findOne({ where: { email } });
 
-    if (!stored) {
+    if (!otpRecord) {
       throw new BadRequestException('No OTP found for this email. Please request a new one.');
     }
 
-    if (new Date() > stored.expiresAt) {
-      this.registrationOtps.delete(email);
+    if (new Date() > otpRecord.expiresAt) {
+      await this.otpRepo.delete({ id: otpRecord.id });
       throw new BadRequestException('OTP has expired. Please request a new one.');
     }
 
-    if (stored.otp !== dto.otp) {
+    if (otpRecord.failedAttempts >= 5) {
+      await this.otpRepo.delete({ id: otpRecord.id });
+      throw new BadRequestException('Too many failed attempts. Please request a new OTP.');
+    }
+
+    const hashedInput = crypto.createHash('sha256').update(dto.otp).digest('hex');
+    try {
+      if (!crypto.timingSafeEqual(Buffer.from(otpRecord.otpHash, 'hex'), Buffer.from(hashedInput, 'hex'))) {
+        await this.otpRepo.increment({ id: otpRecord.id }, 'failedAttempts', 1);
+        throw new BadRequestException('Invalid OTP');
+      }
+    } catch {
+      await this.otpRepo.increment({ id: otpRecord.id }, 'failedAttempts', 1);
       throw new BadRequestException('Invalid OTP');
     }
 
@@ -254,9 +293,19 @@ export class AuthService {
     const email = dto.email.toLowerCase();
 
     // Verify OTP one final time
-    const stored = this.registrationOtps.get(email);
-    if (!stored || stored.otp !== dto.otp || new Date() > stored.expiresAt) {
+    const otpRecord = await this.otpRepo.findOne({ where: { email } });
+    if (!otpRecord || new Date() > otpRecord.expiresAt) {
+      if (otpRecord) await this.otpRepo.delete({ id: otpRecord.id });
       throw new BadRequestException('Invalid or expired OTP. Please start over.');
+    }
+
+    const hashedInput = crypto.createHash('sha256').update(dto.otp).digest('hex');
+    try {
+      if (!crypto.timingSafeEqual(Buffer.from(otpRecord.otpHash, 'hex'), Buffer.from(hashedInput, 'hex'))) {
+        throw new BadRequestException('Invalid OTP. Please start over.');
+      }
+    } catch {
+      throw new BadRequestException('Invalid OTP. Please start over.');
     }
 
     // Check email not taken
@@ -269,62 +318,64 @@ export class AuthService {
     const salt = await bcrypt.genSalt(12);
     const passwordHash = await bcrypt.hash(dto.password, salt);
 
-    // Create user
-    const user = this.userRepo.create({
-      email,
-      passwordHash,
-      role: 'student' as any,
-      mustChangePassword: false,
-      isActive: true,
-    });
-    await this.userRepo.save(user);
-
-    // Ensure GLOBAL department exists
-    let globalDept = await this.departmentRepo.findOne({ where: { code: 'GLOBAL' } });
-    if (!globalDept) {
-      globalDept = this.departmentRepo.create({
-        code: 'GLOBAL',
-        name: 'Global (Self-Registered)',
+    await this.userRepo.manager.transaction(async (manager) => {
+      // Create user
+      const user = manager.create(User, {
+        email,
+        passwordHash,
+        role: 'student' as any,
+        mustChangePassword: false,
         isActive: true,
       });
-      await this.departmentRepo.save(globalDept);
-    }
+      await manager.save(user);
 
-    // Ensure GLOBAL batch exists for current year
-    const currentYear = new Date().getFullYear();
-    let globalBatch = await this.batchRepo.findOne({
-      where: { department: 'GLOBAL', year: currentYear },
-    });
-    if (!globalBatch) {
-      globalBatch = this.batchRepo.create({
-        name: `GLOBAL ${currentYear}`,
-        department: 'GLOBAL',
-        year: currentYear,
-        currentSemester: 1,
-        studentCount: 0,
+      // Ensure GLOBAL department exists
+      let globalDept = await manager.findOne(Department, { where: { code: 'GLOBAL' } });
+      if (!globalDept) {
+        globalDept = manager.create(Department, {
+          code: 'GLOBAL',
+          name: 'Global (Self-Registered)',
+          isActive: true,
+        });
+        await manager.save(globalDept);
+      }
+
+      // Ensure GLOBAL batch exists for current year
+      const currentYear = new Date().getFullYear();
+      let globalBatch = await manager.findOne(Batch, {
+        where: { department: 'GLOBAL', year: currentYear },
       });
-      await this.batchRepo.save(globalBatch);
-    }
+      if (!globalBatch) {
+        globalBatch = manager.create(Batch, {
+          name: `GLOBAL ${currentYear}`,
+          department: 'GLOBAL',
+          year: currentYear,
+          currentSemester: 1,
+          studentCount: 0,
+        });
+        await manager.save(globalBatch);
+      }
 
-    // Create student record with batch assignment
-    const student = this.studentRepo.create({
-      user,
-      fullName: dto.fullName,
-      usn: `SELF-${Date.now()}`,
-      department: 'GLOBAL',
-      batchId: globalBatch.id,
-      semester: globalBatch.currentSemester,
-      profileComplete: false,
-      profileData: {},
+      // Create student record with batch assignment
+      const student = manager.create(Student, {
+        user,
+        fullName: dto.fullName,
+        usn: `SELF-${Date.now()}`,
+        department: 'GLOBAL',
+        batchId: globalBatch.id,
+        semester: globalBatch.currentSemester,
+        profileComplete: false,
+        profileData: {},
+      });
+      await manager.save(student);
+
+      // Update batch student count
+      globalBatch.studentCount += 1;
+      await manager.save(globalBatch);
     });
-    await this.studentRepo.save(student);
-
-    // Update batch student count
-    globalBatch.studentCount += 1;
-    await this.batchRepo.save(globalBatch);
 
     // Clean up OTP
-    this.registrationOtps.delete(email);
+    await this.otpRepo.delete({ email });
 
     this.logger.log(`Student registered successfully: ${email}`);
     return { message: 'Registration successful! You can now login.' };
@@ -351,9 +402,19 @@ export class AuthService {
     }
 
     // Verify OTP one final time
-    const stored = this.registrationOtps.get(email);
-    if (!stored || stored.otp !== dto.otp || new Date() > stored.expiresAt) {
+    const otpRecord = await this.otpRepo.findOne({ where: { email } });
+    if (!otpRecord || new Date() > otpRecord.expiresAt) {
+      if (otpRecord) await this.otpRepo.delete({ id: otpRecord.id });
       throw new BadRequestException('Invalid or expired OTP. Please start over.');
+    }
+
+    const hashedInput = crypto.createHash('sha256').update(dto.otp).digest('hex');
+    try {
+      if (!crypto.timingSafeEqual(Buffer.from(otpRecord.otpHash, 'hex'), Buffer.from(hashedInput, 'hex'))) {
+        throw new BadRequestException('Invalid OTP. Please start over.');
+      }
+    } catch {
+      throw new BadRequestException('Invalid OTP. Please start over.');
     }
 
     // Check email not taken
@@ -366,27 +427,29 @@ export class AuthService {
     const salt = await bcrypt.genSalt(12);
     const passwordHash = await bcrypt.hash(dto.password, salt);
 
-    // Create user with company role
-    const user = this.userRepo.create({
-      email,
-      passwordHash,
-      role: 'company' as any,
-      mustChangePassword: false,
-      isActive: true,
-    });
-    await this.userRepo.save(user);
+    await this.userRepo.manager.transaction(async (manager) => {
+      // Create user with company role
+      const user = manager.create(User, {
+        email,
+        passwordHash,
+        role: 'company' as any,
+        mustChangePassword: false,
+        isActive: true,
+      });
+      await manager.save(user);
 
-    // Create company record
-    const company = this.companyRepo.create({
-      user,
-      name: dto.companyName,
-      hrPhone: dto.companyPhone,
-      profileComplete: false,
+      // Create company record
+      const company = manager.create(Company, {
+        user,
+        name: dto.companyName,
+        hrPhone: dto.companyPhone,
+        profileComplete: false,
+      });
+      await manager.save(company);
     });
-    await this.companyRepo.save(company);
 
     // Clean up OTP
-    this.registrationOtps.delete(email);
+    await this.otpRepo.delete({ email });
 
     this.logger.log(`Company registered successfully: ${email}`);
     return { message: 'Registration successful! You can now login to complete your company profile.' };

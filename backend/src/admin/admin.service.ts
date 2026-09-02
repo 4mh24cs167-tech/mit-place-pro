@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 import { Repository, Like, ILike, Between, MoreThanOrEqual, LessThanOrEqual, In } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { User, UserRole } from '../entities/user.entity';
 import { Student } from '../entities/student.entity';
 import { Batch } from '../entities/batch.entity';
@@ -265,7 +266,10 @@ export class AdminService {
   }
 
   async getStudentResume(studentId: string) {
-    const student = await this.studentRepo.findOne({ where: { id: studentId } });
+    const student = await this.studentRepo.findOne({
+      where: { id: studentId },
+      select: ['id', 'resumeFileData', 'resumeFileType', 'resumeFileName']
+    });
     if (!student || !student.resumeFileData) throw new NotFoundException('Resume not found');
     return { data: student.resumeFileData, type: student.resumeFileType, name: student.resumeFileName };
   }
@@ -273,7 +277,10 @@ export class AdminService {
   async getStudentEduDocument(studentId: string, eduId: string) {
     const eduRepo = this.studentRepo.manager.getRepository('StudentEducation');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const edu: any = await eduRepo.findOne({ where: { id: eduId, studentId } });
+    const edu: any = await eduRepo.findOne({
+      where: { id: eduId, studentId },
+      select: ['id', 'documentFileData', 'documentFileType', 'documentFileName']
+    });
     if (!edu || !edu.documentFileData) throw new NotFoundException('Document not found');
     return { data: edu.documentFileData, type: edu.documentFileType, name: edu.documentFileName };
   }
@@ -362,46 +369,51 @@ export class AdminService {
       where: { department: dept, year: Number(batch) },
     });
 
-    // Generate password: DEPT+BATCH (same pattern as bulk upload)
-    const rawPassword = `${dept}${batch}`;
+    // Generate random password
+    const rawPassword = crypto.randomBytes(4).toString('hex');
     const passwordHash = await bcrypt.hash(rawPassword, 10);
 
-    // Create user
-    const user = await this.userRepo.save({
-      email,
-      passwordHash,
-      role: UserRole.STUDENT,
-      mustChangePassword: true,
-      isActive: true,
-    });
+    // Wrap in transaction
+    const { student } = await this.userRepo.manager.transaction(async (manager) => {
+      // Create user
+      const user = await manager.save(User, {
+        email,
+        passwordHash,
+        role: UserRole.STUDENT,
+        mustChangePassword: true,
+        isActive: true,
+      });
 
-    // Create student
-    const student = await this.studentRepo.save({
-      userId: user.id,
-      usn,
-      fullName: dto.fullName.trim(),
-      department: dept,
-      batchId: matchedBatch?.id || null,
-      semester: matchedBatch?.currentSemester || null,
-      phone: dto.phone || null,
-      gender: dto.gender || null,
-      category: dto.category || null,
-      cgpa: dto.cgpa ?? null,
-      tenthPercent: dto.tenthPercent ?? null,
-      twelfthPercent: dto.twelfthPercent ?? null,
-      backlogs: dto.backlogs ?? 0,
-      profileComplete: false,
-      placementStatus: 'none',
-      profileData: {},
-    });
+      // Create student
+      const student = await manager.save(Student, {
+        userId: user.id,
+        usn,
+        fullName: dto.fullName.trim(),
+        department: dept,
+        batchId: matchedBatch?.id || null,
+        semester: matchedBatch?.currentSemester || null,
+        phone: dto.phone || null,
+        gender: dto.gender || null,
+        category: dto.category || null,
+        cgpa: dto.cgpa ?? null,
+        tenthPercent: dto.tenthPercent ?? null,
+        twelfthPercent: dto.twelfthPercent ?? null,
+        backlogs: dto.backlogs ?? 0,
+        profileComplete: false,
+        placementStatus: 'none',
+        profileData: {},
+      });
 
-    // Audit log
-    await this.auditRepo.save({
-      actorUserId: actorId,
-      action: 'CREATE_STUDENT',
-      entityType: 'student',
-      entityId: student.id,
-      newValue: { usn, email, department: dept, batch } as unknown as Record<string, unknown>,
+      // Audit log
+      await manager.save(AuditLog, {
+        actorUserId: actorId,
+        action: 'CREATE_STUDENT',
+        entityType: 'student',
+        entityId: student.id,
+        newValue: { usn, email, department: dept, batch } as unknown as Record<string, unknown>,
+      });
+
+      return { student };
     });
 
     this.logger.log(`Single student created: ${usn} (${email})`);
@@ -1089,12 +1101,10 @@ export class AdminService {
         if (duplicate) throw new ConflictException(`Department "${newCode}" already exists`);
 
         // Update all batches and students referencing the old code
-        await this.batchRepo
-          .createQueryBuilder()
-          .update()
-          .set({ department: newCode, name: () => `REPLACE(name, '${dept.code}', '${newCode}')` })
-          .where('department = :old', { old: dept.code })
-          .execute();
+        await this.batchRepo.query(
+          `UPDATE batches SET department = $1, name = REPLACE(name, $2, $1) WHERE department = $2`,
+          [newCode, dept.code]
+        );
 
         await this.studentRepo
           .createQueryBuilder()

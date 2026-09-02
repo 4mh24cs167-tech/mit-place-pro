@@ -170,9 +170,7 @@ export class UpdateCompanyProfileDto {
   @IsString()
   hrPhone?: string;
 
-  @IsOptional()
-  @IsBoolean()
-  profileComplete?: boolean;
+
 }
 
 export class SubmitRoundResultsDto {

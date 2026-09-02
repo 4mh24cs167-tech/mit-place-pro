@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, Not } from 'typeorm';
 import { StudentDriveFeedback } from '../entities/feedback.entity';
@@ -88,6 +88,14 @@ export class FeedbackService {
   async submitCompanyFeedback(companyId: string, driveId: string, data: Partial<CompanyDriveFeedback>) {
     const drive = await this.driveRepo.findOne({ where: { id: driveId } });
     if (!drive) throw new NotFoundException('Drive not found');
+
+    const participation = await this.driveRepo.manager.query(
+      `SELECT 1 FROM drive_company_jobs dcj JOIN jobs j ON dcj.job_id = j.id WHERE dcj.drive_id = $1 AND j.company_id = $2 LIMIT 1`,
+      [driveId, companyId]
+    );
+    if (!participation.length) {
+      throw new ForbiddenException('Company did not participate in this drive');
+    }
 
     const existing = await this.companyFeedbackRepo.findOne({ where: { driveId, companyId } });
     if (existing) throw new ConflictException('Feedback already submitted for this drive');

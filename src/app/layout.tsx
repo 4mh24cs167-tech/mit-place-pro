@@ -3,17 +3,39 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "MITM PlacePro — College Placement Portal",
+  title: "MITM PlacePro — Campus Placement Portal",
   description:
-    "Industry-level placement management system for MITM College. Manage student profiles, company drives, interview scheduling, and offer letters in one platform.",
+    "The official placement management platform for MITM College. Connect students with top tech companies seamlessly.",
   keywords: [
     "placement portal",
     "campus recruitment",
     "MITM College",
     "placement management",
-    "interview scheduling",
-    "ATS scoring",
+    "internships",
   ],
+  authors: [{ name: "MITM Placement Cell" }],
+  openGraph: {
+    title: "MITM PlacePro — Campus Placement Portal",
+    description: "The official placement management platform for MITM College. Connect students with top tech companies seamlessly.",
+    url: "https://mitm-placepro.vercel.app",
+    siteName: "MITM PlacePro",
+    images: [
+      {
+        url: "https://mitm-placepro.vercel.app/mitm-logo.png",
+        width: 800,
+        height: 600,
+        alt: "MITM PlacePro Banner",
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MITM PlacePro",
+    description: "MITM College Official Placement Portal.",
+    images: ["https://mitm-placepro.vercel.app/mitm-logo.png"],
+  },
 };
 
 export default function RootLayout({

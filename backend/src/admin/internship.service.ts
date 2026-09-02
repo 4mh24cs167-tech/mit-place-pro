@@ -40,9 +40,13 @@ export class InternshipService {
     });
   }
 
-  async getFormById(id: string): Promise<InternshipPermission> {
+  async getFormById(id: string, userId: string): Promise<InternshipPermission> {
+    const student = await this.studentRepo.findOne({ where: { userId } });
+    if (!student) {
+      throw new NotFoundException('Student profile not found');
+    }
     const form = await this.permissionRepo.findOne({
-      where: { id },
+      where: { id, studentId: student.id },
       relations: ['student', 'student.batch', 'student.user'],
     });
     if (!form) {
