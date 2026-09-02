@@ -87,14 +87,18 @@ export class DriveService {
     });
 
     if (data.type === 'multiple' && dcjEntriesData.length > 0) {
-      const dcjEntries = dcjEntriesData.flatMap(cj =>
-        cj.jobIds.map(jobId => ({
-          driveId: drive.id,
-          companyId: cj.companyId,
-          jobId,
-        }))
-      );
-      await this.dcjRepo.save(dcjEntries);
+      try {
+        const dcjEntries = dcjEntriesData.flatMap(cj =>
+          cj.jobIds.map(jobId => ({
+            driveId: drive.id,
+            companyId: cj.companyId,
+            jobId,
+          }))
+        );
+        await this.dcjRepo.save(dcjEntries);
+      } catch (err) {
+        this.logger.warn('Failed to save DCJ entries: ' + (err instanceof Error ? err.message : String(err)));
+      }
     }
 
     // Find eligible students and NOTIFY them (opt-in workflow, no auto-registration)
@@ -195,15 +199,19 @@ export class DriveService {
     const multiDriveIds = results.filter(d => d.type === 'multiple').map(d => d.id);
     const dcjMap = new Map<string, { companies: Set<string>, companyCount: number }>();
     if (multiDriveIds.length > 0) {
-      const dcjs = await this.dcjRepo.find({ where: { driveId: In(multiDriveIds) } });
-      for (const dcj of dcjs) {
-        if (!dcjMap.has(dcj.driveId)) {
-          dcjMap.set(dcj.driveId, { companies: new Set(), companyCount: 0 });
+      try {
+        const dcjs = await this.dcjRepo.find({ where: { driveId: In(multiDriveIds) } });
+        for (const dcj of dcjs) {
+          if (!dcjMap.has(dcj.driveId)) {
+            dcjMap.set(dcj.driveId, { companies: new Set(), companyCount: 0 });
+          }
+          dcjMap.get(dcj.driveId)!.companies.add(dcj.companyId);
         }
-        dcjMap.get(dcj.driveId)!.companies.add(dcj.companyId);
-      }
-      for (const val of dcjMap.values()) {
-        val.companyCount = val.companies.size;
+        for (const val of dcjMap.values()) {
+          val.companyCount = val.companies.size;
+        }
+      } catch (err) {
+        this.logger.warn('DCJ query failed in listDrives: ' + (err instanceof Error ? err.message : String(err)));
       }
     }
 
@@ -303,36 +311,44 @@ export class DriveService {
     let attendanceCountsResult: Record<string, number> = {};
 
     if (drive.type === 'multiple') {
-      const dcjs = await this.dcjRepo.find({
-        where: { driveId },
-        relations: ['company', 'job'],
-      });
-      
-      const cjMap = new Map<string, { companyId: string, companyName: string, jobs: any[] }>();
-      for (const dcj of dcjs) {
-        if (!cjMap.has(dcj.companyId)) {
-          cjMap.set(dcj.companyId, {
-            companyId: dcj.companyId,
-            companyName: dcj.company?.name || 'Unknown',
-            jobs: []
-          });
+      try {
+        const dcjs = await this.dcjRepo.find({
+          where: { driveId },
+          relations: ['company', 'job'],
+        });
+        
+        const cjMap = new Map<string, { companyId: string, companyName: string, jobs: any[] }>();
+        for (const dcj of dcjs) {
+          if (!cjMap.has(dcj.companyId)) {
+            cjMap.set(dcj.companyId, {
+              companyId: dcj.companyId,
+              companyName: dcj.company?.name || 'Unknown',
+              jobs: []
+            });
+          }
+          if (dcj.job) {
+            cjMap.get(dcj.companyId)!.jobs.push(dcj.job);
+          }
         }
-        if (dcj.job) {
-          cjMap.get(dcj.companyId)!.jobs.push(dcj.job);
+        companyJobsResult = Array.from(cjMap.values());
+        
+        if (companyJobsResult.length > 0) {
+          companyName = `${companyJobsResult.length} Companies`;
         }
-      }
-      companyJobsResult = Array.from(cjMap.values());
-      
-      if (companyJobsResult.length > 0) {
-        companyName = `${companyJobsResult.length} Companies`;
+      } catch (err) {
+        this.logger.warn('DCJ query failed in getDriveDetail: ' + (err instanceof Error ? err.message : String(err)));
       }
 
-      const attendances = await this.attendanceRepo.find({ where: { driveId } });
-      for (const att of attendances) {
-        if (!attendanceCountsResult[att.jobId]) {
-          attendanceCountsResult[att.jobId] = 0;
+      try {
+        const attendances = await this.attendanceRepo.find({ where: { driveId } });
+        for (const att of attendances) {
+          if (!attendanceCountsResult[att.jobId]) {
+            attendanceCountsResult[att.jobId] = 0;
+          }
+          attendanceCountsResult[att.jobId]++;
         }
-        attendanceCountsResult[att.jobId]++;
+      } catch (err) {
+        this.logger.warn('Attendance query failed in getDriveDetail: ' + (err instanceof Error ? err.message : String(err)));
       }
     }
 
