@@ -1,4 +1,4 @@
-# 🎓 UdyogaMITra
+﻿# ðŸŽ“ UdyogaMITra
 
 <div align="center">
 
@@ -14,13 +14,13 @@
 
 **A full-stack, multi-role placement management platform built for MITM (Maharaja Institute of Technology Mysore) to streamline campus placements, assessments, and recruitment workflows.**
 
-[Live Demo](https://mitm-placepro.vercel.app) · [Architecture](ARCHITECTURE.md) · [Security](SECURITY.md)
+[Live Demo](https://mitm-placepro.vercel.app) Â· [Architecture](ARCHITECTURE.md) Â· [Security](SECURITY.md)
 
 </div>
 
 ---
 
-## 📋 Table of Contents
+## ðŸ“‹ Table of Contents
 
 - [Overview](#-overview)
 - [Tech Stack](#-tech-stack)
@@ -36,19 +36,19 @@
 
 ---
 
-## 🔭 Overview
+## ðŸ”­ Overview
 
-UdyogaMITra digitizes the entire campus placement lifecycle — from student onboarding to final selection — replacing manual spreadsheets and email chains with a modern, real-time web application. It connects three key stakeholders:
+UdyogaMITra digitizes the entire campus placement lifecycle â€” from student onboarding to final selection â€” replacing manual spreadsheets and email chains with a modern, real-time web application. It connects three key stakeholders:
 
 | Role | Portal | Description |
 |------|--------|-------------|
-| 🛡️ **Admin** | `/admin/*` | Placement officers managing students, companies, drives, assessments, email campaigns, meetings, and feedback |
-| 🎓 **Student** | `/student/*` | Students building profiles, discovering jobs, registering for drives, viewing assessments & credentials |
-| 🏢 **Company** | `/company/*` | Recruiters posting jobs, scheduling multi-round drives, tracking candidates, and scheduling meetings |
+| ðŸ›¡ï¸ **Admin** | `/admin/*` | Placement officers managing students, companies, drives, assessments, email campaigns, meetings, and feedback |
+| ðŸŽ“ **Student** | `/student/*` | Students building profiles, discovering jobs, registering for drives, viewing assessments & credentials |
+| ðŸ¢ **Company** | `/company/*` | Recruiters posting jobs, scheduling multi-round drives, tracking candidates, and scheduling meetings |
 
 ---
 
-## 🛠️ Tech Stack
+## ðŸ› ï¸ Tech Stack
 
 ### Frontend
 | Technology | Version | Purpose |
@@ -86,9 +86,9 @@ UdyogaMITra digitizes the entire campus placement lifecycle — from student onb
 
 ---
 
-## ✨ Features by Dashboard
+## âœ¨ Features by Dashboard
 
-### 🛡️ Admin Dashboard (`/admin/*`)
+### ðŸ›¡ï¸ Admin Dashboard (`/admin/*`)
 
 #### Dashboard (`/admin/dashboard`)
 - **Real-time stats cards**: Total Students, Total Companies, Active Drives, Placement Rate (%)
@@ -100,7 +100,7 @@ UdyogaMITra digitizes the entire campus placement lifecycle — from student onb
 - **Search**: Real-time search by name, USN, or email (ILIKE query)
 - **Filters**: Department dropdown, Batch dropdown, Placement Status (unplaced/placed/opted-out)
 - **Student table**: Photo, USN, Name, Department, Batch, CGPA, Status, Actions
-- **Bulk upload**: Drag-and-drop CSV/XLSX upload — upserts by email (creates new or updates existing)
+- **Bulk upload**: Drag-and-drop CSV/XLSX upload â€” upserts by email (creates new or updates existing)
 - **Create student**: Full form with all 25+ profile fields
 - **Per-student actions**: Edit profile (modal), Reset password (to `USN@2025`), Delete, Upload photo
 - **Pagination**: Page number selector + items per page (default 50)
@@ -108,19 +108,19 @@ UdyogaMITra digitizes the entire campus placement lifecycle — from student onb
 
 #### Company Management (`/admin/companies`)
 - **Company grid**: Cards showing logo, name, industry, location, contact person, verification badge
-- **Create company**: Modal — company name, email, password, website, industry, location, contact info
+- **Create company**: Modal â€” company name, email, password, website, industry, location, contact info
 - **Actions**: Delete company, Reset password (to `Company@123`)
 
 #### Drive Management (`/admin/drives`)
 - **Drive cards**: Title, company, CTC, drive date, status badge, eligible department tags
-- **Create drive**: Full form — title, description, company, CTC, stipend, role, location, type, dates, departments (multi-select), eligibility criteria (min CGPA, max backlogs)
+- **Create drive**: Full form â€” title, description, company, CTC, stipend, role, location, type, dates, departments (multi-select), eligibility criteria (min CGPA, max backlogs)
 - **Drive detail** (expandable):
   - Registration count & status breakdown
   - **Round management**: Add/edit/complete rounds (Aptitude, Technical, Coding, GD, HR, Managerial, Final)
   - **Registered students table**: With attendance marking (checkboxes)
   - **Round result submission**: Pass/Fail per student per round
   - **Shortlist action**: Bulk-shortlist by min CGPA and department
-- **Status lifecycle**: Draft → Published → Ongoing → Completed
+- **Status lifecycle**: Draft â†’ Published â†’ Ongoing â†’ Completed
 - **Publish trigger**: Auto-creates notifications + registrations for all eligible students
 
 #### Assessment System (`/admin/assessments`)
@@ -130,15 +130,15 @@ UdyogaMITra digitizes the entire campus placement lifecycle — from student onb
   - **Links section**: Add/remove resource links (title, URL, platform, instructions)
   - **Sub-assessments section**:
     - Add sub-items: title, type, description, schedule date/time, 24-hour flag
-    - **Department-specific**: Multi-department selector — only those students see the sub-assessment
+    - **Department-specific**: Multi-department selector â€” only those students see the sub-assessment
     - Nested links per sub-assessment
     - Department filter tabs (multi-select) to filter view
   - **Batch schedules section**:
-    - Add batch slots: label, departments, date, start/end time, venue, USN range (start–end)
+    - Add batch slots: label, departments, date, start/end time, venue, USN range (startâ€“end)
     - Auto-assigns students to schedule by USN number range
   - **Credential upload section**:
     - Upload .xlsx/.csv with Email, Password, LoginID columns
-    - **Preview-before-save flow**: Parses file → shows matched students table (USN, Name, Dept, Password) + not-found emails + warning if replacing existing → Confirm & Save or Cancel
+    - **Preview-before-save flow**: Parses file â†’ shows matched students table (USN, Name, Dept, Password) + not-found emails + warning if replacing existing â†’ Confirm & Save or Cancel
     - Re-upload **replaces all** previous credentials for that assessment
   - **Submissions table**: All assigned students with USN, Name, Department, Status, Score, filtered by selected departments
   - **Bulk grading**: Update score/status/remarks for multiple students
@@ -148,12 +148,12 @@ UdyogaMITra digitizes the entire campus placement lifecycle — from student onb
 - **Meeting cards**: Title, date, time, type (virtual/in-person), location/meet link, company, status badge
 - **Create meeting**: Company, job link, title, date, time range, type, location/meet link, description
 - **Actions**: Edit, Delete, Mark completed/cancelled
-- **Status**: Scheduled → Completed / Cancelled
+- **Status**: Scheduled â†’ Completed / Cancelled
 
 #### Email System (`/admin/email`)
 - **Compose**: Subject, body, recipient filters (department, batch, placement status, or custom list)
 - **Send preview**: Shows recipient count before sending
-- **Email logs**: Table of sent emails — timestamp, subject, recipient count, status
+- **Email logs**: Table of sent emails â€” timestamp, subject, recipient count, status
 - **SMTP**: Via Brevo relay (smtp-relay.brevo.com:2525)
 
 #### Feedback Dashboard (`/admin/feedback`)
@@ -170,7 +170,7 @@ UdyogaMITra digitizes the entire campus placement lifecycle — from student onb
 
 ---
 
-### 🎓 Student Dashboard (`/student/*`)
+### ðŸŽ“ Student Dashboard (`/student/*`)
 
 #### Dashboard (`/student/dashboard`)
 - **Welcome card**: Student name, USN, department, batch
@@ -201,7 +201,7 @@ UdyogaMITra digitizes the entire campus placement lifecycle — from student onb
 - **My drives tab**: Registered drives with round progress
 - **Drive cards**: Company, CTC, date, rounds info, current status
 - **Round progress**: Which round student is in, result per round
-- **Status badges**: Registered → Attended → Shortlisted → Selected / Rejected
+- **Status badges**: Registered â†’ Attended â†’ Shortlisted â†’ Selected / Rejected
 
 #### Assessments (`/student/assessments`)
 - **Assessment cards**: Title, type badges, deadline, status
@@ -228,7 +228,7 @@ UdyogaMITra digitizes the entire campus placement lifecycle — from student onb
 
 ---
 
-### 🏢 Company Dashboard (`/company/*`)
+### ðŸ¢ Company Dashboard (`/company/*`)
 
 #### Dashboard (`/company/dashboard`)
 - **Stats**: Total Jobs, Active Drives, Total Candidates, Meetings Scheduled
@@ -237,13 +237,13 @@ UdyogaMITra digitizes the entire campus placement lifecycle — from student onb
 
 #### Jobs (`/company/jobs`)
 - **Job list**: All posted jobs with title, status, applicant count, deadline
-- **Create job**: Full form — title, description, requirements, location, CTC, stipend, type (full-time/internship/both), mode (remote/onsite/hybrid), openings, eligible departments, eligibility criteria, deadline
+- **Create job**: Full form â€” title, description, requirements, location, CTC, stipend, type (full-time/internship/both), mode (remote/onsite/hybrid), openings, eligible departments, eligibility criteria, deadline
 - **Job detail** (`/company/jobs/[jobId]`):
   - Job info display with edit
-  - **Publish/Unpublish**: Toggle visibility — publish auto-creates Drive + notifications + student registrations
+  - **Publish/Unpublish**: Toggle visibility â€” publish auto-creates Drive + notifications + student registrations
   - **Round management**: Define rounds (type, date, location, instructions)
   - **Availability**: Set interview time slots
-  - **Candidate table**: All registered students — USN, Name, Department, CGPA, Status, with search/filter
+  - **Candidate table**: All registered students â€” USN, Name, Department, CGPA, Status, with search/filter
   - **Candidate detail**: Click to view full student profile (academic, skills, resume)
   - **Attendance marking**: Checkbox per candidate per round
   - **Round results**: Pass/Fail per candidate, with individual and bulk submission
@@ -263,153 +263,153 @@ UdyogaMITra digitizes the entire campus placement lifecycle — from student onb
 
 ---
 
-## 📁 Project Structure
+## ðŸ“ Project Structure
 
 ```
 mitm-placepro/
-├── src/                                # Frontend (Next.js 16)
-│   ├── app/
-│   │   ├── layout.tsx                  # Root layout: AuthProvider, fonts (Inter + JetBrains Mono)
-│   │   ├── page.tsx                    # Landing page: hero, stats, CTA → /login
-│   │   ├── globals.css                 # Tailwind v4 + CSS custom properties theming
-│   │   ├── (auth)/login/page.tsx       # Login: email+password, role-based redirect
-│   │   ├── (admin)/admin/
-│   │   │   ├── layout.tsx              # Admin guard, sidebar+header+bottom bar
-│   │   │   ├── dashboard/page.tsx
-│   │   │   ├── students/page.tsx       # 900+ lines: search, filters, table, bulk upload, CRUD
-│   │   │   ├── companies/page.tsx
-│   │   │   ├── drives/page.tsx
-│   │   │   ├── assessments/page.tsx    # 870+ lines: sub-items, batches, credentials, grading
-│   │   │   ├── meetings/page.tsx
-│   │   │   ├── email/page.tsx
-│   │   │   ├── feedback/page.tsx
-│   │   │   ├── batches/page.tsx
-│   │   │   └── departments/page.tsx
-│   │   ├── (student)/student/
-│   │   │   ├── layout.tsx              # Student guard, header+bottom bar
-│   │   │   ├── dashboard/page.tsx
-│   │   │   ├── profile/page.tsx
-│   │   │   ├── jobs/page.tsx
-│   │   │   ├── drives/page.tsx
-│   │   │   ├── assessments/page.tsx
-│   │   │   ├── meetings/page.tsx
-│   │   │   ├── notifications/page.tsx
-│   │   │   └── feedback/page.tsx
-│   │   └── (company)/company/
-│   │       ├── layout.tsx              # Company guard, header+sidebar
-│   │       ├── dashboard/page.tsx
-│   │       ├── jobs/page.tsx
-│   │       ├── jobs/[jobId]/page.tsx   # Job detail: rounds, candidates, results
-│   │       ├── drives/page.tsx
-│   │       ├── meetings/page.tsx
-│   │       └── feedback/page.tsx
-│   ├── components/
-│   │   ├── layout/
-│   │   │   ├── Header.tsx              # Top bar: avatar, name, role badge, logout
-│   │   │   ├── AdminSidebar.tsx        # Desktop sidebar: 10 nav links with icons
-│   │   │   ├── AdminBottomBar.tsx      # Mobile: 5 tabs + "More" slide-up drawer
-│   │   │   └── StudentBottomBar.tsx    # Mobile: 5 tabs + "More" drawer
-│   │   └── ui/
-│   │       └── button.tsx              # CVA variant button (6 variants, 4 sizes, Slot support)
-│   ├── lib/
-│   │   ├── api.ts                      # 80+ API functions: adminApi, studentApi, companyApi
-│   │   ├── auth-context.tsx            # JWT AuthProvider: login, logout, token persistence
-│   │   └── utils.ts                    # cn() classname merge utility
-│   └── types/
-│       └── index.ts                    # 8 shared interfaces: User, Student, Company, Job, etc.
-│
-├── backend/                            # Backend (NestJS 11)
-│   └── src/
-│       ├── main.ts                     # Bootstrap: CORS, ValidationPipe, 50MB body limit
-│       ├── app.module.ts               # TypeORM config: 18 entities, synchronize:true, SSL
-│       ├── auth/
-│       │   ├── auth.controller.ts      # POST /auth/login
-│       │   ├── auth.service.ts         # bcrypt verify, JWT sign (7d expiry)
-│       │   └── jwt.strategy.ts         # Bearer token extraction + validation
-│       ├── admin/
-│       │   ├── admin.controller.ts     # 35+ routes: students, companies, drives, assessments
-│       │   ├── admin.service.ts        # Student CRUD, bulk upload, drives, meetings, email
-│       │   ├── assessment.service.ts   # Assessment CRUD, sub-items, schedules, credentials, grading
-│       │   └── email.service.ts        # SMTP transport via Nodemailer + Brevo
-│       ├── student/
-│       │   ├── student.controller.ts   # 18 routes: profile, jobs, drives, assessments, notifications
-│       │   └── student.service.ts      # Eligibility checks, drive registration, feedback
-│       ├── company/
-│       │   ├── company.controller.ts   # 20+ routes: jobs, drives, candidates, meetings, feedback
-│       │   └── company.service.ts      # Job→Drive publish flow, candidate management, bulk results
-│       └── entities/                   # 18 TypeORM entities
-│           ├── user.entity.ts          # users: id, email, password, fullName, role, isActive
-│           ├── student.entity.ts       # students: 25+ columns, skills[], placementStatus
-│           ├── company.entity.ts       # companies: companyName, industry, isVerified
-│           ├── drive.entity.ts         # drives + drive_registrations + drive_rounds
-│           ├── assessment.entity.ts    # 6 entities: assessment, links, sub-items, schedules, submissions, credentials
-│           ├── meeting.entity.ts       # meetings: virtual/in-person with status lifecycle
-│           ├── notification.entity.ts  # notifications: type, readAt, metadata
-│           └── feedback.entity.ts      # feedbacks: company-to-college, student-to-college
-│
-├── render.yaml                         # Render deployment: Node.js free tier, env vars
-├── netlify.toml                        # Alternative frontend deploy config
-├── next.config.ts                      # images.unoptimized: true
-├── package.json                        # Frontend deps
-└── backend/package.json                # Backend deps
+â”œâ”€â”€ src/                                # Frontend (Next.js 16)
+â”‚   â”œâ”€â”€ app/
+â”‚   â”‚   â”œâ”€â”€ layout.tsx                  # Root layout: AuthProvider, fonts (Inter + JetBrains Mono)
+â”‚   â”‚   â”œâ”€â”€ page.tsx                    # Landing page: hero, stats, CTA â†’ /login
+â”‚   â”‚   â”œâ”€â”€ globals.css                 # Tailwind v4 + CSS custom properties theming
+â”‚   â”‚   â”œâ”€â”€ (auth)/login/page.tsx       # Login: email+password, role-based redirect
+â”‚   â”‚   â”œâ”€â”€ (admin)/admin/
+â”‚   â”‚   â”‚   â”œâ”€â”€ layout.tsx              # Admin guard, sidebar+header+bottom bar
+â”‚   â”‚   â”‚   â”œâ”€â”€ dashboard/page.tsx
+â”‚   â”‚   â”‚   â”œâ”€â”€ students/page.tsx       # 900+ lines: search, filters, table, bulk upload, CRUD
+â”‚   â”‚   â”‚   â”œâ”€â”€ companies/page.tsx
+â”‚   â”‚   â”‚   â”œâ”€â”€ drives/page.tsx
+â”‚   â”‚   â”‚   â”œâ”€â”€ assessments/page.tsx    # 870+ lines: sub-items, batches, credentials, grading
+â”‚   â”‚   â”‚   â”œâ”€â”€ meetings/page.tsx
+â”‚   â”‚   â”‚   â”œâ”€â”€ email/page.tsx
+â”‚   â”‚   â”‚   â”œâ”€â”€ feedback/page.tsx
+â”‚   â”‚   â”‚   â”œâ”€â”€ batches/page.tsx
+â”‚   â”‚   â”‚   â””â”€â”€ departments/page.tsx
+â”‚   â”‚   â”œâ”€â”€ (student)/student/
+â”‚   â”‚   â”‚   â”œâ”€â”€ layout.tsx              # Student guard, header+bottom bar
+â”‚   â”‚   â”‚   â”œâ”€â”€ dashboard/page.tsx
+â”‚   â”‚   â”‚   â”œâ”€â”€ profile/page.tsx
+â”‚   â”‚   â”‚   â”œâ”€â”€ jobs/page.tsx
+â”‚   â”‚   â”‚   â”œâ”€â”€ drives/page.tsx
+â”‚   â”‚   â”‚   â”œâ”€â”€ assessments/page.tsx
+â”‚   â”‚   â”‚   â”œâ”€â”€ meetings/page.tsx
+â”‚   â”‚   â”‚   â”œâ”€â”€ notifications/page.tsx
+â”‚   â”‚   â”‚   â””â”€â”€ feedback/page.tsx
+â”‚   â”‚   â””â”€â”€ (company)/company/
+â”‚   â”‚       â”œâ”€â”€ layout.tsx              # Company guard, header+sidebar
+â”‚   â”‚       â”œâ”€â”€ dashboard/page.tsx
+â”‚   â”‚       â”œâ”€â”€ jobs/page.tsx
+â”‚   â”‚       â”œâ”€â”€ jobs/[jobId]/page.tsx   # Job detail: rounds, candidates, results
+â”‚   â”‚       â”œâ”€â”€ drives/page.tsx
+â”‚   â”‚       â”œâ”€â”€ meetings/page.tsx
+â”‚   â”‚       â””â”€â”€ feedback/page.tsx
+â”‚   â”œâ”€â”€ components/
+â”‚   â”‚   â”œâ”€â”€ layout/
+â”‚   â”‚   â”‚   â”œâ”€â”€ Header.tsx              # Top bar: avatar, name, role badge, logout
+â”‚   â”‚   â”‚   â”œâ”€â”€ AdminSidebar.tsx        # Desktop sidebar: 10 nav links with icons
+â”‚   â”‚   â”‚   â”œâ”€â”€ AdminBottomBar.tsx      # Mobile: 5 tabs + "More" slide-up drawer
+â”‚   â”‚   â”‚   â””â”€â”€ StudentBottomBar.tsx    # Mobile: 5 tabs + "More" drawer
+â”‚   â”‚   â””â”€â”€ ui/
+â”‚   â”‚       â””â”€â”€ button.tsx              # CVA variant button (6 variants, 4 sizes, Slot support)
+â”‚   â”œâ”€â”€ lib/
+â”‚   â”‚   â”œâ”€â”€ api.ts                      # 80+ API functions: adminApi, studentApi, companyApi
+â”‚   â”‚   â”œâ”€â”€ auth-context.tsx            # JWT AuthProvider: login, logout, token persistence
+â”‚   â”‚   â””â”€â”€ utils.ts                    # cn() classname merge utility
+â”‚   â””â”€â”€ types/
+â”‚       â””â”€â”€ index.ts                    # 8 shared interfaces: User, Student, Company, Job, etc.
+â”‚
+â”œâ”€â”€ backend/                            # Backend (NestJS 11)
+â”‚   â””â”€â”€ src/
+â”‚       â”œâ”€â”€ main.ts                     # Bootstrap: CORS, ValidationPipe, 50MB body limit
+â”‚       â”œâ”€â”€ app.module.ts               # TypeORM config: 18 entities, synchronize:true, SSL
+â”‚       â”œâ”€â”€ auth/
+â”‚       â”‚   â”œâ”€â”€ auth.controller.ts      # POST /auth/login
+â”‚       â”‚   â”œâ”€â”€ auth.service.ts         # bcrypt verify, JWT sign (7d expiry)
+â”‚       â”‚   â””â”€â”€ jwt.strategy.ts         # Bearer token extraction + validation
+â”‚       â”œâ”€â”€ admin/
+â”‚       â”‚   â”œâ”€â”€ admin.controller.ts     # 35+ routes: students, companies, drives, assessments
+â”‚       â”‚   â”œâ”€â”€ admin.service.ts        # Student CRUD, bulk upload, drives, meetings, email
+â”‚       â”‚   â”œâ”€â”€ assessment.service.ts   # Assessment CRUD, sub-items, schedules, credentials, grading
+â”‚       â”‚   â””â”€â”€ email.service.ts        # SMTP transport via Nodemailer + Brevo
+â”‚       â”œâ”€â”€ student/
+â”‚       â”‚   â”œâ”€â”€ student.controller.ts   # 18 routes: profile, jobs, drives, assessments, notifications
+â”‚       â”‚   â””â”€â”€ student.service.ts      # Eligibility checks, drive registration, feedback
+â”‚       â”œâ”€â”€ company/
+â”‚       â”‚   â”œâ”€â”€ company.controller.ts   # 20+ routes: jobs, drives, candidates, meetings, feedback
+â”‚       â”‚   â””â”€â”€ company.service.ts      # Jobâ†’Drive publish flow, candidate management, bulk results
+â”‚       â””â”€â”€ entities/                   # 18 TypeORM entities
+â”‚           â”œâ”€â”€ user.entity.ts          # users: id, email, password, fullName, role, isActive
+â”‚           â”œâ”€â”€ student.entity.ts       # students: 25+ columns, skills[], placementStatus
+â”‚           â”œâ”€â”€ company.entity.ts       # companies: companyName, industry, isVerified
+â”‚           â”œâ”€â”€ drive.entity.ts         # drives + drive_registrations + drive_rounds
+â”‚           â”œâ”€â”€ assessment.entity.ts    # 6 entities: assessment, links, sub-items, schedules, submissions, credentials
+â”‚           â”œâ”€â”€ meeting.entity.ts       # meetings: virtual/in-person with status lifecycle
+â”‚           â”œâ”€â”€ notification.entity.ts  # notifications: type, readAt, metadata
+â”‚           â””â”€â”€ feedback.entity.ts      # feedbacks: company-to-college, student-to-college
+â”‚
+â”œâ”€â”€ render.yaml                         # Render deployment: Node.js free tier, env vars
+â”œâ”€â”€ netlify.toml                        # Alternative frontend deploy config
+â”œâ”€â”€ next.config.ts                      # images.unoptimized: true
+â”œâ”€â”€ package.json                        # Frontend deps
+â””â”€â”€ backend/package.json                # Backend deps
 ```
 
 ---
 
-## 🗄️ Database Schema
+## ðŸ—„ï¸ Database Schema
 
 ### 18 Entities across 18 Tables
 
 #### Core Identity
 | Table | Primary Key | Key Columns | Relations |
 |-------|-------------|-------------|-----------|
-| `users` | uuid | email (unique), password (bcrypt), fullName, role (`admin`/`student`/`company`), isActive | → Student, → Company |
-| `students` | uuid | usn (unique), department, section, semester, batch, cgpa, backlogs, phone, parentPhone, address, 10th/12th/diploma %, linkedIn, github, portfolio, photoUrl, resumeUrl, skills[], placementStatus, placedCompany, placedPackage | → User, → DriveRegistrations, → Applications, → AssessmentSubmissions |
-| `companies` | uuid | companyName, website, industry, location, description, logoUrl, contactPerson, contactPhone, isVerified | → User, → Jobs, → Drives, → Meetings |
+| `users` | uuid | email (unique), password (bcrypt), fullName, role (`admin`/`student`/`company`), isActive | â†’ Student, â†’ Company |
+| `students` | uuid | usn (unique), department, section, semester, batch, cgpa, backlogs, phone, parentPhone, address, 10th/12th/diploma %, linkedIn, github, portfolio, photoUrl, resumeUrl, skills[], placementStatus, placedCompany, placedPackage | â†’ User, â†’ DriveRegistrations, â†’ Applications, â†’ AssessmentSubmissions |
+| `companies` | uuid | companyName, website, industry, location, description, logoUrl, contactPerson, contactPhone, isVerified | â†’ User, â†’ Jobs, â†’ Drives, â†’ Meetings |
 
 #### Jobs & Applications
 | Table | Key Columns | Relations |
 |-------|-------------|-----------|
-| `jobs` | title, description, requirements, location, ctc, stipend, type, mode, openings, eligibleDepartments[], eligibleCriteria (jsonb: minCGPA, maxBacklogs), status, deadline, postedAt | → Company, → Applications, → Drive |
-| `applications` | status (`applied`/`under-review`/`shortlisted`/`selected`/`rejected`), appliedAt | → Job, → Student |
+| `jobs` | title, description, requirements, location, ctc, stipend, type, mode, openings, eligibleDepartments[], eligibleCriteria (jsonb: minCGPA, maxBacklogs), status, deadline, postedAt | â†’ Company, â†’ Applications, â†’ Drive |
+| `applications` | status (`applied`/`under-review`/`shortlisted`/`selected`/`rejected`), appliedAt | â†’ Job, â†’ Student |
 
 #### Placement Drives
 | Table | Key Columns | Relations |
 |-------|-------------|-----------|
-| `drives` | title, description, eligibleDepartments[], eligibleCriteria (jsonb), ctc, stipend, role, location, driveType, driveDate, lastDate, status (`draft`/`published`/`ongoing`/`completed`) | → Company, → Job, → Registrations, → Rounds |
-| `drive_registrations` | status (`registered`/`attended`/`shortlisted`/`selected`/`rejected`/`opted-out`/`declined`), currentRound, remarks | → Drive, → Student |
-| `drive_rounds` | roundNumber, roundType (`aptitude`/`technical`/`coding`/`gd`/`hr`/`managerial`/`final`), roundDate, location, instructions, isCompleted | → Drive |
+| `drives` | title, description, eligibleDepartments[], eligibleCriteria (jsonb), ctc, stipend, role, location, driveType, driveDate, lastDate, status (`draft`/`published`/`ongoing`/`completed`) | â†’ Company, â†’ Job, â†’ Registrations, â†’ Rounds |
+| `drive_registrations` | status (`registered`/`attended`/`shortlisted`/`selected`/`rejected`/`opted-out`/`declined`), currentRound, remarks | â†’ Drive, â†’ Student |
+| `drive_rounds` | roundNumber, roundType (`aptitude`/`technical`/`coding`/`gd`/`hr`/`managerial`/`final`), roundDate, location, instructions, isCompleted | â†’ Drive |
 
 #### Assessment System
 | Table | Key Columns | Relations |
 |-------|-------------|-----------|
-| `assessments` | title, description, types[], departments[], batchIds[], status (`draft`/`active`/`expired`), deadline, maxScore | → Links, SubItems, Schedules, Submissions, Credentials |
-| `assessment_links` | title, url, platform, instructions, displayOrder | → Assessment |
-| `assessment_sub_items` | title, type, description, scheduleDate, startTime, endTime, is24Hours, links (jsonb), departments[], displayOrder | → Assessment |
-| `assessment_schedules` | batchLabel, departments[], scheduleDate, startTime, endTime, venue, usnStart, usnEnd | → Assessment |
-| `assessment_submissions` | status (`pending`/`completed`/`absent`), score, remarks, attemptedAt, gradedAt | → Assessment, → Student, → Schedule |
-| `assessment_credentials` | loginId, loginPassword | → Assessment, → Student |
+| `assessments` | title, description, types[], departments[], batchIds[], status (`draft`/`active`/`expired`), deadline, maxScore | â†’ Links, SubItems, Schedules, Submissions, Credentials |
+| `assessment_links` | title, url, platform, instructions, displayOrder | â†’ Assessment |
+| `assessment_sub_items` | title, type, description, scheduleDate, startTime, endTime, is24Hours, links (jsonb), departments[], displayOrder | â†’ Assessment |
+| `assessment_schedules` | batchLabel, departments[], scheduleDate, startTime, endTime, venue, usnStart, usnEnd | â†’ Assessment |
+| `assessment_submissions` | status (`pending`/`completed`/`absent`), score, remarks, attemptedAt, gradedAt | â†’ Assessment, â†’ Student, â†’ Schedule |
+| `assessment_credentials` | loginId, loginPassword | â†’ Assessment, â†’ Student |
 
 #### Communication & Feedback
 | Table | Key Columns | Relations |
 |-------|-------------|-----------|
-| `meetings` | title, meetingDate, startTime, endTime, meetingType (`virtual`/`in-person`), location, meetLink, description, status (`scheduled`/`completed`/`cancelled`) | → Company, → Job, → Drive |
-| `notifications` | title, message, type, readAt, metadata (jsonb) | → User |
+| `meetings` | title, meetingDate, startTime, endTime, meetingType (`virtual`/`in-person`), location, meetLink, description, status (`scheduled`/`completed`/`cancelled`) | â†’ Company, â†’ Job, â†’ Drive |
+| `notifications` | title, message, type, readAt, metadata (jsonb) | â†’ User |
 | `email_logs` | subject, body, recipientCount, recipientFilter (jsonb), status, sentBy, sentAt | |
-| `feedbacks` | type (`company-to-college`/`student-to-college`), overallRating (1-5), comments, categories (jsonb), isAnonymous | → Drive, → Company, → Student |
+| `feedbacks` | type (`company-to-college`/`student-to-college`), overallRating (1-5), comments, categories (jsonb), isAnonymous | â†’ Drive, â†’ Company, â†’ Student |
 
 ---
 
-## 📡 API Reference
+## ðŸ“¡ API Reference
 
 All routes prefixed with `/api/v1`. Protected by JWT Bearer token unless noted.
 
 ### Authentication
 | Method | Route | Description |
 |--------|-------|-------------|
-| POST | `/auth/login` | Authenticate with email + password → JWT token |
+| POST | `/auth/login` | Authenticate with email + password â†’ JWT token |
 
-### Admin — Students (7 routes)
+### Admin â€” Students (7 routes)
 | Method | Route | Description |
 |--------|-------|-------------|
 | GET | `/admin/students` | List students with search, department, batch, status filters + pagination |
@@ -418,9 +418,9 @@ All routes prefixed with `/api/v1`. Protected by JWT Bearer token unless noted.
 | PATCH | `/admin/students/:id` | Update student profile fields |
 | DELETE | `/admin/students/:id` | Delete student + associated user |
 | POST | `/admin/students/:id/reset-password` | Reset to `USN@2025` format |
-| POST | `/admin/students/:id/photo` | Upload photo (multipart → Base64) |
+| POST | `/admin/students/:id/photo` | Upload photo (multipart â†’ Base64) |
 
-### Admin — Companies (4 routes)
+### Admin â€” Companies (4 routes)
 | Method | Route | Description |
 |--------|-------|-------------|
 | GET | `/admin/companies` | List all companies |
@@ -428,21 +428,21 @@ All routes prefixed with `/api/v1`. Protected by JWT Bearer token unless noted.
 | DELETE | `/admin/companies/:id` | Delete company + user |
 | POST | `/admin/companies/:id/reset-password` | Reset to `Company@123` |
 
-### Admin — Drives (10 routes)
+### Admin â€” Drives (10 routes)
 | Method | Route | Description |
 |--------|-------|-------------|
 | GET | `/admin/drives` | List all drives |
 | POST | `/admin/drives` | Create drive |
 | PATCH | `/admin/drives/:id` | Update drive |
 | DELETE | `/admin/drives/:id` | Delete drive |
-| PATCH | `/admin/drives/:id/publish` | Publish → notify + register eligible students |
+| PATCH | `/admin/drives/:id/publish` | Publish â†’ notify + register eligible students |
 | GET | `/admin/drives/:id/registrations` | Get registered students with search/filter |
 | PATCH | `/admin/attendance` | Mark student attendance |
 | PATCH | `/admin/round-result` | Submit pass/fail result |
 | GET | `/admin/drives/:id/rounds` | Get drive rounds |
 | POST | `/admin/drives/:id/shortlist` | Bulk-shortlist by criteria |
 
-### Admin — Assessments (14 routes)
+### Admin â€” Assessments (14 routes)
 | Method | Route | Description |
 |--------|-------|-------------|
 | GET | `/admin/assessments` | List assessments |
@@ -462,7 +462,7 @@ All routes prefixed with `/api/v1`. Protected by JWT Bearer token unless noted.
 | POST | `/admin/assessments/:id/bulk-grade` | Bulk grade students |
 | GET | `/admin/assessments/:id/stats` | Completion %, avg score, department breakdown |
 
-### Admin — Other (8 routes)
+### Admin â€” Other (8 routes)
 | Method | Route | Description |
 |--------|-------|-------------|
 | GET | `/admin/dashboard` | Stats: students, companies, drives, placement rate |
@@ -505,7 +505,7 @@ All routes prefixed with `/api/v1`. Protected by JWT Bearer token unless noted.
 | POST | `/company/jobs` | Create job |
 | GET | `/company/jobs` | List company's jobs |
 | GET | `/company/jobs/:jobId` | Job detail |
-| PATCH | `/company/jobs/:jobId/publish` | Publish → creates Drive + registrations + notifications |
+| PATCH | `/company/jobs/:jobId/publish` | Publish â†’ creates Drive + registrations + notifications |
 | PATCH | `/company/jobs/:jobId/rounds` | Set round definitions |
 | POST/GET | `/company/jobs/:jobId/availability` | Manage interview slots |
 | GET | `/company/jobs/:jobId/candidates` | View registered candidates |
@@ -520,19 +520,19 @@ All routes prefixed with `/api/v1`. Protected by JWT Bearer token unless noted.
 
 ---
 
-## 🚀 Getting Started
+## ðŸš€ Getting Started
 
 ### Prerequisites
-- **Node.js** ≥ 18.x
-- **npm** ≥ 9.x
+- **Node.js** â‰¥ 18.x
+- **npm** â‰¥ 9.x
 - **PostgreSQL** database (or free [Neon](https://neon.tech/) account)
 
 ### Installation
 
 ```bash
 # Clone
-git clone https://github.com/yashas1519-pixel/mitm-placepro.git
-cd mitm-placepro
+git clone https://github.com/4mh24cs167-tech/mit-place-pro.git
+cd mit-place-pro
 
 # Frontend
 npm install
@@ -571,35 +571,35 @@ npm run dev
 
 ---
 
-## 🔐 Environment Variables
+## ðŸ” Environment Variables
 
 ### Frontend
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `NEXT_PUBLIC_API` | ✅ | Backend API base URL |
+| `NEXT_PUBLIC_API` | âœ… | Backend API base URL |
 
 ### Backend
 | Variable | Required | Description | Example |
 |----------|----------|-------------|---------|
-| `DATABASE_URL` | ✅ | PostgreSQL connection string | `postgresql://user:pass@host/db?sslmode=require` |
-| `JWT_SECRET` | ✅ | Secret for JWT signing | `my-super-secret-key-256bit` |
-| `PORT` | ❌ | Server port (default: 3001) | `3001` |
-| `SMTP_HOST` | ✅ | SMTP relay hostname | `smtp-relay.brevo.com` |
-| `SMTP_PORT` | ✅ | SMTP port | `2525` |
-| `SMTP_USER` | ✅ | SMTP username | `your-api-key` |
-| `SMTP_PASS` | ✅ | SMTP password | `your-smtp-password` |
-| `SMTP_FROM` | ✅ | Sender email address | `placements@mitm.ac.in` |
+| `DATABASE_URL` | âœ… | PostgreSQL connection string | `postgresql://user:pass@host/db?sslmode=require` |
+| `JWT_SECRET` | âœ… | Secret for JWT signing | `my-super-secret-key-256bit` |
+| `PORT` | âŒ | Server port (default: 3001) | `3001` |
+| `SMTP_HOST` | âœ… | SMTP relay hostname | `smtp-relay.brevo.com` |
+| `SMTP_PORT` | âœ… | SMTP port | `2525` |
+| `SMTP_USER` | âœ… | SMTP username | `your-api-key` |
+| `SMTP_PASS` | âœ… | SMTP password | `your-smtp-password` |
+| `SMTP_FROM` | âœ… | Sender email address | `placements@mitm.ac.in` |
 
 ---
 
-## 🌐 Deployment
+## ðŸŒ Deployment
 
-### Frontend → Vercel
+### Frontend â†’ Vercel
 1. Connect GitHub repo to [Vercel](https://vercel.com/)
 2. Set `NEXT_PUBLIC_API` environment variable to Render backend URL
 3. Auto-deploys on push to `main`
 
-### Backend → Render
+### Backend â†’ Render
 Configured via `render.yaml`:
 - **Runtime**: Node.js (free tier)
 - **Region**: Oregon
@@ -607,51 +607,51 @@ Configured via `render.yaml`:
 - **Start**: `cd backend && npm run start:prod`
 - **Env vars**: DATABASE_URL, JWT_SECRET, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM
 
-### Database → Neon
+### Database â†’ Neon
 1. Create free PostgreSQL on [Neon](https://neon.tech/)
 2. Copy connection string to `DATABASE_URL`
 3. TypeORM `synchronize: true` auto-creates all 18 tables on first startup
 
 ---
 
-## 👥 Roles & Permissions
+## ðŸ‘¥ Roles & Permissions
 
 | Feature | Admin | Student | Company |
 |---------|:-----:|:-------:|:-------:|
-| View Dashboard | ✅ | ✅ | ✅ |
-| Manage Students (CRUD, bulk upload) | ✅ | ❌ | ❌ |
-| Manage Companies | ✅ | ❌ | ❌ |
-| Create/Publish Drives | ✅ | ❌ | ❌ |
-| Post/Publish Jobs | ❌ | ❌ | ✅ |
-| Register for Drives | ❌ | ✅ | ❌ |
-| Apply for Jobs | ❌ | ✅ | ❌ |
-| Manage Assessments | ✅ | ❌ | ❌ |
-| View Assessments + Credentials | ❌ | ✅ | ❌ |
-| Grade Submissions | ✅ | ❌ | ❌ |
-| Upload Credentials | ✅ | ❌ | ❌ |
-| Schedule Meetings | ✅ | ❌ | ✅ |
-| View Meetings | ✅ | ✅ | ✅ |
-| Send Bulk Emails | ✅ | ❌ | ❌ |
-| Submit Feedback | ❌ | ✅ | ✅ |
-| View All Feedback | ✅ | ✅ | ✅ |
-| Mark Attendance | ✅ | ❌ | ✅ |
-| Submit Round Results | ✅ | ❌ | ✅ |
-| View Notifications | ❌ | ✅ | ❌ |
-| Edit Own Profile | ❌ | ✅ | ✅ |
+| View Dashboard | âœ… | âœ… | âœ… |
+| Manage Students (CRUD, bulk upload) | âœ… | âŒ | âŒ |
+| Manage Companies | âœ… | âŒ | âŒ |
+| Create/Publish Drives | âœ… | âŒ | âŒ |
+| Post/Publish Jobs | âŒ | âŒ | âœ… |
+| Register for Drives | âŒ | âœ… | âŒ |
+| Apply for Jobs | âŒ | âœ… | âŒ |
+| Manage Assessments | âœ… | âŒ | âŒ |
+| View Assessments + Credentials | âŒ | âœ… | âŒ |
+| Grade Submissions | âœ… | âŒ | âŒ |
+| Upload Credentials | âœ… | âŒ | âŒ |
+| Schedule Meetings | âœ… | âŒ | âœ… |
+| View Meetings | âœ… | âœ… | âœ… |
+| Send Bulk Emails | âœ… | âŒ | âŒ |
+| Submit Feedback | âŒ | âœ… | âœ… |
+| View All Feedback | âœ… | âœ… | âœ… |
+| Mark Attendance | âœ… | âŒ | âœ… |
+| Submit Round Results | âœ… | âŒ | âœ… |
+| View Notifications | âŒ | âœ… | âŒ |
+| Edit Own Profile | âŒ | âœ… | âœ… |
 
 ---
 
-## 📚 Related Documentation
+## ðŸ“š Related Documentation
 
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** — Detailed system architecture, data flow diagrams, module interactions, and design decisions
-- **[SECURITY.md](SECURITY.md)** — Authentication flow, authorization model, data protection, threat analysis, and security recommendations
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** â€” Detailed system architecture, data flow diagrams, module interactions, and design decisions
+- **[SECURITY.md](SECURITY.md)** â€” Authentication flow, authorization model, data protection, threat analysis, and security recommendations
 
 ---
 
 <div align="center">
 
-Built with ❤️ by [Yashas](https://github.com/yashas1519-pixel)
+Developed by: Yashas N, Varshith V, Vishesh G Devanur, Yashavanth B N, Vinod Patel, Bhavish S - Dept of CSE
 
-**UdyogaMITra** — Streamlining campus placements, one drive at a time.
+**UdyogaMITra** â€” Streamlining campus placements, one drive at a time.
 
 </div>
