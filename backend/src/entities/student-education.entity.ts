@@ -5,6 +5,7 @@ export enum QualificationType {
   SSLC = 'SSLC',
   PUC = 'PUC',
   DIPLOMA = 'DIPLOMA',
+  ITI = 'ITI',
   UG = 'UG',
   PG = 'PG',
 }
