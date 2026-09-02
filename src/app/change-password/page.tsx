@@ -169,7 +169,7 @@ export default function ChangePasswordPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
-          <img src="/udyogamitra-logo.jpg" alt="MITM Logo" className="w-11 h-11 rounded-2xl object-cover" />
+          <img src="/udyogamitra-logo.jpg" alt="UdyogaMITra Logo" className="w-12 h-12 rounded-full object-cover scale-110 bg-white shadow-sm" />
           <span className="text-xl font-bold text-foreground tracking-tight">UdyogaMITra</span>
         </div>
 
