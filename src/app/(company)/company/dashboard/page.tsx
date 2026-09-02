@@ -43,7 +43,7 @@ export default function CompanyDashboardPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [showCreateJob, setShowCreateJob] = useState(false);
-  const [jobForm, setJobForm] = useState({ title: "", description: "", location: "", ctcMinLpa: "", ctcMaxLpa: "", minCgpa: "", openPositions: "1", eligibleDepartments: "", jobType: "placement", stipendAmount: "", bondYears: "", bondAmountInr: "" });
+  const [jobForm, setJobForm] = useState({ title: "", description: "", location: "", ctcMinLpa: "", ctcMaxLpa: "", minQualification: "UG", minQualificationScore: "", openPositions: "1", eligibleDepartments: "", jobType: "placement", stipendAmount: "", bondYears: "", bondAmountInr: "" });
   const [jobSaving, setJobSaving] = useState(false);
   const [jobError, setJobError] = useState("");
   const [jobSuccess, setJobSuccess] = useState("");
@@ -458,16 +458,28 @@ export default function CompanyDashboardPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
-                    <GraduationCap className="w-3.5 h-3.5 text-indigo-500" /> Min CGPA
+                    <GraduationCap className="w-3.5 h-3.5 text-indigo-500" /> Minimum Qualification
                   </label>
-                  <input type="number" step="0.1" value={jobForm.minCgpa} onChange={(e) => setJobForm(f => ({ ...f, minCgpa: e.target.value }))} placeholder="e.g. 6.5" className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+                  <select value={jobForm.minQualification} onChange={(e) => setJobForm(f => ({ ...f, minQualification: e.target.value }))} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white">
+                    <option value="SSLC">SSLC</option>
+                    <option value="PUC">PUC / Diploma</option>
+                    <option value="UG">Undergraduate (UG)</option>
+                    <option value="PG">Postgraduate (PG)</option>
+                  </select>
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-indigo-500" /> Departments
+                    <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500" /> Min. {jobForm.minQualification === "UG" || jobForm.minQualification === "PG" ? "CGPA" : "Percentage"}
                   </label>
-                  <input type="text" value={jobForm.eligibleDepartments} onChange={(e) => setJobForm(f => ({ ...f, eligibleDepartments: e.target.value }))} placeholder="CSE, ISE, ECE" className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+                  <input type="number" step="0.1" value={jobForm.minQualificationScore} onChange={(e) => setJobForm(f => ({ ...f, minQualificationScore: e.target.value }))} placeholder={jobForm.minQualification === "UG" || jobForm.minQualification === "PG" ? "e.g. 6.5" : "e.g. 65"} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
                 </div>
+              </div>
+              
+              <div>
+                <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-indigo-500" /> Departments
+                </label>
+                <input type="text" value={jobForm.eligibleDepartments} onChange={(e) => setJobForm(f => ({ ...f, eligibleDepartments: e.target.value }))} placeholder="CSE, ISE, ECE" className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -516,6 +528,17 @@ export default function CompanyDashboardPage() {
                   setJobSaving(true);
                   setJobError("");
                   try {
+                    let minCgpa: number | undefined;
+                    let minTenthPercent: number | undefined;
+                    let minTwelfthPercent: number | undefined;
+                    
+                    const score = jobForm.minQualificationScore ? Number(jobForm.minQualificationScore) : undefined;
+                    if (score) {
+                      if (jobForm.minQualification === "SSLC") minTenthPercent = score;
+                      else if (jobForm.minQualification === "PUC") minTwelfthPercent = score;
+                      else minCgpa = score; // UG and PG
+                    }
+
                     const payload: Record<string, unknown> = {
                       title: jobForm.title.trim(),
                       description: jobForm.description.trim() || jobForm.title.trim(),
@@ -523,7 +546,9 @@ export default function CompanyDashboardPage() {
                       totalVacancies: Number(jobForm.openPositions) || 1,
                       ctcMinLpa: jobForm.ctcMinLpa ? Number(jobForm.ctcMinLpa) : undefined,
                       ctcMaxLpa: jobForm.ctcMaxLpa ? Number(jobForm.ctcMaxLpa) : undefined,
-                      minCgpa: jobForm.minCgpa ? Number(jobForm.minCgpa) : undefined,
+                      minCgpa,
+                      minTenthPercent,
+                      minTwelfthPercent,
                       allowedDepartments: jobForm.eligibleDepartments ? jobForm.eligibleDepartments.split(",").map(d => d.trim()).filter(Boolean) : undefined,
                       jobType: jobForm.jobType,
                       stipendAmount: jobForm.stipendAmount ? Number(jobForm.stipendAmount) : undefined,
@@ -535,7 +560,7 @@ export default function CompanyDashboardPage() {
                     setTimeout(() => {
                       setShowCreateJob(false);
                       setJobSuccess("");
-                      setJobForm({ title: "", description: "", location: "", ctcMinLpa: "", ctcMaxLpa: "", minCgpa: "", openPositions: "1", eligibleDepartments: "", jobType: "placement", stipendAmount: "", bondYears: "", bondAmountInr: "" });
+                      setJobForm({ title: "", description: "", location: "", ctcMinLpa: "", ctcMaxLpa: "", minQualification: "UG", minQualificationScore: "", openPositions: "1", eligibleDepartments: "", jobType: "placement", stipendAmount: "", bondYears: "", bondAmountInr: "" });
                       queryClient.invalidateQueries({ queryKey: ["company", "jobs"] });
                     }, 1200);
                   } catch {
