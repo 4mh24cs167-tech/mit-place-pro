@@ -770,10 +770,15 @@ export default function StudentProfilePage() {
                               if (!file) return;
                               if (file.size > 2 * 1024 * 1024) { showToast("error", "File must be under 2MB"); return; }
                               try {
-                                await studentApi.uploadResume(file);
-                                setField("resumeLink", `uploaded:${file.name}`);
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                const presignedRes: any = await studentApi.getResumePresignedUrl(file.name, file.type);
+                                const { presignedUrl, key, publicUrl } = presignedRes?.data || presignedRes;
+                                const s3Res = await fetch(presignedUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+                                if (!s3Res.ok) throw new Error("Upload failed");
+                                await studentApi.confirmResumeUpload(key, publicUrl, file.name);
+                                setField("resumeLink", publicUrl);
                                 showToast("success", `Resume "${file.name}" uploaded!`);
-                              } catch { showToast("error", "Failed to upload resume"); }
+                              } catch { showToast("error", "Failed to upload resume. Try using a Drive link instead."); }
                             }} />
                           </label>
                           {form.resumeLink?.startsWith("uploaded:") && (
@@ -827,8 +832,13 @@ export default function StudentProfilePage() {
                                 });
                                 const fileName = `${(form.fullName || "resume").replace(/\s+/g, "_")}_Resume.pdf`;
                                 const file = new File([blob], fileName, { type: "application/pdf" });
-                                await studentApi.uploadResume(file);
-                                setField("resumeLink", `uploaded:${fileName}`);
+                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                                const presignedRes: any = await studentApi.getResumePresignedUrl(fileName, file.type);
+                                const { presignedUrl, key, publicUrl } = presignedRes?.data || presignedRes;
+                                const s3Res = await fetch(presignedUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+                                if (!s3Res.ok) throw new Error("Upload failed");
+                                await studentApi.confirmResumeUpload(key, publicUrl, fileName);
+                                setField("resumeLink", publicUrl);
                                 showToast("success", "Resume generated & uploaded successfully!");
                               } catch {
                                 showToast("error", "Failed to generate resume");

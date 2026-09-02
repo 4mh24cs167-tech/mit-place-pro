@@ -396,11 +396,12 @@ export const studentApi = {
     const base = typeof window !== 'undefined' ? localStorage.getItem('api_base') || '' : '';
     return `${base}/api/v1/student/education/${id}/document`;
   },
-  uploadResume: (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return apiFetch('/api/v1/student/resume/upload', { method: 'POST', body: formData, isFormData: true });
-  },
+  // Presigned S3 upload — step 1: get presigned URL
+  getResumePresignedUrl: (fileName: string, fileType: string) =>
+    apiFetch('/api/v1/student/resume/presigned-url', { method: 'POST', body: { fileName, fileType } }),
+  // Presigned S3 upload — step 2: confirm after browser uploaded to S3
+  confirmResumeUpload: (key: string, publicUrl: string, fileName: string) =>
+    apiFetch('/api/v1/student/resume/confirm-upload', { method: 'POST', body: { key, publicUrl, fileName } }),
   getResumeDownloadUrl: () => {
     const base = typeof window !== 'undefined' ? localStorage.getItem('api_base') || '' : '';
     return `${base}/api/v1/student/resume/download`;
