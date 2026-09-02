@@ -19,9 +19,11 @@ import {
   Loader2,
   Trash2,
   AlertTriangle,
+  Download,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import jsPDF from "jspdf";
 
 interface Company {
   id: string;
@@ -101,6 +103,55 @@ export default function AdminCompaniesPage() {
     emailSent: boolean;
     companyName: string;
   } | null>(null);
+
+  const downloadCompanyPdf = () => {
+    if (!selectedCompany) return;
+    const doc = new jsPDF();
+    const c = selectedCompany;
+    
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
+    doc.text(c.name, 20, 20);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12);
+    
+    let y = 35;
+    const addLine = (label: string, value: string | undefined | null) => {
+      doc.setFont("helvetica", "bold");
+      doc.text(`${label}:`, 20, y);
+      doc.setFont("helvetica", "normal");
+      doc.text(value || "N/A", 60, y);
+      y += 10;
+    };
+
+    addLine("Sector", c.sector);
+    addLine("HQ City", c.hqCity);
+    addLine("Website", c.website);
+    addLine("Annual Turnover", c.annualTurnoverRange);
+    
+    y += 10;
+    doc.setFont("helvetica", "bold");
+    doc.text("HR Contact Details", 20, y);
+    doc.line(20, y + 2, 190, y + 2);
+    y += 12;
+
+    addLine("HR Name", c.hrName);
+    addLine("HR Phone", c.hrPhone);
+    addLine("HR Email", c.email || c.user?.email);
+
+    if (c.description) {
+      y += 10;
+      doc.setFont("helvetica", "bold");
+      doc.text("Description", 20, y);
+      doc.setFont("helvetica", "normal");
+      y += 8;
+      const splitDesc = doc.splitTextToSize(c.description, 170);
+      doc.text(splitDesc, 20, y);
+    }
+
+    doc.save(`${c.name.replace(/\s+/g, '_')}_Details.pdf`);
+  };
 
   const handleAddCompany = async () => {
     if (!formData.name || !formData.hrEmail) {
@@ -603,17 +654,27 @@ export default function AdminCompaniesPage() {
                   </div>
                 )}
 
-                {/* Approve Button */}
-                {!selectedCompany.isApproved && (
+                {/* Action Buttons */}
+                <div className="flex gap-3">
                   <button
-                    onClick={handleApproveFromModal}
-                    disabled={approvingCompany}
-                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-lg hover:shadow-xl transition-all"
+                    onClick={downloadCompanyPdf}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white border-2 border-border text-foreground font-semibold hover:bg-muted/50 transition-all"
                   >
-                    {approvingCompany ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                    Approve Company
+                    <Download className="w-4 h-4 text-muted-foreground" />
+                    Download PDF
                   </button>
-                )}
+                  
+                  {!selectedCompany.isApproved && (
+                    <button
+                      onClick={handleApproveFromModal}
+                      disabled={approvingCompany}
+                      className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+                    >
+                      {approvingCompany ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                      Approve
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>

@@ -16,6 +16,8 @@ import { DriveAttendance } from '../entities/drive-attendance.entity';
 import { RoundMeeting, MeetingGroup, MeetingAssignment } from '../entities/round-meeting.entity';
 import { StudentDriveFeedback, CompanyDriveFeedback } from '../entities/feedback.entity';
 
+import { UploadModule } from '../upload/upload.module';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -38,6 +40,7 @@ import { StudentDriveFeedback, CompanyDriveFeedback } from '../entities/feedback
       CompanyDriveFeedback,
     ]),
     AdminModule,
+    UploadModule,
   ],
   controllers: [CompanyController],
   providers: [CompanyService],

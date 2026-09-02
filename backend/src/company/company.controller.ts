@@ -36,6 +36,23 @@ export class CompanyController {
     return { success: true, data };
   }
 
+  @Post('logo/presigned-url')
+  async getLogoPresignedUrl(
+    @CurrentUser('id') userId: string,
+    @Body() dto: { fileName: string; fileType: string },
+  ) {
+    const ext = dto.fileName.split('.').pop() || 'jpg';
+    return this.companyService.getLogoPresignedUrl(userId, ext, dto.fileType);
+  }
+
+  @Post('logo/confirm-upload')
+  async confirmLogoUpload(
+    @CurrentUser('id') userId: string,
+    @Body() dto: { key: string; publicUrl: string },
+  ) {
+    return this.companyService.confirmLogoUpload(userId, dto.key, dto.publicUrl);
+  }
+
   // ─── Jobs ───────────────────────────────────────
   @Post('jobs')
   async createJob(

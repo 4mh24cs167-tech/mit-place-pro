@@ -14,6 +14,7 @@ import { DriveCompanyJob } from '../entities/drive-company-job.entity';
 import { DriveAttendance } from '../entities/drive-attendance.entity';
 import { RoundMeeting, MeetingGroup, MeetingAssignment } from '../entities/round-meeting.entity';
 import type { MeetingStatus } from '../entities/round-meeting.entity';
+import { UploadService } from '../upload/upload.service';
 import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto, SubmitRoundResultsDto, UpdateJobRoundsDto, CreateRoundMeetingDto, UpdateRoundMeetingDto } from './dto/company.dto';
 import { EmailService } from '../admin/email.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -41,6 +42,7 @@ export class CompanyService {
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly uploadService: UploadService,
   ) {}
 
   // ─── Helper ──────────────────────────────────────
@@ -78,6 +80,24 @@ export class CompanyService {
       company.profileComplete = true;
     }
 
+    return this.companyRepo.save(company);
+  }
+
+  async getLogoPresignedUrl(userId: string, extension: string, contentType: string) {
+    const company = await this.companyRepo.findOne({ where: { userId } });
+    if (!company) throw new NotFoundException('Company not found');
+    
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowed.includes(contentType)) throw new BadRequestException('Only JPG, PNG, WEBP files are allowed');
+
+    return this.uploadService.getPresignedUploadUrl('company-logos', extension, contentType);
+  }
+
+  async confirmLogoUpload(userId: string, key: string, publicUrl: string) {
+    const company = await this.companyRepo.findOne({ where: { userId } });
+    if (!company) throw new NotFoundException('Company not found');
+
+    company.logoS3Key = publicUrl;
     await this.companyRepo.save(company);
     return company;
   }

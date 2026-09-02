@@ -13,6 +13,8 @@ import {
   Loader2,
   CheckCircle2,
   Sparkles,
+  Upload,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -61,6 +63,14 @@ export default function CompanyOnboarding({ initialData, onComplete }: CompanyOn
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState("");
+  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  const showToast = (type: "success" | "error", msg: string) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const [form, setForm] = useState({
     name: initialData?.name || "",
@@ -146,6 +156,74 @@ export default function CompanyOnboarding({ initialData, onComplete }: CompanyOn
           {/* Step 0: Company Details */}
           {step === 0 && (
             <div className="space-y-4">
+              
+              {/* Logo Upload */}
+              <div>
+                <label className="text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
+                  <ImageIcon className="w-3.5 h-3.5 text-indigo-500" />
+                  Company Logo
+                </label>
+                <div className="flex items-center gap-4">
+                  {logoUrl ? (
+                    <div className="w-12 h-12 rounded-xl border overflow-hidden bg-gray-50 flex items-center justify-center relative group">
+                      <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                        <label className="cursor-pointer p-1">
+                          <Upload className="w-4 h-4 text-white" />
+                          <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setLogoUploading(true);
+                            try {
+                              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                              const presignedRes: any = await companyApi.getLogoPresignedUrl(file.name, file.type);
+                              const { presignedUrl, key, publicUrl } = presignedRes?.data || presignedRes;
+                              const s3Res = await fetch(presignedUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+                              if (!s3Res.ok) throw new Error("Upload failed");
+                              await companyApi.confirmLogoUpload(key, publicUrl);
+                              setLogoUrl(publicUrl);
+                              showToast("success", "Logo uploaded!");
+                            } catch {
+                              showToast("error", "Failed to upload logo");
+                            } finally {
+                              setLogoUploading(false);
+                            }
+                          }} />
+                        </label>
+                      </div>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-12 h-12 rounded-xl border-2 border-dashed border-indigo-200 hover:border-indigo-400 cursor-pointer bg-gray-50 transition-colors">
+                      {logoUploading ? <Loader2 className="w-4 h-4 animate-spin text-indigo-500" /> : <Upload className="w-4 h-4 text-indigo-500" />}
+                      <input type="file" accept="image/*" className="hidden" disabled={logoUploading} onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setLogoUploading(true);
+                        try {
+                          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                          const presignedRes: any = await companyApi.getLogoPresignedUrl(file.name, file.type);
+                          const { presignedUrl, key, publicUrl } = presignedRes?.data || presignedRes;
+                          const s3Res = await fetch(presignedUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+                          if (!s3Res.ok) throw new Error("Upload failed");
+                          await companyApi.confirmLogoUpload(key, publicUrl);
+                          setLogoUrl(publicUrl);
+                          showToast("success", "Logo uploaded!");
+                        } catch {
+                          showToast("error", "Failed to upload logo");
+                        } finally {
+                          setLogoUploading(false);
+                        }
+                      }} />
+                    </label>
+                  )}
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground">
+                      Upload your company logo (JPG, PNG). This will be shown to students.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <label className="text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1.5">
                   <Building2 className="w-3.5 h-3.5 text-indigo-500" />
@@ -344,6 +422,13 @@ export default function CompanyOnboarding({ initialData, onComplete }: CompanyOn
           )}
         </div>
       </div>
+      
+      {toast && (
+        <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2 z-[999] animate-in slide-in-from-bottom-2 ${toast.type === "success" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+          {toast.type === "success" ? <CheckCircle2 className="w-4 h-4" /> : <Loader2 className="w-4 h-4" />}
+          {toast.msg}
+        </div>
+      )}
     </div>
   );
 }
