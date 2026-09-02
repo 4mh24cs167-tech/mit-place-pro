@@ -1,4 +1,5 @@
 import { Controller, Get, Patch, Post, Delete, Body, Param, Query, Res, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StudentService } from './student.service';
 import { UploadService } from '../upload/upload.service';
@@ -60,6 +61,7 @@ export class StudentController {
   }
 
   // ─── Jobs ───────────────────────────────────────
+  @UseInterceptors(CacheInterceptor)
   @Get('jobs')
   async getEligibleJobs(@CurrentUser('id') userId: string) {
     const data = await this.studentService.getEligibleJobs(userId);
@@ -266,19 +268,28 @@ export class StudentController {
   }
 
   /* ─── Resume Upload / Download ─────────────────── */
-  @Post('resume/upload')
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 2 * 1024 * 1024 } }))
-  async uploadResume(
+  @Post('resume/presigned-url')
+  async getResumePresignedUrl(
     @CurrentUser('id') userId: string,
-    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: { fileName: string; fileType: string },
   ) {
-    return this.studentService.uploadResume(userId, file);
+    if (!dto.fileName || !dto.fileType) throw new BadRequestException('Filename and type required');
+    const ext = dto.fileName.split('.').pop() || 'pdf';
+    return this.studentService.getResumePresignedUrl(userId, ext, dto.fileType);
+  }
+
+  @Post('resume/confirm-upload')
+  async confirmResumeUpload(
+    @CurrentUser('id') userId: string,
+    @Body() dto: { key: string; publicUrl: string; fileName: string },
+  ) {
+    return this.studentService.confirmResumeUpload(userId, dto.key, dto.publicUrl, dto.fileName);
   }
 
   @Get('resume/download')
   async downloadResume(
     @CurrentUser('id') userId: string,
-    @Res() res: any,
+    @Res() res: Response,
   ) {
     const doc = await this.studentService.getResume(userId);
     res.set({ 'Content-Type': doc.type, 'Content-Disposition': `inline; filename="${doc.name}"` });

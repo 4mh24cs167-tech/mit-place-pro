@@ -1,6 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -73,5 +74,29 @@ export class UploadService {
   getPublicUrl(key: string): string {
     if (!key) return '';
     return `https://${this.bucket}.s3.${this.region}.amazonaws.com/${key}`;
+  }
+
+  async getPresignedUploadUrl(
+    folder: string,
+    extension: string,
+    contentType: string,
+  ): Promise<{ presignedUrl: string; key: string; publicUrl: string }> {
+    if (!this.bucket) {
+      throw new BadRequestException('S3 bucket is not configured. Contact administrator.');
+    }
+
+    const key = `${folder}/${randomUUID()}.${extension.replace('.', '')}`;
+    
+    const command = new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    // URL expires in 5 minutes
+    const presignedUrl = await getSignedUrl(this.s3, command, { expiresIn: 300 });
+    const publicUrl = this.getPublicUrl(key);
+
+    return { presignedUrl, key, publicUrl };
   }
 }

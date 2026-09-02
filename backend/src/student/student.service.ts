@@ -964,22 +964,29 @@ export class StudentService {
   /* ═══════════════════════════════════════════════════ */
   /*  Resume Upload / Download                          */
   /* ═══════════════════════════════════════════════════ */
-  async uploadResume(userId: string, file: Express.Multer.File) {
-    if (!file) throw new BadRequestException('No file provided');
+  async getResumePresignedUrl(userId: string, extension: string, contentType: string) {
+    const student = await this.studentRepo.findOne({ where: { user: { id: userId } } });
+    if (!student) throw new NotFoundException('Student not found');
+    
     const allowed = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    if (!allowed.includes(file.mimetype)) throw new BadRequestException('Only PDF, DOC, DOCX files are allowed');
-    if (file.size > 2 * 1024 * 1024) throw new BadRequestException('File must be under 2MB');
+    if (!allowed.includes(contentType)) throw new BadRequestException('Only PDF, DOC, DOCX files are allowed');
 
+    return this.uploadService.getPresignedUploadUrl('resumes', extension, contentType);
+  }
+
+  async confirmResumeUpload(userId: string, key: string, publicUrl: string, fileName: string) {
     const student = await this.studentRepo.findOne({ where: { user: { id: userId } } });
     if (!student) throw new NotFoundException('Student not found');
 
-    student.resumeFileData = file.buffer;
-    student.resumeFileName = file.originalname;
-    student.resumeFileType = file.mimetype;
-    student.resumeLink = `uploaded:${file.originalname}`;
+    // We no longer save raw Buffer data, we just save the S3 link!
+    student.resumeLink = publicUrl;
+    student.resumeFileName = fileName;
+    
+    // Clear out old bytea data to save DB space
+    student.resumeFileData = null as any; 
+    
     await this.studentRepo.save(student);
-
-    return { message: 'Resume uploaded successfully', fileName: file.originalname };
+    return { success: true, message: 'Resume uploaded to S3 successfully', resumeLink: publicUrl };
   }
 
   async getResume(userId: string) {

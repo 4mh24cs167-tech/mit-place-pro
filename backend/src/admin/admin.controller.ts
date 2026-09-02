@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, Query, UseInterceptors, UploadedFile, Res } from '@nestjs/common';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
 import { AdminService } from './admin.service';
@@ -22,6 +23,7 @@ export class AdminController {
   ) {}
 
   // ─── Dashboard ──────────────────────────────────
+  @UseInterceptors(CacheInterceptor)
   @Get('dashboard')
   async getDashboard() {
     const stats = await this.adminService.getDashboardStats();
