@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsArray, IsObject, Min, Max, IsDateString, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsArray, IsObject, Min, Max, IsDateString, MaxLength, IsBoolean } from 'class-validator';
 
 export class UpdateProfileDto {
   @IsOptional()
@@ -157,6 +157,7 @@ export class UpdateProfileDto {
 
   // ─── Profile Completion Flag ──────────────────
   @IsOptional()
+  @IsBoolean()
   profileComplete?: boolean;
 
 }
