@@ -9,15 +9,15 @@ export class OtpRecord {
   @Column({ type: 'varchar', length: 255 })
   email: string;
 
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: 'varchar', length: 255, name: 'otp_hash' })
   otpHash: string;
 
-  @Column({ type: 'timestamptz' })
+  @Column({ type: 'timestamptz', name: 'expires_at' })
   expiresAt: Date;
 
-  @Column({ type: 'smallint', default: 0 })
+  @Column({ type: 'smallint', default: 0, name: 'failed_attempts' })
   failedAttempts: number;
 
-  @CreateDateColumn({ type: 'timestamptz' })
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt: Date;
 }
