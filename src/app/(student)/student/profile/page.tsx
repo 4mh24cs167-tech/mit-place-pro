@@ -315,7 +315,7 @@ export default function StudentProfilePage() {
         familyIncome: form.familyIncome ? parseInt(form.familyIncome) : undefined,
         category: form.category || undefined,
         driveLink: form.driveLink || undefined,
-        resumeLink: form.resumeLink || undefined,
+        resumeLink: (form.resumeLink?.startsWith("uploaded:") || form.resumeLink?.includes("amazonaws.com")) ? undefined : (form.resumeLink || undefined),
         skills,
         certifications,
         aboutMe: form.aboutMe || undefined,
@@ -776,21 +776,21 @@ export default function StudentProfilePage() {
                                 const s3Res = await fetch(presignedUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
                                 if (!s3Res.ok) throw new Error("Upload failed");
                                 await studentApi.confirmResumeUpload(key, publicUrl, file.name);
-                                setField("resumeLink", publicUrl);
+                                setField("resumeLink", `uploaded:${file.name}`);
                                 showToast("success", `Resume "${file.name}" uploaded!`);
                               } catch { showToast("error", "Failed to upload resume. Try using a Drive link instead."); }
                             }} />
                           </label>
-                          {form.resumeLink?.startsWith("uploaded:") && (
+                          {(form.resumeLink?.startsWith("uploaded:") || form.resumeLink?.includes("amazonaws.com")) && (
                             <p className="text-xs text-emerald-600 font-medium mt-2 flex items-center gap-1.5">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Uploaded: {form.resumeLink.replace("uploaded:", "")}
+                              <CheckCircle2 className="w-3.5 h-3.5" /> {form.resumeLink.startsWith("uploaded:") ? `Uploaded: ${form.resumeLink.replace("uploaded:", "")}` : "Resume uploaded to cloud storage"}
                             </p>
                           )}
                         </div>
                         {/* Or paste link */}
                         <div className="pt-2 border-t border-border/30">
                           <p className="text-[10px] text-muted-foreground mb-1.5">Or paste a link instead:</p>
-                          <InlineInput label="Resume Link (Google Drive / URL)" value={form.resumeLink?.startsWith("uploaded:") ? "" : form.resumeLink} onChange={(v) => setField("resumeLink", v)}
+                          <InlineInput label="Resume Link (Google Drive / URL)" value={(form.resumeLink?.startsWith("uploaded:") || form.resumeLink?.includes("amazonaws.com")) ? "" : form.resumeLink} onChange={(v) => setField("resumeLink", v)}
                             editing={editing} placeholder="https://drive.google.com/..." />
                         </div>
                       </div>
@@ -838,7 +838,7 @@ export default function StudentProfilePage() {
                                 const s3Res = await fetch(presignedUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
                                 if (!s3Res.ok) throw new Error("Upload failed");
                                 await studentApi.confirmResumeUpload(key, publicUrl, fileName);
-                                setField("resumeLink", publicUrl);
+                                setField("resumeLink", `uploaded:${fileName}`);
                                 showToast("success", "Resume generated & uploaded successfully!");
                               } catch {
                                 showToast("error", "Failed to generate resume");
