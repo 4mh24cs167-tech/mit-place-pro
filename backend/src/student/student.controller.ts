@@ -1,5 +1,6 @@
 import { Controller, Get, Patch, Post, Delete, Body, Param, Query, Res, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { CacheInterceptor } from '@nestjs/cache-manager';
+import type { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StudentService } from './student.service';
 import { UploadService } from '../upload/upload.service';

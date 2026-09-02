@@ -15,6 +15,7 @@ import { DriveCompanyJob } from '../entities/drive-company-job.entity';
 import { DriveAttendance } from '../entities/drive-attendance.entity';
 import { Company } from '../entities/company.entity';
 import { UpdateProfileDto, ApplyJobDto, CreateEducationDto, UpdateEducationDto } from './dto/student.dto';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class StudentService {
@@ -33,6 +34,7 @@ export class StudentService {
     @InjectRepository(StudentEducation) private readonly educationRepo: Repository<StudentEducation>,
     @InjectRepository(DriveCompanyJob) private readonly dcjRepo: Repository<DriveCompanyJob>,
     @InjectRepository(DriveAttendance) private readonly attendanceRepo: Repository<DriveAttendance>,
+    private readonly uploadService: UploadService,
   ) {}
 
   // ─── Profile ────────────────────────────────────
