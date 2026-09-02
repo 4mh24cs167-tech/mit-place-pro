@@ -99,8 +99,9 @@ export class AuthService {
 
   // ── Forgot Password: Send OTP ─────────────────────────────
   async forgotPassword(dto: ForgotPasswordDto) {
+    const email = dto.email.toLowerCase();
     const user = await this.userRepo.findOne({
-      where: { email: dto.email.toLowerCase(), isActive: true },
+      where: { email, isActive: true },
     });
 
     // Always return success to prevent email enumeration

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
 
 export default function GlobalError({
@@ -27,22 +26,20 @@ export default function GlobalError({
           We apologize for the inconvenience. An unexpected error occurred.
         </p>
         <div className="space-y-4">
-          <Button
+          <button
             onClick={() => reset()}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
           >
             Try again
-          </Button>
-          <Button
+          </button>
+          <button
             onClick={() => window.location.href = '/'}
-            variant="outline"
-            className="w-full"
+            className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-md transition-colors"
           >
             Go back home
-          </Button>
+          </button>
         </div>
       </div>
     </div>
   );
 }
-

@@ -23,10 +23,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     // Log the error natively
     if (status >= 500) {
       this.logger.error(
-        \\ \ - \\,
+        `${request.method} ${request.url} - ${exception instanceof Error ? exception.stack : exception}`,
       );
     } else {
-      this.logger.warn(\\ \ - Status: \ - \\);
+      this.logger.warn(`${request.method} ${request.url} - Status: ${status} - ${JSON.stringify(message)}`);
     }
 
     response.status(status).json({
