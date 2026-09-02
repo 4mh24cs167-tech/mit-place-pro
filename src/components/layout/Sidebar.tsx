@@ -52,6 +52,7 @@ const navConfigs = {
   ],
   company: [
     { label: "Dashboard", href: "/company/dashboard", icon: Home },
+    { label: "Posted Jobs", href: "/company/jobs", icon: Briefcase },
     { label: "Drives", href: "/company/drives", icon: CalendarClock },
     { label: "Candidates", href: "/company/candidates", icon: Users },
     { label: "Rounds", href: "/company/rounds", icon: ClipboardList },
