@@ -46,6 +46,7 @@ interface JobPosting {
   stipendAmount?: number | null;
   joiningDate?: string | null;
   bondYears?: number | null;
+  bondAmountInr?: number | null;
   createdAt?: string;
   alreadyApplied: boolean;
   applicationStatus?: string | null;
@@ -463,7 +464,10 @@ export default function StudentJobsPage() {
                           {job.bondYears && (
                             <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
                               <p className="text-[10px] text-muted-foreground uppercase font-semibold">Bond</p>
-                              <p className="text-sm font-bold text-foreground mt-0.5">{job.bondYears} year{job.bondYears > 1 ? "s" : ""}</p>
+                              <p className="text-sm font-bold text-foreground mt-0.5">
+                                {job.bondYears} year{job.bondYears > 1 ? "s" : ""}
+                                {job.bondAmountInr ? ` (₹${Number(job.bondAmountInr).toLocaleString("en-IN")})` : ""}
+                              </p>
                             </div>
                           )}
                           {job.joiningDate && (

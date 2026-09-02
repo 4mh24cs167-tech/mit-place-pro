@@ -43,7 +43,7 @@ export default function CompanyDashboardPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [showCreateJob, setShowCreateJob] = useState(false);
-  const [jobForm, setJobForm] = useState({ title: "", description: "", location: "", ctcMinLpa: "", ctcMaxLpa: "", minCgpa: "", openPositions: "1", eligibleDepartments: "" });
+  const [jobForm, setJobForm] = useState({ title: "", description: "", location: "", ctcMinLpa: "", ctcMaxLpa: "", minCgpa: "", openPositions: "1", eligibleDepartments: "", jobType: "placement", stipendAmount: "", bondYears: "", bondAmountInr: "" });
   const [jobSaving, setJobSaving] = useState(false);
   const [jobError, setJobError] = useState("");
   const [jobSuccess, setJobSuccess] = useState("");
@@ -469,6 +469,40 @@ export default function CompanyDashboardPage() {
                   <input type="text" value={jobForm.eligibleDepartments} onChange={(e) => setJobForm(f => ({ ...f, eligibleDepartments: e.target.value }))} placeholder="CSE, ISE, ECE" className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                    <Briefcase className="w-3.5 h-3.5 text-indigo-500" /> Nature of Recruitment
+                  </label>
+                  <select value={jobForm.jobType} onChange={(e) => setJobForm(f => ({ ...f, jobType: e.target.value }))} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-white">
+                    <option value="placement">Full Time (Placement)</option>
+                    <option value="internship">Internship</option>
+                    <option value="internship_plus_placement">Internship + Placement</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                    <DollarSign className="w-3.5 h-3.5 text-indigo-500" /> Stipend (if Intern)
+                  </label>
+                  <input type="number" value={jobForm.stipendAmount} onChange={(e) => setJobForm(f => ({ ...f, stipendAmount: e.target.value }))} placeholder="e.g. 20000" className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-indigo-500" /> Bond / Service (Years)
+                  </label>
+                  <input type="number" step="0.5" value={jobForm.bondYears} onChange={(e) => setJobForm(f => ({ ...f, bondYears: e.target.value }))} placeholder="e.g. 2" className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
+                    <DollarSign className="w-3.5 h-3.5 text-indigo-500" /> Bond Penalty (INR)
+                  </label>
+                  <input type="number" value={jobForm.bondAmountInr} onChange={(e) => setJobForm(f => ({ ...f, bondAmountInr: e.target.value }))} placeholder="e.g. 100000" className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+                </div>
+              </div>
             </div>
 
             <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-end gap-3">
@@ -491,14 +525,18 @@ export default function CompanyDashboardPage() {
                       ctcMaxLpa: jobForm.ctcMaxLpa ? Number(jobForm.ctcMaxLpa) : undefined,
                       minCgpa: jobForm.minCgpa ? Number(jobForm.minCgpa) : undefined,
                       allowedDepartments: jobForm.eligibleDepartments ? jobForm.eligibleDepartments.split(",").map(d => d.trim()).filter(Boolean) : undefined,
+                      jobType: jobForm.jobType,
+                      stipendAmount: jobForm.stipendAmount ? Number(jobForm.stipendAmount) : undefined,
+                      bondYears: jobForm.bondYears ? Number(jobForm.bondYears) : undefined,
+                      bondAmountInr: jobForm.bondAmountInr ? Number(jobForm.bondAmountInr) : undefined,
                     };
                     await companyApi.createJob(payload);
                     setJobSuccess("Job posted successfully!");
                     setTimeout(() => {
                       setShowCreateJob(false);
                       setJobSuccess("");
-                      setJobForm({ title: "", description: "", location: "", ctcMinLpa: "", ctcMaxLpa: "", minCgpa: "", openPositions: "1", eligibleDepartments: "" });
-                      fetchData();
+                      setJobForm({ title: "", description: "", location: "", ctcMinLpa: "", ctcMaxLpa: "", minCgpa: "", openPositions: "1", eligibleDepartments: "", jobType: "placement", stipendAmount: "", bondYears: "", bondAmountInr: "" });
+                      queryClient.invalidateQueries({ queryKey: ["company", "jobs"] });
                     }, 1200);
                   } catch {
                     setJobError("Failed to create job. Please try again.");
