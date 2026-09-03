@@ -24,6 +24,8 @@ import {
   Drive,
   DriveRegistration,
   DriveSlot,
+  DriveCompanyJob,
+  DriveAttendance,
 } from './entities';
 import { RoundMeeting, MeetingGroup, MeetingAssignment } from './entities';
 import { EmailLog } from './entities';
@@ -52,6 +54,8 @@ const entities = [
   Drive,
   DriveRegistration,
   DriveSlot,
+  DriveCompanyJob,
+  DriveAttendance,
   RoundMeeting,
   MeetingGroup,
   MeetingAssignment,
