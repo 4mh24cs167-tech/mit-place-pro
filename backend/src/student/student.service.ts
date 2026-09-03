@@ -407,10 +407,14 @@ export class StudentService {
     const multiDriveIds = multiDrives.map(d => d.id);
     let multiDcjMap = new Map<string, Set<string>>(); // driveId -> Set of companyIds
     if (multiDriveIds.length > 0) {
-      const dcjs = await this.dcjRepo.find({ where: { driveId: In(multiDriveIds) } });
-      for (const dcj of dcjs) {
-        if (!multiDcjMap.has(dcj.driveId)) multiDcjMap.set(dcj.driveId, new Set());
-        multiDcjMap.get(dcj.driveId)!.add(dcj.companyId);
+      try {
+        const dcjs = await this.dcjRepo.find({ where: { driveId: In(multiDriveIds) } });
+        for (const dcj of dcjs) {
+          if (!multiDcjMap.has(dcj.driveId)) multiDcjMap.set(dcj.driveId, new Set());
+          multiDcjMap.get(dcj.driveId)!.add(dcj.companyId);
+        }
+      } catch {
+        // Table may not exist yet
       }
     }
 
@@ -644,11 +648,21 @@ export class StudentService {
     if (!registration) throw new BadRequestException('You must join this drive first');
 
     // Verify this job is part of this drive
-    const dcj = await this.dcjRepo.findOne({
-      where: { driveId, jobId },
-      relations: ['company'],
-    });
-    if (!dcj) throw new NotFoundException('This job is not part of this drive');
+    let dcj: DriveCompanyJob | null = null;
+    try {
+      dcj = await this.dcjRepo.findOne({
+        where: { driveId, jobId },
+        relations: ['company'],
+      });
+    } catch {
+      // Table may not exist yet
+    }
+    if (!dcj) {
+      // Fallback: check if job is in drive.jobIds
+      const drive = await this.driveRepo.findOne({ where: { id: driveId } });
+      const driveJobIds = drive?.jobIds || (drive?.jobId ? [drive.jobId] : []);
+      if (!driveJobIds.includes(jobId)) throw new NotFoundException('This job is not part of this drive');
+    }
 
     // Check if already attending
     const existing = await this.attendanceRepo.findOne({
@@ -661,13 +675,13 @@ export class StudentService {
       driveId,
       studentId: student.id,
       jobId,
-      companyId: dcj.companyId,
+      companyId: dcj?.companyId || '',
     });
 
     return {
       id: attendance.id,
       message: 'You are now attending this company session.',
-      companyName: dcj.company?.name || 'Company',
+      companyName: dcj?.company?.name || 'Company',
     };
   }
 
@@ -685,16 +699,26 @@ export class StudentService {
     if (!drive) throw new NotFoundException('Drive not found');
 
     // Get all company+job entries for this drive
-    const dcjs = await this.dcjRepo.find({
-      where: { driveId },
-      relations: ['company', 'job'],
-    });
+    let dcjs: DriveCompanyJob[] = [];
+    try {
+      dcjs = await this.dcjRepo.find({
+        where: { driveId },
+        relations: ['company', 'job'],
+      });
+    } catch {
+      // Table may not exist yet
+    }
 
     // Get student's existing attendances for this drive
-    const myAttendances = await this.attendanceRepo.find({
-      where: { driveId, studentId: student.id },
-    });
-    const attendedJobIds = new Set(myAttendances.map(a => a.jobId));
+    let attendedJobIds = new Set<string>();
+    try {
+      const myAttendances = await this.attendanceRepo.find({
+        where: { driveId, studentId: student.id },
+      });
+      attendedJobIds = new Set(myAttendances.map(a => a.jobId));
+    } catch {
+      // Table may not exist yet
+    }
 
     // Group by company
     const companyMap = new Map<string, { companyId: string; companyName: string; companyWebsite: string | null; companyDescription: string | null; companyLogo: string | null; jobs: Array<{ id: string; title: string; description: string; ctcMinLpa: number | null; ctcMaxLpa: number | null; workMode: string | null; workLocation: string | null; requiredSkills: string[]; allowedDepartments: string[]; totalVacancies: number; jobType: string; attending: boolean }> }>();
