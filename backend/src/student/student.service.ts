@@ -653,42 +653,67 @@ export class StudentService {
     });
     if (!registration) throw new BadRequestException('You must join this drive first');
 
-    // Verify this job is part of this drive
-    let dcj: DriveCompanyJob | null = null;
+    // Verify this job is part of this drive and get companyId
+    let companyId = '';
+    let companyName = 'Company';
+
+    // Try DCJ first
     try {
-      dcj = await this.dcjRepo.findOne({
+      const dcj = await this.dcjRepo.findOne({
         where: { driveId, jobId },
         relations: ['company'],
       });
+      if (dcj) {
+        companyId = dcj.companyId;
+        companyName = dcj.company?.name || 'Company';
+      }
     } catch {
       // Table may not exist yet
     }
-    if (!dcj) {
-      // Fallback: check if job is in drive.jobIds
+
+    // Fallback: look up job directly
+    if (!companyId) {
+      const job = await this.jobRepo.findOne({ where: { id: jobId }, relations: ['company'] });
+      if (!job) throw new NotFoundException('Job not found');
+
+      // Verify job is in this drive
       const drive = await this.driveRepo.findOne({ where: { id: driveId } });
       const driveJobIds = drive?.jobIds || (drive?.jobId ? [drive.jobId] : []);
       if (!driveJobIds.includes(jobId)) throw new NotFoundException('This job is not part of this drive');
+
+      companyId = job.companyId;
+      companyName = job.company?.name || 'Company';
     }
 
     // Check if already attending
-    const existing = await this.attendanceRepo.findOne({
-      where: { driveId, studentId: student.id, jobId },
-    });
-    if (existing) throw new ConflictException('You are already attending this job');
+    try {
+      const existing = await this.attendanceRepo.findOne({
+        where: { driveId, studentId: student.id, jobId },
+      });
+      if (existing) throw new ConflictException('You are already attending this job');
+    } catch (err) {
+      if (err instanceof ConflictException) throw err;
+      // Table may not exist yet — continue to create
+    }
 
     // Create attendance record
-    const attendance = await this.attendanceRepo.save({
-      driveId,
-      studentId: student.id,
-      jobId,
-      companyId: dcj?.companyId || '',
-    });
+    try {
+      const attendance = await this.attendanceRepo.save({
+        driveId,
+        studentId: student.id,
+        jobId,
+        companyId,
+      });
 
-    return {
-      id: attendance.id,
-      message: 'You are now attending this company session.',
-      companyName: dcj?.company?.name || 'Company',
-    };
+      return {
+        id: attendance.id,
+        message: 'You are now attending this company session.',
+        companyName,
+      };
+    } catch (err) {
+      if (err instanceof ConflictException) throw err;
+      throw new BadRequestException('Failed to record attendance: ' + (err instanceof Error ? err.message : String(err)));
+    }
   }
 
   async getDriveCompanies(userId: string, driveId: string) {
