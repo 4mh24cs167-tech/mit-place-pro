@@ -430,7 +430,13 @@ export class StudentService {
       let companyName = matchedJobs[0]?.company?.name || drive.job?.company?.name || 'Unknown';
       if (drive.type === 'multiple') {
         const uniqueCIds = multiDcjMap.get(drive.id) || new Set();
-        companyCount = uniqueCIds.size || 1;
+        if (uniqueCIds.size > 0) {
+          companyCount = uniqueCIds.size;
+        } else {
+          // Fallback: count unique companies from matched jobs
+          const jobCompanyIds = new Set(matchedJobs.map(j => j.companyId).filter(Boolean));
+          companyCount = jobCompanyIds.size || 1;
+        }
         companyName = `${companyCount} Companies`;
       }
 
@@ -707,6 +713,38 @@ export class StudentService {
       });
     } catch {
       // Table may not exist yet
+    }
+
+    // Fallback: if no DCJ records, build from drive.jobIds
+    if (dcjs.length === 0) {
+      const jobIds = drive.jobIds && drive.jobIds.length > 0 ? drive.jobIds : (drive.jobId ? [drive.jobId] : []);
+      if (jobIds.length > 0) {
+        const jobs = await this.jobRepo.find({ where: { id: In(jobIds) }, relations: ['company'] });
+        // Create synthetic DCJ-like entries and also backfill real DCJ records
+        for (const job of jobs) {
+          dcjs.push({
+            id: '',
+            driveId,
+            companyId: job.companyId,
+            jobId: job.id,
+            company: job.company,
+            job: job,
+            drive: drive,
+            createdAt: new Date(),
+          } as DriveCompanyJob);
+
+          // Auto-backfill DCJ record
+          try {
+            await this.dcjRepo.save({
+              driveId,
+              companyId: job.companyId,
+              jobId: job.id,
+            });
+          } catch {
+            // Ignore duplicates or table issues
+          }
+        }
+      }
     }
 
     // Get student's existing attendances for this drive

@@ -339,6 +339,12 @@ export class AdminController {
     return { success: true, data };
   }
 
+  @Post('drives/backfill-dcj')
+  async backfillDCJ() {
+    const data = await this.driveService.backfillDCJ();
+    return { success: true, data };
+  }
+
   @Post('drives/:id/reject')
   async rejectDriveStudents(
     @Param('id') id: string,

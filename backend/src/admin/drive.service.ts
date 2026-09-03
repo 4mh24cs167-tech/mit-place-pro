@@ -645,4 +645,36 @@ export class DriveService {
       this.logger.error(`Error syncing drive registrations to applications for drive ${driveId}:`, err);
     }
   }
+
+  // ─── Backfill DCJ records for existing multi-company drives ──
+  async backfillDCJ() {
+    const multiDrives = await this.driveRepo.find({ where: { type: 'multiple' } });
+    let totalCreated = 0;
+
+    for (const drive of multiDrives) {
+      const jobIds = drive.jobIds && drive.jobIds.length > 0 ? drive.jobIds : (drive.jobId ? [drive.jobId] : []);
+      if (jobIds.length === 0) continue;
+
+      // Check if DCJ records already exist for this drive
+      const existingCount = await this.dcjRepo.count({ where: { driveId: drive.id } });
+      if (existingCount > 0) continue;
+
+      // Fetch jobs with their companies
+      const jobs = await this.jobRepo.find({ where: { id: In(jobIds) }, relations: ['company'] });
+
+      const dcjEntries = jobs.map(job => ({
+        driveId: drive.id,
+        companyId: job.companyId,
+        jobId: job.id,
+      }));
+
+      if (dcjEntries.length > 0) {
+        await this.dcjRepo.save(dcjEntries);
+        totalCreated += dcjEntries.length;
+        this.logger.log(`Backfilled ${dcjEntries.length} DCJ records for drive "${drive.title}" (${drive.id})`);
+      }
+    }
+
+    return { backfilledDrives: multiDrives.length, totalDCJCreated: totalCreated };
+  }
 }
