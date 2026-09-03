@@ -647,11 +647,25 @@ export class StudentService {
     const student = await this.studentRepo.findOne({ where: { userId } });
     if (!student) throw new NotFoundException('Student profile not found');
 
-    // Verify drive exists and student is registered+approved
+    // Verify drive exists and student is registered
     const registration = await this.driveRegRepo.findOne({
-      where: { driveId, studentId: student.id, status: 'approved' },
+      where: { driveId, studentId: student.id },
     });
     if (!registration) throw new BadRequestException('You must join this drive first');
+
+    // Auto-approve for multi-company drives if still pending
+    if (registration.status === 'pending') {
+      const drive = await this.driveRepo.findOne({ where: { id: driveId } });
+      if (drive?.type === 'multiple') {
+        registration.status = 'approved';
+        await this.driveRegRepo.save(registration);
+      } else {
+        throw new BadRequestException('Your registration is still pending approval');
+      }
+    }
+    if (registration.status !== 'approved') {
+      throw new BadRequestException('Your registration has not been approved');
+    }
 
     // Verify this job is part of this drive and get companyId
     let companyId = '';
