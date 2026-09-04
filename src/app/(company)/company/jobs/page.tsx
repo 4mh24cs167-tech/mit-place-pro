@@ -76,12 +76,12 @@ export default function CompanyJobsPage() {
     minQualification: "UG",
     minQualificationScore: "",
     openPositions: "1",
-    eligibleDepartments: "",
     jobType: "placement",
     stipendAmount: "",
     bondYears: "",
     bondAmountInr: "",
   });
+  const [jdFile, setJdFile] = useState<File | null>(null);
 
   // Fetch Jobs
   const {
@@ -773,20 +773,17 @@ export default function CompanyJobsPage() {
 
               <div>
                 <label className="text-xs font-semibold text-foreground mb-1 flex items-center gap-1.5">
-                  <Users className="w-3.5 h-3.5 text-indigo-500" /> Departments
+                  <FileText className="w-3.5 h-3.5 text-indigo-500" /> Job Description PDF
                 </label>
                 <input
-                  type="text"
-                  value={jobForm.eligibleDepartments}
-                  onChange={(e) =>
-                    setJobForm((f) => ({
-                      ...f,
-                      eligibleDepartments: e.target.value,
-                    }))
-                  }
-                  placeholder="e.g. CSE, ISE, ECE, AI&ML"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-background text-foreground"
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => setJdFile(e.target.files?.[0] || null)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-border text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 bg-background text-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-1 file:text-xs file:font-semibold file:text-indigo-700"
                 />
+                {jdFile && (
+                  <p className="text-[10px] text-emerald-600 mt-1">✓ {jdFile.name}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -917,12 +914,6 @@ export default function CompanyJobsPage() {
                       minCgpa,
                       minTenthPercent,
                       minTwelfthPercent,
-                      allowedDepartments: jobForm.eligibleDepartments
-                        ? jobForm.eligibleDepartments
-                            .split(",")
-                            .map((d) => d.trim())
-                            .filter(Boolean)
-                        : undefined,
                       jobType: jobForm.jobType,
                       stipendAmount: jobForm.stipendAmount
                         ? Number(jobForm.stipendAmount)
@@ -935,7 +926,28 @@ export default function CompanyJobsPage() {
                         : undefined,
                     };
 
-                    await companyApi.createJob(payload);
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const jobRes = await companyApi.createJob(payload) as any;
+                    const newJobId = jobRes?.data?.id;
+
+                    // Upload JD PDF if provided
+                    if (jdFile && newJobId) {
+                      try {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const presignedRes = await companyApi.getJdPresignedUrl(newJobId, jdFile.name, jdFile.type) as any;
+                        const { presignedUrl, key, publicUrl } = presignedRes?.data || {};
+                        if (presignedUrl) {
+                          await fetch(presignedUrl, {
+                            method: 'PUT',
+                            body: jdFile,
+                            headers: { 'Content-Type': jdFile.type },
+                          });
+                          await companyApi.confirmJdUpload(newJobId, key, publicUrl);
+                        }
+                      } catch {
+                        // JD upload failed but job was created
+                      }
+                    }
                     setJobSuccess("Job posted successfully!");
                     setTimeout(() => {
                       setShowCreateJob(false);
@@ -949,12 +961,12 @@ export default function CompanyJobsPage() {
                         minQualification: "UG",
                         minQualificationScore: "",
                         openPositions: "1",
-                        eligibleDepartments: "",
                         jobType: "placement",
                         stipendAmount: "",
                         bondYears: "",
                         bondAmountInr: "",
                       });
+                      setJdFile(null);
                       queryClient.invalidateQueries({
                         queryKey: ["company", "jobs"],
                       });

@@ -798,7 +798,7 @@ export class StudentService {
     }
 
     // Group by company
-    const companyMap = new Map<string, { companyId: string; companyName: string; companyWebsite: string | null; companyDescription: string | null; companyLogo: string | null; jobs: Array<{ id: string; title: string; description: string; ctcMinLpa: number | null; ctcMaxLpa: number | null; workMode: string | null; workLocation: string | null; requiredSkills: string[]; allowedDepartments: string[]; totalVacancies: number; jobType: string; attending: boolean }> }>();
+    const companyMap = new Map<string, { companyId: string; companyName: string; companyWebsite: string | null; companyDescription: string | null; companyLogo: string | null; jobs: Array<{ id: string; title: string; description: string; ctcMinLpa: number | null; ctcMaxLpa: number | null; workMode: string | null; workLocation: string | null; requiredSkills: string[]; allowedDepartments: string[]; totalVacancies: number; jobType: string; attending: boolean; minCgpa: number; minTenthPercent: number; minTwelfthPercent: number; maxBacklogs: number; jdFileUrl: string | null }> }>();
 
     for (const dcj of dcjs) {
       if (!companyMap.has(dcj.companyId)) {
@@ -827,6 +827,11 @@ export class StudentService {
           totalVacancies: job.totalVacancies,
           jobType: job.jobType || 'placement',
           attending: attendedJobIds.has(job.id),
+          minCgpa: job.minCgpa || 0,
+          minTenthPercent: job.minTenthPercent || 0,
+          minTwelfthPercent: job.minTwelfthPercent || 0,
+          maxBacklogs: job.maxBacklogs ?? 0,
+          jdFileUrl: job.jdFileUrl || null,
         });
       }
     }

@@ -5,7 +5,7 @@ import { studentApi } from "@/lib/api";
 import {
   ArrowLeft, Building2, Briefcase, Loader2, CheckCircle2,
   AlertCircle, MapPin, IndianRupee, Users, ChevronDown, ChevronUp,
-  CalendarDays, X, Sparkles,
+  CalendarDays, X, Sparkles, GraduationCap, FileText,
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 
@@ -22,6 +22,11 @@ interface JobDetail {
   totalVacancies: number;
   jobType: string;
   attending: boolean;
+  minCgpa?: number;
+  minTenthPercent?: number;
+  minTwelfthPercent?: number;
+  maxBacklogs?: number;
+  jdFileUrl?: string | null;
 }
 
 interface CompanyEntry {
@@ -288,6 +293,50 @@ export default function DriveCompaniesView({ driveId, onBack }: Props) {
                                     </span>
                                   ))}
                                 </div>
+                              )}
+
+                              {/* Minimum Qualifications */}
+                              {((job.minCgpa && job.minCgpa > 0) || (job.minTenthPercent && job.minTenthPercent > 0) || (job.minTwelfthPercent && job.minTwelfthPercent > 0) || (job.maxBacklogs !== undefined && job.maxBacklogs >= 0)) && (
+                                <div className="mt-3 p-2.5 bg-amber-50/50 border border-amber-100 rounded-lg">
+                                  <p className="text-[10px] font-semibold text-amber-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                                    <GraduationCap className="w-3 h-3" /> Minimum Qualifications
+                                  </p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {job.minCgpa !== undefined && job.minCgpa > 0 && (
+                                      <span className="px-2 py-0.5 bg-white border border-amber-200 rounded text-[10px] font-medium text-amber-800">
+                                        CGPA ≥ {job.minCgpa}
+                                      </span>
+                                    )}
+                                    {job.minTenthPercent !== undefined && job.minTenthPercent > 0 && (
+                                      <span className="px-2 py-0.5 bg-white border border-amber-200 rounded text-[10px] font-medium text-amber-800">
+                                        10th ≥ {job.minTenthPercent}%
+                                      </span>
+                                    )}
+                                    {job.minTwelfthPercent !== undefined && job.minTwelfthPercent > 0 && (
+                                      <span className="px-2 py-0.5 bg-white border border-amber-200 rounded text-[10px] font-medium text-amber-800">
+                                        12th ≥ {job.minTwelfthPercent}%
+                                      </span>
+                                    )}
+                                    {job.maxBacklogs !== undefined && job.maxBacklogs >= 0 && (
+                                      <span className="px-2 py-0.5 bg-white border border-amber-200 rounded text-[10px] font-medium text-amber-800">
+                                        Max Backlogs: {job.maxBacklogs}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* JD PDF Link */}
+                              {job.jdFileUrl && (
+                                <a
+                                  href={job.jdFileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 border border-indigo-100 rounded-lg text-xs font-medium text-indigo-700 hover:bg-indigo-100 transition-colors"
+                                >
+                                  <FileText className="w-3.5 h-3.5" />
+                                  View Job Description PDF
+                                </a>
                               )}
                             </div>
 
