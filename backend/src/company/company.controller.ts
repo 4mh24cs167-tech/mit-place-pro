@@ -63,6 +63,26 @@ export class CompanyController {
     return { success: true, data };
   }
 
+  @Post('jobs/:jobId/jd/presigned-url')
+  async getJdPresignedUrl(
+    @CurrentUser('id') userId: string,
+    @Param('jobId') jobId: string,
+    @Body() dto: { fileName: string; fileType: string },
+  ) {
+    const data = await this.companyService.getJdPresignedUrl(userId, jobId, dto.fileName, dto.fileType);
+    return { success: true, data };
+  }
+
+  @Post('jobs/:jobId/jd/confirm-upload')
+  async confirmJdUpload(
+    @CurrentUser('id') userId: string,
+    @Param('jobId') jobId: string,
+    @Body() dto: { key: string; publicUrl: string },
+  ) {
+    const data = await this.companyService.confirmJdUpload(userId, jobId, dto.publicUrl);
+    return { success: true, data };
+  }
+
   @Get('jobs')
   async listJobs(@CurrentUser('id') userId: string) {
     const data = await this.companyService.listJobs(userId);

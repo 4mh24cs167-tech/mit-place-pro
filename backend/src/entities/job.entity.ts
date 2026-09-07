@@ -84,6 +84,9 @@ export class Job {
   @Column({ type: 'decimal', precision: 8, scale: 2, nullable: true, name: 'stipend_amount' })
   stipendAmount: number | null; // monthly stipend in INR
 
+  @Column({ type: 'varchar', length: 500, nullable: true, name: 'jd_file_url' })
+  jdFileUrl: string | null;
+
   @Column({ type: 'enum', enum: ['draft', 'open', 'closed'], default: 'draft' })
   status: string;
 

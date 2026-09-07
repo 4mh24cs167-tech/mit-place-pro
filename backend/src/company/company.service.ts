@@ -102,6 +102,32 @@ export class CompanyService {
     return company;
   }
 
+  async getJdPresignedUrl(userId: string, jobId: string, fileName: string, fileType: string) {
+    const company = await this.companyRepo.findOne({ where: { userId } });
+    if (!company) throw new NotFoundException('Company not found');
+
+    const job = await this.jobRepo.findOne({ where: { id: jobId, companyId: company.id } });
+    if (!job) throw new NotFoundException('Job not found');
+
+    const allowed = ['application/pdf'];
+    if (!allowed.includes(fileType)) throw new BadRequestException('Only PDF files are allowed');
+
+    const ext = fileName.split('.').pop() || 'pdf';
+    return this.uploadService.getPresignedUploadUrl('job-descriptions', ext, fileType);
+  }
+
+  async confirmJdUpload(userId: string, jobId: string, publicUrl: string) {
+    const company = await this.companyRepo.findOne({ where: { userId } });
+    if (!company) throw new NotFoundException('Company not found');
+
+    const job = await this.jobRepo.findOne({ where: { id: jobId, companyId: company.id } });
+    if (!job) throw new NotFoundException('Job not found');
+
+    job.jdFileUrl = publicUrl;
+    await this.jobRepo.save(job);
+    return { jdFileUrl: publicUrl };
+  }
+
   // ─── Job Management ─────────────────────────────
   async createJob(userId: string, dto: CreateJobDto) {
     const company = await this.companyRepo.findOne({ where: { userId } });
