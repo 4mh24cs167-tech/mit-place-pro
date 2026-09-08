@@ -367,12 +367,12 @@ export class StudentService {
     const student = await this.studentRepo.findOne({ where: { userId } });
     if (!student) throw new NotFoundException('Student profile not found');
 
-    // Get all open drives that match the student's department
+    // Get all open/scheduled drives that match the student's department
     const drives = await this.driveRepo
       .createQueryBuilder('d')
       .leftJoinAndSelect('d.job', 'job')
       .leftJoinAndSelect('job.company', 'company')
-      .where('d.status = :status', { status: 'open' })
+      .where('d.status IN (:...statuses)', { statuses: ['open', 'scheduled', 'screening'] })
       .orderBy('d.createdAt', 'DESC')
       .getMany();
 

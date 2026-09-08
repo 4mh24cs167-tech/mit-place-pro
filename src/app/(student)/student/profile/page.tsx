@@ -703,7 +703,6 @@ export default function StudentProfilePage() {
                 <InlineInput label="Date of Birth" value={form.dateOfBirth} onChange={(v) => setField("dateOfBirth", v)} editing={editing} type="date" required />
                 <InlineSelect label="Gender" value={form.gender} onChange={(v) => setField("gender", v)} editing={editing} options={GENDER_OPTIONS} required />
                 <InlineSelect label="Category" value={form.category} onChange={(v) => setField("category", v)} editing={editing} options={CATEGORY_OPTIONS} />
-                <InlineInput label="Family Income (₹/yr)" value={form.familyIncome} onChange={(v) => setField("familyIncome", v)} editing={editing} type="number" placeholder="500000" />
                 {/* Email (read-only) */}
                 <div className="pt-2 border-t border-border/40">
                   <label className="block text-[10px] font-semibold text-muted-foreground/80 uppercase tracking-wider mb-1.5">Email</label>
