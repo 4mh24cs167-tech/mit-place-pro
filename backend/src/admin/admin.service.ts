@@ -1158,6 +1158,19 @@ export class AdminService {
     return { message: `Department "${dept.code}" deleted` };
   }
 
+  // ─── Admin Notifications ──────────────────────
+  async getAdminNotifications(userId: string) {
+    return this.notificationRepo.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      take: 50,
+    });
+  }
+
+  async markNotificationRead(userId: string, notificationId: string) {
+    await this.notificationRepo.update({ id: notificationId, userId }, { isRead: true });
+  }
+
   async getSmtpStatus() {
     return this.emailService.getSmtpStatus();
   }

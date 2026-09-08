@@ -23,6 +23,7 @@ import {
   Clock,
   XCircle,
   Send,
+  Bell,
 } from "lucide-react";
 
 interface DashboardStats {
@@ -72,6 +73,8 @@ export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   const fetchData = useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true);
@@ -79,17 +82,18 @@ export default function AdminDashboardPage() {
     setError(null);
 
     try {
-      const [dashRes, actRes, emailRes] = await Promise.allSettled([
+      const [dashRes, actRes, emailRes, notifRes] = await Promise.allSettled([
         adminApi.getDashboard(),
         adminApi.getActivity(8),
         adminApi.getEmailLogs(20),
+        adminApi.getNotifications(),
       ]);
 
       if (dashRes.status === 'fulfilled' && dashRes.value.data) setStats(dashRes.value.data as DashboardStats);
       if (actRes.status === 'fulfilled' && actRes.value.data) setActivity(actRes.value.data as ActivityItem[]);
       if (emailRes.status === 'fulfilled' && emailRes.value.data) setEmailLogs(emailRes.value.data as EmailLogItem[]);
+      if (notifRes.status === 'fulfilled' && notifRes.value.data) setNotifications(notifRes.value.data as any[]);
 
-      // Only show error if the main dashboard call failed
       if (dashRes.status === 'rejected') {
         setError("Failed to load dashboard data");
       }
@@ -101,6 +105,13 @@ export default function AdminDashboardPage() {
       setIsRefreshing(false);
     }
   }, []);
+
+  const handleMarkRead = async (id: string) => {
+    try {
+      await adminApi.markNotificationRead(id);
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    } catch { /* ignore */ }
+  };
 
   useEffect(() => {
     fetchData();
@@ -211,6 +222,37 @@ export default function AdminDashboardPage() {
               ))}
             </div>
           </div>
+
+          {/* Notifications */}
+          {notifications.filter(n => !n.isRead).length > 0 && (
+            <div className="lg:col-span-5 i-card p-6 border-l-4 border-indigo-500">
+              <div className="flex items-center gap-2 mb-4">
+                <Bell className="w-5 h-5 text-indigo-600" />
+                <h2 className="text-lg font-semibold text-foreground">Notifications</h2>
+                <span className="ml-auto bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                  {notifications.filter(n => !n.isRead).length} new
+                </span>
+              </div>
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {notifications.filter(n => !n.isRead).slice(0, 10).map((n) => (
+                  <div key={n.id} className="flex items-start gap-3 p-3 rounded-xl bg-indigo-50/50 hover:bg-indigo-50 transition-colors">
+                    <div className="w-2 h-2 rounded-full bg-indigo-500 mt-2 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground">{n.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{n.body}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{new Date(n.createdAt).toLocaleString()}</p>
+                    </div>
+                    <button
+                      onClick={() => handleMarkRead(n.id)}
+                      className="text-xs text-indigo-600 hover:text-indigo-800 font-medium shrink-0"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Recent Activity */}
           <div className="lg:col-span-3 i-card p-6">

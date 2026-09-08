@@ -395,6 +395,19 @@ export class AdminController {
     return { success: true, ...data };
   }
 
+  // ─── Admin Notifications ──────────────────────
+  @Get('notifications')
+  async getAdminNotifications(@CurrentUser('id') userId: string) {
+    const data = await this.adminService.getAdminNotifications(userId);
+    return { success: true, data };
+  }
+
+  @Patch('notifications/:id/read')
+  async markNotificationRead(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    await this.adminService.markNotificationRead(userId, id);
+    return { success: true };
+  }
+
   // ─── SMTP Diagnostics ──────────────────────────
   @Get('smtp/status')
   async getSmtpStatus() {

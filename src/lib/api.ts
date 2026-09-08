@@ -311,6 +311,9 @@ export const adminApi = {
   updateDriveStatus: (driveId: string, status: string) =>
     apiFetch(`/api/v1/admin/drives/${driveId}/status`, { method: 'PATCH', body: { status } }),
   deleteDrive: (id: string) => apiFetch(`/api/v1/admin/drives/${id}`, { method: 'DELETE' }),
+  // Notifications
+  getNotifications: () => apiFetch('/api/v1/admin/notifications'),
+  markNotificationRead: (id: string) => apiFetch(`/api/v1/admin/notifications/${id}/read`, { method: 'PATCH' }),
   // Feedback
   getDriveStudentFeedback: (driveId: string) => apiFetch(`/api/v1/admin/drives/${driveId}/feedback/students`),
   getDriveCompanyFeedback: (driveId: string) => apiFetch(`/api/v1/admin/drives/${driveId}/feedback/company`),
