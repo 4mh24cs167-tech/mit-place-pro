@@ -113,7 +113,7 @@ export default function AdminDrivesPage() {
     try {
       const [detailRes, compRes] = await Promise.all([
         adminApi.getDrive(drive.id),
-        adminApi.listCompanies({ page: 1 }),
+        adminApi.listCompanies({ limit: 1000 }),
       ]);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const detail = detailRes.data as any;
@@ -121,9 +121,18 @@ export default function AdminDrivesPage() {
       const compData = (compRes.data as any);
       const allComps = Array.isArray(compData) ? compData : compData?.data || [];
       setEditAllCompanies(allComps);
-      // Get existing company-jobs from DCJ or single job
+      // Parse existing company-jobs: backend returns { companyId, companyName, jobs: [{id, title}] }
       if (detail?.companyJobs && detail.companyJobs.length > 0) {
-        setEditCompanies(detail.companyJobs);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const flat = detail.companyJobs.flatMap((cj: any) =>
+          (cj.jobs || []).map((j: any) => ({
+            companyId: cj.companyId,
+            companyName: cj.companyName || "Company",
+            jobId: j.id,
+            jobTitle: j.title || "Job",
+          }))
+        );
+        setEditCompanies(flat);
       } else if (detail?.job) {
         setEditCompanies([{ companyId: detail.job.companyId, companyName: detail.job.company?.name || "Company", jobId: detail.job.id, jobTitle: detail.job.title }]);
       }

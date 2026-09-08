@@ -583,36 +583,40 @@ export class DriveService {
     if (!drive) throw new NotFoundException('Drive not found');
 
     // Update basic fields
-    if (data.title !== undefined) drive.title = data.title;
-    if (data.description !== undefined) drive.description = data.description;
-    if (data.driveDate !== undefined) drive.driveDate = data.driveDate as any;
+    if (data.title !== undefined && data.title) drive.title = data.title;
+    if (data.description !== undefined) drive.description = data.description || null as any;
+    if (data.driveDate !== undefined && data.driveDate) drive.driveDate = data.driveDate as any;
     if (data.departments !== undefined) drive.departments = data.departments;
     if (data.batchIds !== undefined) drive.batchIds = data.batchIds;
 
     // Update company-jobs for multi-company drives
-    if (data.companyJobs && drive.type === 'multiple') {
-      // Remove old DCJ entries
-      await this.dcjRepo.delete({ driveId });
+    if (data.companyJobs && data.companyJobs.length > 0 && drive.type === 'multiple') {
+      try {
+        // Remove old DCJ entries
+        await this.dcjRepo.delete({ driveId });
 
-      // Collect all job IDs
-      const allJobIds = data.companyJobs.flatMap(cj => cj.jobIds);
-      
-      // Insert new DCJ entries
-      const dcjEntries = data.companyJobs.flatMap(cj =>
-        cj.jobIds.map(jobId => this.dcjRepo.create({
-          driveId,
-          companyId: cj.companyId,
-          jobId,
-        }))
-      );
-      if (dcjEntries.length > 0) {
-        await this.dcjRepo.save(dcjEntries);
-      }
+        // Collect all job IDs
+        const allJobIds = data.companyJobs.flatMap(cj => cj.jobIds).filter(Boolean);
+        
+        // Insert new DCJ entries
+        const dcjEntries = data.companyJobs.flatMap(cj =>
+          cj.jobIds.filter(Boolean).map(jobId => this.dcjRepo.create({
+            driveId,
+            companyId: cj.companyId,
+            jobId,
+          }))
+        );
+        if (dcjEntries.length > 0) {
+          await this.dcjRepo.save(dcjEntries);
+        }
 
-      // Update jobIds on the drive
-      drive.jobIds = allJobIds;
-      if (allJobIds.length > 0) {
-        drive.jobId = allJobIds[0];
+        // Update jobIds on the drive
+        drive.jobIds = allJobIds;
+        if (allJobIds.length > 0) {
+          drive.jobId = allJobIds[0];
+        }
+      } catch (err) {
+        this.logger.warn(`Failed to update DCJ entries: ${(err as Error).message}`);
       }
     }
 

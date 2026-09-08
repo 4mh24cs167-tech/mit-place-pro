@@ -699,6 +699,34 @@ export class StudentService {
       companyName = job.company?.name || 'Company';
     }
 
+    // ─── Qualification Check ────────────────────
+    const jobForQual = await this.jobRepo.findOne({ where: { id: jobId } });
+    if (jobForQual) {
+      const reasons: string[] = [];
+
+      if (jobForQual.minCgpa && Number(jobForQual.minCgpa) > 0 && (student.cgpa === null || Number(student.cgpa) < Number(jobForQual.minCgpa))) {
+        reasons.push(`Minimum CGPA required: ${jobForQual.minCgpa} (yours: ${student.cgpa ?? 'N/A'})`);
+      }
+      if (jobForQual.minTenthPercent && Number(jobForQual.minTenthPercent) > 0 && (student.tenthPercent === null || Number(student.tenthPercent) < Number(jobForQual.minTenthPercent))) {
+        reasons.push(`Minimum 10th%: ${jobForQual.minTenthPercent}% (yours: ${student.tenthPercent ?? 'N/A'}%)`);
+      }
+      if (jobForQual.minTwelfthPercent && Number(jobForQual.minTwelfthPercent) > 0 && (student.twelfthPercent === null || Number(student.twelfthPercent) < Number(jobForQual.minTwelfthPercent))) {
+        reasons.push(`Minimum 12th%: ${jobForQual.minTwelfthPercent}% (yours: ${student.twelfthPercent ?? 'N/A'}%)`);
+      }
+      if (jobForQual.maxBacklogs !== null && jobForQual.maxBacklogs !== undefined && Number(jobForQual.maxBacklogs) >= 0 && student.backlogs > Number(jobForQual.maxBacklogs)) {
+        reasons.push(`Maximum backlogs allowed: ${jobForQual.maxBacklogs} (yours: ${student.backlogs})`);
+      }
+      if (jobForQual.allowedDepartments && jobForQual.allowedDepartments.length > 0 && student.department) {
+        if (!jobForQual.allowedDepartments.includes(student.department)) {
+          reasons.push(`Department ${student.department} is not eligible (allowed: ${jobForQual.allowedDepartments.join(', ')})`);
+        }
+      }
+
+      if (reasons.length > 0) {
+        throw new BadRequestException(`You do not meet the minimum qualifications for this role: ${reasons.join('; ')}`);
+      }
+    }
+
     // Check if already attending
     try {
       const existing = await this.attendanceRepo.findOne({
