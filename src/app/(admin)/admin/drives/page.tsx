@@ -112,7 +112,7 @@ export default function AdminDrivesPage() {
     setEditCompanyJobs([]);
     try {
       const [detailRes, compRes] = await Promise.all([
-        adminApi.getDriveDetail(drive.id),
+        adminApi.getDrive(drive.id),
         adminApi.listCompanies({ page: 1 }),
       ]);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
