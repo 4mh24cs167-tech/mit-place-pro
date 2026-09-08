@@ -702,16 +702,33 @@ export class StudentService {
     // ─── Qualification Check ────────────────────
     const jobForQual = await this.jobRepo.findOne({ where: { id: jobId } });
     if (jobForQual) {
+      // Fetch student education records for accurate 10th/12th data
+      const eduRecords = await this.educationRepo.find({ where: { studentId: student.id } });
+      const sslcRecord = eduRecords.find(e => e.qualificationType === QualificationType.SSLC);
+      const pucRecord = eduRecords.find(e => e.qualificationType === QualificationType.PUC);
+      const ugRecord = eduRecords.find(e => e.qualificationType === QualificationType.UG);
+
+      // Use education records first, fallback to student table fields
+      const studentTenthPercent = sslcRecord?.percentage ?? student.tenthPercent;
+      const studentTwelfthPercent = pucRecord?.percentage ?? student.twelfthPercent;
+      const studentCgpa = student.cgpa ?? ugRecord?.cgpa;
+
       const reasons: string[] = [];
 
-      if (jobForQual.minCgpa && Number(jobForQual.minCgpa) > 0 && (student.cgpa === null || Number(student.cgpa) < Number(jobForQual.minCgpa))) {
-        reasons.push(`Minimum CGPA required: ${jobForQual.minCgpa} (yours: ${student.cgpa ?? 'N/A'})`);
+      if (jobForQual.minCgpa && Number(jobForQual.minCgpa) > 0) {
+        if (studentCgpa === null || studentCgpa === undefined || Number(studentCgpa) < Number(jobForQual.minCgpa)) {
+          reasons.push(`Minimum CGPA required: ${jobForQual.minCgpa} (yours: ${studentCgpa ?? 'N/A'})`);
+        }
       }
-      if (jobForQual.minTenthPercent && Number(jobForQual.minTenthPercent) > 0 && (student.tenthPercent === null || Number(student.tenthPercent) < Number(jobForQual.minTenthPercent))) {
-        reasons.push(`Minimum 10th%: ${jobForQual.minTenthPercent}% (yours: ${student.tenthPercent ?? 'N/A'}%)`);
+      if (jobForQual.minTenthPercent && Number(jobForQual.minTenthPercent) > 0) {
+        if (studentTenthPercent === null || studentTenthPercent === undefined || Number(studentTenthPercent) < Number(jobForQual.minTenthPercent)) {
+          reasons.push(`Minimum 10th%: ${jobForQual.minTenthPercent}% (yours: ${studentTenthPercent ?? 'N/A'}%)`);
+        }
       }
-      if (jobForQual.minTwelfthPercent && Number(jobForQual.minTwelfthPercent) > 0 && (student.twelfthPercent === null || Number(student.twelfthPercent) < Number(jobForQual.minTwelfthPercent))) {
-        reasons.push(`Minimum 12th%: ${jobForQual.minTwelfthPercent}% (yours: ${student.twelfthPercent ?? 'N/A'}%)`);
+      if (jobForQual.minTwelfthPercent && Number(jobForQual.minTwelfthPercent) > 0) {
+        if (studentTwelfthPercent === null || studentTwelfthPercent === undefined || Number(studentTwelfthPercent) < Number(jobForQual.minTwelfthPercent)) {
+          reasons.push(`Minimum 12th%: ${jobForQual.minTwelfthPercent}% (yours: ${studentTwelfthPercent ?? 'N/A'}%)`);
+        }
       }
       if (jobForQual.maxBacklogs !== null && jobForQual.maxBacklogs !== undefined && Number(jobForQual.maxBacklogs) >= 0 && student.backlogs > Number(jobForQual.maxBacklogs)) {
         reasons.push(`Maximum backlogs allowed: ${jobForQual.maxBacklogs} (yours: ${student.backlogs})`);
