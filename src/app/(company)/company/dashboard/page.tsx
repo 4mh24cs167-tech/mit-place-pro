@@ -57,6 +57,20 @@ export default function CompanyDashboardPage() {
   const [jobSaving, setJobSaving] = useState(false);
   const [jobError, setJobError] = useState("");
   const [jobSuccess, setJobSuccess] = useState("");
+  const [departments, setDepartments] = useState<{ id: string; code: string; name: string }[]>([]);
+  const [deptDropdownOpen, setDeptDropdownOpen] = useState(false);
+
+  // Fetch departments for dropdown
+  const { } = useQuery({
+    queryKey: ["company", "departments"],
+    queryFn: async () => {
+      const res = await companyApi.listDepartments();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = (res as any)?.data;
+      if (Array.isArray(data)) setDepartments(data);
+      return data;
+    },
+  });
 
   // ─── React Query: Profile ──────────────────────
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -492,11 +506,36 @@ export default function CompanyDashboardPage() {
                 </div>
               </div>
               
-              <div>
+              <div className="relative">
                 <label className="text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
                   <Users className="w-3.5 h-3.5 text-indigo-500" /> Departments
                 </label>
-                <input type="text" value={jobForm.eligibleDepartments} onChange={(e) => setJobForm(f => ({ ...f, eligibleDepartments: e.target.value }))} placeholder="CSE, ISE, ECE" className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400" />
+                <button type="button" onClick={() => setDeptDropdownOpen(!deptDropdownOpen)} className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 text-left bg-white flex items-center justify-between">
+                  <span className={jobForm.eligibleDepartments ? "text-gray-900" : "text-gray-400"}>
+                    {jobForm.eligibleDepartments || "Select departments..."}
+                  </span>
+                  <svg className={`w-4 h-4 text-gray-400 transition-transform ${deptDropdownOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                </button>
+                {deptDropdownOpen && (
+                  <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-48 overflow-y-auto">
+                    {departments.length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-gray-400">No departments found</div>
+                    ) : departments.map((dept) => {
+                      const selected = jobForm.eligibleDepartments.split(",").map(d => d.trim()).filter(Boolean);
+                      const isChecked = selected.includes(dept.code);
+                      return (
+                        <label key={dept.id} className="flex items-center gap-2 px-3 py-2 hover:bg-indigo-50 cursor-pointer text-sm">
+                          <input type="checkbox" checked={isChecked} onChange={() => {
+                            const updated = isChecked ? selected.filter(d => d !== dept.code) : [...selected, dept.code];
+                            setJobForm(f => ({ ...f, eligibleDepartments: updated.join(", ") }));
+                          }} className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+                          <span className="font-medium">{dept.code}</span>
+                          <span className="text-gray-400 text-xs">— {dept.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">

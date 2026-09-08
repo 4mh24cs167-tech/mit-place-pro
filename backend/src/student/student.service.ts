@@ -784,6 +784,25 @@ export class StudentService {
         companyId,
       });
 
+      // Also create an application record so the company sees this student as a candidate
+      try {
+        const existingApp = await this.applicationRepo.findOne({
+          where: { studentId: student.id, jobId },
+        });
+        if (!existingApp) {
+          await this.applicationRepo.save({
+            studentId: student.id,
+            jobId,
+            adminApproved: true,
+            adminApprovedAt: new Date(),
+            matchScore: 75,
+            currentRound: 1,
+          });
+        }
+      } catch {
+        // Application creation is best-effort
+      }
+
       return {
         id: attendance.id,
         message: 'You are now attending this company session.',

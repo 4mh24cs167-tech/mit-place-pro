@@ -53,6 +53,13 @@ export class CompanyController {
     return this.companyService.confirmLogoUpload(userId, dto.key, dto.publicUrl);
   }
 
+  // ─── Departments ────────────────────────────────
+  @Get('departments')
+  async listDepartments() {
+    const data = await this.companyService.listDepartments();
+    return { success: true, data };
+  }
+
   // ─── Jobs ───────────────────────────────────────
   @Post('jobs')
   async createJob(

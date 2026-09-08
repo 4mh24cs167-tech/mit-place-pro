@@ -16,6 +16,7 @@ import { DriveCompanyJob } from '../entities/drive-company-job.entity';
 import { DriveAttendance } from '../entities/drive-attendance.entity';
 import { RoundMeeting, MeetingGroup, MeetingAssignment } from '../entities/round-meeting.entity';
 import { StudentDriveFeedback, CompanyDriveFeedback } from '../entities/feedback.entity';
+import { Department } from '../entities/department.entity';
 
 import { UploadModule } from '../upload/upload.module';
 
@@ -40,6 +41,7 @@ import { UploadModule } from '../upload/upload.module';
       MeetingAssignment,
       StudentDriveFeedback,
       CompanyDriveFeedback,
+      Department,
     ]),
     AdminModule,
     UploadModule,

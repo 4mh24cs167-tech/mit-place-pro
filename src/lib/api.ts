@@ -421,6 +421,7 @@ export const companyApi = {
   updateProfile: (data: Record<string, unknown>) => apiFetch('/api/v1/company/profile', { method: 'PATCH', body: data }),
   getLogoPresignedUrl: (fileName: string, fileType: string) => apiFetch('/api/v1/company/logo/presigned-url', { method: 'POST', body: { fileName, fileType } }),
   confirmLogoUpload: (key: string, publicUrl: string) => apiFetch('/api/v1/company/logo/confirm-upload', { method: 'POST', body: { key, publicUrl } }),
+  listDepartments: () => apiFetch('/api/v1/company/departments'),
   createJob: (data: Record<string, unknown>) => apiFetch('/api/v1/company/jobs', { method: 'POST', body: data }),
   getJdPresignedUrl: (jobId: string, fileName: string, fileType: string) => apiFetch(`/api/v1/company/jobs/${jobId}/jd/presigned-url`, { method: 'POST', body: { fileName, fileType } }),
   confirmJdUpload: (jobId: string, key: string, publicUrl: string) => apiFetch(`/api/v1/company/jobs/${jobId}/jd/confirm-upload`, { method: 'POST', body: { key, publicUrl } }),

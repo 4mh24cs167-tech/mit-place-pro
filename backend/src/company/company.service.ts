@@ -16,6 +16,7 @@ import { DriveAttendance } from '../entities/drive-attendance.entity';
 import { RoundMeeting, MeetingGroup, MeetingAssignment } from '../entities/round-meeting.entity';
 import type { MeetingStatus } from '../entities/round-meeting.entity';
 import { UploadService } from '../upload/upload.service';
+import { Department } from '../entities/department.entity';
 import { CreateJobDto, AddAvailabilityDto, MarkAttendanceDto, MarkRoundResultDto, SubmitRoundResultsDto, UpdateJobRoundsDto, CreateRoundMeetingDto, UpdateRoundMeetingDto } from './dto/company.dto';
 import { EmailService } from '../admin/email.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -41,6 +42,7 @@ export class CompanyService {
     @InjectRepository(RoundMeeting) private readonly roundMeetingRepo: Repository<RoundMeeting>,
     @InjectRepository(MeetingGroup) private readonly meetingGroupRepo: Repository<MeetingGroup>,
     @InjectRepository(MeetingAssignment) private readonly meetingAssignmentRepo: Repository<MeetingAssignment>,
+    @InjectRepository(Department) private readonly departmentRepo: Repository<Department>,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
     private readonly eventEmitter: EventEmitter2,
@@ -52,6 +54,14 @@ export class CompanyService {
     const company = await this.companyRepo.findOne({ where: { userId } });
     if (!company) throw new NotFoundException('Company profile not found');
     return company;
+  }
+
+  async listDepartments() {
+    return this.departmentRepo.find({
+      where: { isActive: true },
+      select: ['id', 'code', 'name', 'type'],
+      order: { code: 'ASC' },
+    });
   }
 
   // ─── Company Profile ────────────────────────────
