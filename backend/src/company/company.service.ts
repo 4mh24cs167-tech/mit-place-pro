@@ -183,7 +183,7 @@ export class CompanyService {
           userId: admin.id,
           type: 'job_published',
           title: `New Job Published: ${job.title}`,
-          body: `${company.name} has published a new job: ${job.title}. Package: ${job.ctcRange || 'N/A'}.`,
+          body: `${company.name} has published a new job: ${job.title}. Package: ${job.ctcMinLpa ? job.ctcMinLpa + '-' + (job.ctcMaxLpa || '') + ' LPA' : 'N/A'}.`,
           metadata: { jobId: job.id, companyId: company.id, companyName: company.name },
         }));
         await this.notificationRepo.save(notifications);
