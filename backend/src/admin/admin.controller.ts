@@ -376,6 +376,23 @@ export class AdminController {
     return { success: true, data };
   }
 
+  @Patch('drives/:id')
+  async updateDrive(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Body() body: {
+      title?: string;
+      description?: string;
+      driveDate?: string;
+      departments?: string[];
+      batchIds?: string[];
+      companyJobs?: Array<{ companyId: string; jobIds: string[] }>;
+    },
+  ) {
+    const data = await this.driveService.updateDrive(id, body, userId);
+    return { success: true, data };
+  }
+
   @Patch('drives/:id/status')
   async updateDriveStatus(
     @Param('id') id: string,

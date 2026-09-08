@@ -570,6 +570,90 @@ export class DriveService {
     return drive;
   }
 
+  // ─── Update Drive Details ─────────────────────
+  async updateDrive(driveId: string, data: {
+    title?: string;
+    description?: string;
+    driveDate?: string;
+    departments?: string[];
+    batchIds?: string[];
+    companyJobs?: Array<{ companyId: string; jobIds: string[] }>;
+  }, actorId: string) {
+    const drive = await this.driveRepo.findOne({ where: { id: driveId } });
+    if (!drive) throw new NotFoundException('Drive not found');
+
+    // Update basic fields
+    if (data.title !== undefined) drive.title = data.title;
+    if (data.description !== undefined) drive.description = data.description;
+    if (data.driveDate !== undefined) drive.driveDate = data.driveDate as any;
+    if (data.departments !== undefined) drive.departments = data.departments;
+    if (data.batchIds !== undefined) drive.batchIds = data.batchIds;
+
+    // Update company-jobs for multi-company drives
+    if (data.companyJobs && drive.type === 'multiple') {
+      // Remove old DCJ entries
+      await this.dcjRepo.delete({ driveId });
+
+      // Collect all job IDs
+      const allJobIds = data.companyJobs.flatMap(cj => cj.jobIds);
+      
+      // Insert new DCJ entries
+      const dcjEntries = data.companyJobs.flatMap(cj =>
+        cj.jobIds.map(jobId => this.dcjRepo.create({
+          driveId,
+          companyId: cj.companyId,
+          jobId,
+        }))
+      );
+      if (dcjEntries.length > 0) {
+        await this.dcjRepo.save(dcjEntries);
+      }
+
+      // Update jobIds on the drive
+      drive.jobIds = allJobIds;
+      if (allJobIds.length > 0) {
+        drive.jobId = allJobIds[0];
+      }
+    }
+
+    await this.driveRepo.save(drive);
+
+    // Audit log
+    await this.auditRepo.save({
+      actorUserId: actorId,
+      action: 'UPDATE_DRIVE',
+      entityType: 'drive',
+      entityId: driveId,
+      newValue: data as unknown as Record<string, unknown>,
+    });
+
+    // Notify registered students about drive update
+    try {
+      const registrations = await this.regRepo.find({
+        where: { driveId },
+        relations: ['student'],
+      });
+      if (registrations.length > 0) {
+        const notifications = registrations
+          .filter(r => r.student?.userId)
+          .map(r => this.notificationRepo.create({
+            userId: r.student.userId,
+            type: 'drive_updated',
+            title: `Drive Updated: ${drive.title}`,
+            body: `The placement drive "${drive.title}" has been updated. Please check the latest details.`,
+            metadata: { driveId },
+          }));
+        if (notifications.length > 0) {
+          await this.notificationRepo.save(notifications);
+        }
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to notify students about drive update: ${(err as Error).message}`);
+    }
+
+    return drive;
+  }
+
   // ─── Delete Drive ──────────────────────────────
   async deleteDrive(driveId: string, actorId: string) {
     const drive = await this.driveRepo.findOne({ where: { id: driveId } });

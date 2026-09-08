@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { adminApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import {
-  Briefcase, Plus, Loader2, AlertCircle, X, Eye, Trash2,
+  Briefcase, Plus, Loader2, AlertCircle, X, Eye, Trash2, Pencil,
   Users, Clock, CheckCircle2, XCircle, Calendar, Building2,
   Search, Filter,
 } from "lucide-react";
@@ -79,6 +79,43 @@ export default function AdminDrivesPage() {
       fetchDrives();
     } catch (err: unknown) {
       showToast("error", err instanceof Error ? err.message : "Failed to delete");
+    }
+  };
+
+  // ─── Edit Drive ───────────────────────────────
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [editDrive, setEditDrive] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({ title: "", description: "", driveDate: "", departments: "" });
+  const [editSaving, setEditSaving] = useState(false);
+
+  const openEditModal = (drive: DriveSummary) => {
+    setEditForm({
+      title: drive.title,
+      description: "",
+      driveDate: drive.driveDate || "",
+      departments: (drive.departments || []).join(", "),
+    });
+    setEditDrive(drive);
+  };
+
+  const handleEditSave = async () => {
+    if (!editDrive) return;
+    setEditSaving(true);
+    try {
+      const depts = editForm.departments.split(",").map(d => d.trim()).filter(Boolean);
+      await adminApi.updateDrive(editDrive.id, {
+        title: editForm.title || undefined,
+        description: editForm.description || undefined,
+        driveDate: editForm.driveDate || undefined,
+        departments: depts.length > 0 ? depts : undefined,
+      });
+      showToast("success", `Drive "${editForm.title}" updated`);
+      setEditDrive(null);
+      fetchDrives();
+    } catch (err: unknown) {
+      showToast("error", err instanceof Error ? err.message : "Failed to update");
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -283,6 +320,11 @@ export default function AdminDrivesPage() {
                       className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all">
                       <Eye className="w-4 h-4" /> Manage
                     </button>
+                    <button onClick={() => openEditModal(drive)}
+                      className="flex items-center justify-center p-2.5 rounded-xl border border-border hover:bg-blue-50 hover:border-blue-200 hover:text-blue-600 text-muted-foreground transition-all"
+                      title="Edit Drive">
+                      <Pencil className="w-4 h-4" />
+                    </button>
                     <button onClick={() => handleDelete(drive.id, drive.title)}
                       className="flex items-center justify-center p-2.5 rounded-xl border border-border hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-muted-foreground transition-all"
                       title="Delete Drive">
@@ -297,6 +339,55 @@ export default function AdminDrivesPage() {
       </div>
 
       {showCreate && <CreateDriveModal onClose={() => setShowCreate(false)} onCreated={() => { setShowCreate(false); fetchDrives(); }} showToast={showToast} />}
+
+      {/* Edit Drive Modal */}
+      {editDrive && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-background rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 border border-border">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <Pencil className="w-5 h-5 text-blue-600" /> Edit Drive
+              </h2>
+              <button onClick={() => setEditDrive(null)} className="p-1 rounded-lg hover:bg-muted"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Title</label>
+                <input value={editForm.title} onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Drive Date</label>
+                <input type="date" value={editForm.driveDate} onChange={e => setEditForm(p => ({ ...p, driveDate: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Departments (comma-separated)</label>
+                <input value={editForm.departments} onChange={e => setEditForm(p => ({ ...p, departments: e.target.value }))}
+                  placeholder="CSE, ISE, ECE"
+                  className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Description</label>
+                <textarea value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
+                  rows={3} placeholder="Optional updated description..."
+                  className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setEditDrive(null)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors">
+                  Cancel
+                </button>
+                <button onClick={handleEditSave} disabled={editSaving}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium shadow-lg hover:shadow-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                  {editSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+                  {editSaving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

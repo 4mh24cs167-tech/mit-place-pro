@@ -141,6 +141,23 @@ export class CompanyService {
       status: 'draft',
     });
 
+    // Notify all admin users about new job
+    try {
+      const admins = await this.userRepo.find({ where: { role: UserRole.ADMIN, isActive: true } });
+      if (admins.length > 0) {
+        const notifications = admins.map(admin => this.notificationRepo.create({
+          userId: admin.id,
+          type: 'job_created',
+          title: `New Job Created: ${job.title}`,
+          body: `${company.name} has created a new job posting: ${job.title}.`,
+          metadata: { jobId: job.id, companyId: company.id, companyName: company.name },
+        }));
+        await this.notificationRepo.save(notifications);
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to notify admins about job creation: ${(err as Error).message}`);
+    }
+
     return job;
   }
 

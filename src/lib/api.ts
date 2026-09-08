@@ -311,6 +311,7 @@ export const adminApi = {
   updateDriveStatus: (driveId: string, status: string) =>
     apiFetch(`/api/v1/admin/drives/${driveId}/status`, { method: 'PATCH', body: { status } }),
   deleteDrive: (id: string) => apiFetch(`/api/v1/admin/drives/${id}`, { method: 'DELETE' }),
+  updateDrive: (id: string, body: Record<string, unknown>) => apiFetch(`/api/v1/admin/drives/${id}`, { method: 'PATCH', body }),
   // Notifications
   getNotifications: () => apiFetch('/api/v1/admin/notifications'),
   markNotificationRead: (id: string) => apiFetch(`/api/v1/admin/notifications/${id}/read`, { method: 'PATCH' }),
