@@ -173,6 +173,12 @@ export class AdminController {
     return { success: true, data: result };
   }
 
+  @Get('companies/:id/jobs')
+  async getCompanyJobs(@Param('id') id: string) {
+    const data = await this.adminService.getCompanyJobs(id);
+    return { success: true, data };
+  }
+
   @Delete('companies/:id')
   async deleteCompany(
     @Param('id') id: string,

@@ -558,6 +558,13 @@ export class AdminService {
     return company;
   }
 
+  async getCompanyJobs(companyId: string) {
+    return this.jobRepo.find({
+      where: { companyId },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
   async approveCompany(companyId: string, actorId: string) {
     const company = await this.companyRepo.findOne({
       where: { id: companyId },

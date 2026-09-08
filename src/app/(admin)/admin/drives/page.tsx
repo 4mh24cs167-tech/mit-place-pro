@@ -87,8 +87,18 @@ export default function AdminDrivesPage() {
   const [editDrive, setEditDrive] = useState<any | null>(null);
   const [editForm, setEditForm] = useState({ title: "", description: "", driveDate: "", departments: "" });
   const [editSaving, setEditSaving] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [editCompanies, setEditCompanies] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [editAllCompanies, setEditAllCompanies] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [editAllJobs, setEditAllJobs] = useState<any[]>([]);
+  const [editAddCompanyId, setEditAddCompanyId] = useState("");
+  const [editAddJobIds, setEditAddJobIds] = useState<string[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [editCompanyJobs, setEditCompanyJobs] = useState<any[]>([]);
 
-  const openEditModal = (drive: DriveSummary) => {
+  const openEditModal = async (drive: DriveSummary) => {
     setEditForm({
       title: drive.title,
       description: "",
@@ -96,6 +106,57 @@ export default function AdminDrivesPage() {
       departments: (drive.departments || []).join(", "),
     });
     setEditDrive(drive);
+    setEditCompanies([]);
+    setEditAddCompanyId("");
+    setEditAddJobIds([]);
+    setEditCompanyJobs([]);
+    try {
+      const [detailRes, compRes] = await Promise.all([
+        adminApi.getDriveDetail(drive.id),
+        adminApi.listCompanies({ page: 1 }),
+      ]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const detail = detailRes.data as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const compData = (compRes.data as any);
+      const allComps = Array.isArray(compData) ? compData : compData?.data || [];
+      setEditAllCompanies(allComps);
+      // Get existing company-jobs from DCJ or single job
+      if (detail?.companyJobs && detail.companyJobs.length > 0) {
+        setEditCompanies(detail.companyJobs);
+      } else if (detail?.job) {
+        setEditCompanies([{ companyId: detail.job.companyId, companyName: detail.job.company?.name || "Company", jobId: detail.job.id, jobTitle: detail.job.title }]);
+      }
+    } catch { /* ignore */ }
+  };
+
+  const loadJobsForCompany = async (companyId: string) => {
+    setEditAddCompanyId(companyId);
+    setEditAddJobIds([]);
+    setEditCompanyJobs([]);
+    if (!companyId) return;
+    try {
+      const res = await adminApi.getCompanyJobs(companyId);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setEditCompanyJobs((res.data || []) as any[]);
+    } catch { setEditCompanyJobs([]); }
+  };
+
+  const addCompanyJobsToEdit = () => {
+    if (!editAddCompanyId || editAddJobIds.length === 0) return;
+    const comp = editAllCompanies.find((c: { id: string }) => c.id === editAddCompanyId);
+    const newEntries = editAddJobIds.map(jid => {
+      const job = editCompanyJobs.find((j: { id: string }) => j.id === jid);
+      return { companyId: editAddCompanyId, companyName: comp?.name || "Company", jobId: jid, jobTitle: job?.title || "Job" };
+    });
+    setEditCompanies(prev => [...prev, ...newEntries.filter(ne => !prev.some((p: { jobId: string }) => p.jobId === ne.jobId))]);
+    setEditAddCompanyId("");
+    setEditAddJobIds([]);
+    setEditCompanyJobs([]);
+  };
+
+  const removeCompanyJob = (jobId: string) => {
+    setEditCompanies(prev => prev.filter((e: { jobId: string }) => e.jobId !== jobId));
   };
 
   const handleEditSave = async () => {
@@ -103,11 +164,20 @@ export default function AdminDrivesPage() {
     setEditSaving(true);
     try {
       const depts = editForm.departments.split(",").map(d => d.trim()).filter(Boolean);
+      // Group company-jobs by companyId
+      const companyJobsMap: Record<string, string[]> = {};
+      editCompanies.forEach((e: { companyId: string; jobId: string }) => {
+        if (!companyJobsMap[e.companyId]) companyJobsMap[e.companyId] = [];
+        companyJobsMap[e.companyId].push(e.jobId);
+      });
+      const companyJobs = Object.entries(companyJobsMap).map(([companyId, jobIds]) => ({ companyId, jobIds }));
+
       await adminApi.updateDrive(editDrive.id, {
         title: editForm.title || undefined,
         description: editForm.description || undefined,
         driveDate: editForm.driveDate || undefined,
         departments: depts.length > 0 ? depts : undefined,
+        companyJobs: companyJobs.length > 0 ? companyJobs : undefined,
       });
       showToast("success", `Drive "${editForm.title}" updated`);
       setEditDrive(null);
@@ -343,7 +413,7 @@ export default function AdminDrivesPage() {
       {/* Edit Drive Modal */}
       {editDrive && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-background rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 border border-border">
+          <div className="bg-background rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-6 border border-border max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
                 <Pencil className="w-5 h-5 text-blue-600" /> Edit Drive
@@ -356,23 +426,87 @@ export default function AdminDrivesPage() {
                 <input value={editForm.title} onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))}
                   className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Drive Date</label>
-                <input type="date" value={editForm.driveDate} onChange={e => setEditForm(p => ({ ...p, driveDate: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Departments (comma-separated)</label>
-                <input value={editForm.departments} onChange={e => setEditForm(p => ({ ...p, departments: e.target.value }))}
-                  placeholder="CSE, ISE, ECE"
-                  className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Drive Date</label>
+                  <input type="date" value={editForm.driveDate} onChange={e => setEditForm(p => ({ ...p, driveDate: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Departments</label>
+                  <input value={editForm.departments} onChange={e => setEditForm(p => ({ ...p, departments: e.target.value }))}
+                    placeholder="CSE, ISE, ECE"
+                    className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Description</label>
                 <textarea value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))}
-                  rows={3} placeholder="Optional updated description..."
+                  rows={2} placeholder="Optional updated description..."
                   className="w-full px-3 py-2 rounded-xl border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none" />
               </div>
+
+              {/* Companies & Roles Section */}
+              <div className="border-t pt-4">
+                <label className="block text-sm font-bold mb-2 flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-purple-600" /> Companies & Job Roles
+                </label>
+                {editCompanies.length > 0 && (
+                  <div className="space-y-2 mb-3">
+                    {editCompanies.map((entry: { companyId: string; companyName: string; jobId: string; jobTitle: string }) => (
+                      <div key={entry.jobId} className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/50 border border-border">
+                        <div className="text-sm">
+                          <span className="font-medium text-foreground">{entry.companyName}</span>
+                          <span className="text-muted-foreground"> — {entry.jobTitle}</span>
+                        </div>
+                        <button onClick={() => removeCompanyJob(entry.jobId)}
+                          className="text-red-500 hover:text-red-700 p-1" title="Remove">
+                          <XCircle className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {editCompanies.length === 0 && (
+                  <p className="text-xs text-muted-foreground mb-3">No companies/roles added yet.</p>
+                )}
+
+                {/* Add Company + Job */}
+                <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-200 space-y-2">
+                  <p className="text-xs font-semibold text-blue-700">+ Add Company & Role</p>
+                  <select value={editAddCompanyId} onChange={e => loadJobsForCompany(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm">
+                    <option value="">Select company...</option>
+                    {editAllCompanies.map((c: { id: string; name: string }) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  {editAddCompanyId && editCompanyJobs.length > 0 && (
+                    <div className="space-y-1">
+                      {editCompanyJobs.map((j: { id: string; title: string }) => (
+                        <label key={j.id} className="flex items-center gap-2 text-sm px-2 py-1 rounded hover:bg-blue-100 cursor-pointer">
+                          <input type="checkbox"
+                            checked={editAddJobIds.includes(j.id)}
+                            onChange={e => {
+                              if (e.target.checked) setEditAddJobIds(prev => [...prev, j.id]);
+                              else setEditAddJobIds(prev => prev.filter(id => id !== j.id));
+                            }}
+                            className="rounded" />
+                          {j.title}
+                        </label>
+                      ))}
+                      <button onClick={addCompanyJobsToEdit} disabled={editAddJobIds.length === 0}
+                        className="w-full mt-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium disabled:opacity-40 hover:bg-blue-700 transition-colors flex items-center justify-center gap-1">
+                        <Plus className="w-3 h-3" /> Add Selected
+                      </button>
+                    </div>
+                  )}
+                  {editAddCompanyId && editCompanyJobs.length === 0 && (
+                    <p className="text-xs text-muted-foreground">No jobs found for this company.</p>
+                  )}
+                </div>
+              </div>
+
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setEditDrive(null)}
                   className="flex-1 px-4 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-muted transition-colors">
