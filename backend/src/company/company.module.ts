@@ -10,6 +10,7 @@ import { CompanyAvailability } from '../entities/company-availability.entity';
 import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { Student } from '../entities/student.entity';
+import { User } from '../entities/user.entity';
 import { Drive, DriveSlot, DriveRegistration } from '../entities/drive.entity';
 import { DriveCompanyJob } from '../entities/drive-company-job.entity';
 import { DriveAttendance } from '../entities/drive-attendance.entity';
@@ -28,6 +29,7 @@ import { UploadModule } from '../upload/upload.module';
       InterviewSlot,
       Notification,
       Student,
+      User,
       Drive,
       DriveSlot,
       DriveRegistration,

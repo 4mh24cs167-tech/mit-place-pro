@@ -9,6 +9,7 @@ import { CompanyAvailability } from '../entities/company-availability.entity';
 import { InterviewSlot } from '../entities/interview-slot.entity';
 import { Notification } from '../entities/notification.entity';
 import { Student } from '../entities/student.entity';
+import { User, UserRole } from '../entities/user.entity';
 import { Drive, DriveSlot, DriveRegistration } from '../entities/drive.entity';
 import { DriveCompanyJob } from '../entities/drive-company-job.entity';
 import { DriveAttendance } from '../entities/drive-attendance.entity';
@@ -31,6 +32,7 @@ export class CompanyService {
     @InjectRepository(InterviewSlot) private readonly slotRepo: Repository<InterviewSlot>,
     @InjectRepository(Notification) private readonly notificationRepo: Repository<Notification>,
     @InjectRepository(Student) private readonly studentRepo: Repository<Student>,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Drive) private readonly driveRepo: Repository<Drive>,
     @InjectRepository(DriveSlot) private readonly driveSlotRepo: Repository<DriveSlot>,
     @InjectRepository(DriveRegistration) private readonly driveRegRepo: Repository<DriveRegistration>,
@@ -172,6 +174,24 @@ export class CompanyService {
 
     job.status = 'open';
     await this.jobRepo.save(job);
+
+    // Notify all admin users
+    try {
+      const admins = await this.userRepo.find({ where: { role: UserRole.ADMIN, isActive: true } });
+      if (admins.length > 0) {
+        const notifications = admins.map(admin => this.notificationRepo.create({
+          userId: admin.id,
+          type: 'job_published',
+          title: `New Job Published: ${job.title}`,
+          body: `${company.name} has published a new job: ${job.title}. Package: ${job.ctcRange || 'N/A'}.`,
+          metadata: { jobId: job.id, companyId: company.id, companyName: company.name },
+        }));
+        await this.notificationRepo.save(notifications);
+      }
+    } catch (err) {
+      this.logger.warn(`Failed to notify admins about job publish: ${(err as Error).message}`);
+    }
+
     return job;
   }
 
