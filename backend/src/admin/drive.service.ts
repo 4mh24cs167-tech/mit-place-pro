@@ -526,9 +526,8 @@ export class DriveService {
     // Bulk insert all slots at once instead of one-at-a-time
     const savedSlots = await this.slotRepo.save(slotEntities);
 
-    // Update drive status
-    drive.status = 'scheduled';
-    await this.driveRepo.save(drive);
+    // Keep drive status as-is (don't auto-change to 'scheduled')
+    // Admin can manually change status when they want to close registration
 
     // Sync registrations to job applications
     await this.syncApprovedRegistrationsToApplications(driveId);

@@ -530,6 +530,26 @@ export class StudentService {
     let message = 'You have registered for this drive. Your registration is pending admin approval.';
     if (drive.type === 'multiple') {
       message = 'You have joined this drive. You can now view companies and attend their sessions.';
+
+      // Auto-assign to existing slots if they exist
+      try {
+        const existingSlots = await this.driveSlotRepo.find({ where: { driveId } });
+        if (existingSlots.length > 0) {
+          // Find slots matching this student's department and increment count
+          const matchingSlots = existingSlots.filter(
+            (s) => s.departments.includes(student.department),
+          );
+          for (const slot of matchingSlots) {
+            slot.studentCount = (slot.studentCount || 0) + 1;
+          }
+          if (matchingSlots.length > 0) {
+            await this.driveSlotRepo.save(matchingSlots);
+            message = 'You have joined this drive and been assigned to an interview slot. Check your allocations page.';
+          }
+        }
+      } catch {
+        // Slot assignment is best-effort
+      }
     }
 
     return {
