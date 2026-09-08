@@ -31,7 +31,7 @@ export default function CompanyRegisterPage() {
     if (!companyName.trim()) return setError("Please enter the company name");
     if (!companyPhone.trim()) return setError("Please enter the company phone number");
     if (!email.trim()) return setError("Please enter the company email");
-    if (isFreeEmail(email)) return setError("Please use a company domain email (e.g. hr@company.com). Free emails like Gmail, Yahoo are not accepted.");
+    // All email domains are now accepted for company registration
     setError("");
     setLoading(true);
     try {
@@ -158,7 +158,7 @@ export default function CompanyRegisterPage() {
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-input bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                   />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Must be a company domain email (not Gmail, Yahoo, etc.)</p>
+                <p className="text-xs text-muted-foreground mt-1">Enter the email address for your company account</p>
               </div>
               <button
                 onClick={handleSendOtp}
