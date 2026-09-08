@@ -210,9 +210,10 @@ export const adminApi = {
 
   // Companies
   createCompany: (data: Record<string, unknown>) => apiFetch('/api/v1/admin/companies', { method: 'POST', body: data }),
-  listCompanies: (params?: { page?: number; search?: string }) => {
+  listCompanies: (params?: { page?: number; limit?: number; search?: string }) => {
     const query = new URLSearchParams();
     if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
     if (params?.search) query.set('search', params.search);
     return apiFetch(`/api/v1/admin/companies?${query.toString()}`);
   },

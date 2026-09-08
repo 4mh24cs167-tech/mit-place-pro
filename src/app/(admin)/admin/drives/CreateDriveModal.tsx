@@ -61,7 +61,7 @@ export default function CreateDriveModal({ onClose, onCreated, showToast }: Prop
   const fetchCompanies = useCallback(async () => {
     setLoadingCompanies(true);
     try {
-      const res = await adminApi.listCompanies();
+      const res = await adminApi.listCompanies({ limit: 1000 });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const d = res.data as any;
       setCompanies(Array.isArray(d) ? d : d?.data || []);

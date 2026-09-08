@@ -63,7 +63,7 @@ export default function AdminCompaniesPage() {
   const { data: companies = [], isLoading: loading, refetch: fetchCompanies } = useQuery<Company[]>({
     queryKey: ["admin", "companies", searchQuery],
     queryFn: async () => {
-      const res = await adminApi.listCompanies({ search: searchQuery });
+      const res = await adminApi.listCompanies({ search: searchQuery, limit: 1000 } as any);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data = (res as any)?.data;
       return Array.isArray(data) ? data : (data?.data || []);
