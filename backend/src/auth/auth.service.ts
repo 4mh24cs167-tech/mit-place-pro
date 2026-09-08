@@ -397,10 +397,7 @@ export class AuthService {
   async registerCompany(dto: RegisterCompanyDto) {
     const email = dto.email.toLowerCase();
 
-    // Validate company domain email
-    if (!this.isCompanyDomainEmail(email)) {
-      throw new BadRequestException('Please use a company domain email address (e.g. name@company.com). Free email providers like Gmail, Yahoo are not accepted.');
-    }
+    // All email domains are now accepted for company registration
 
     // Verify OTP one final time
     const otpRecord = await this.otpRepo.findOne({ where: { email } });
