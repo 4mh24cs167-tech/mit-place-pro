@@ -126,6 +126,15 @@ export default function StudentDashboardPage() {
         subtitle="Let's make this day productive."
       />
 
+      {(profile as Record<string, unknown>)?.registerNumber && (
+        <div className="px-4 sm:px-6 md:px-8 mt-2 mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 border border-indigo-200">
+            <span className="text-xs font-medium text-indigo-500 uppercase tracking-wide">Register No.</span>
+            <span className="text-lg font-bold text-indigo-700">{(profile as Record<string, unknown>).registerNumber as string}</span>
+          </div>
+        </div>
+      )}
+
       <div className="px-4 sm:px-6 md:px-8 pb-10">
         {/* WhatsApp Group Banner */}
         {!loading && (

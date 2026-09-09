@@ -634,6 +634,7 @@ export default function CompanyCandidatesPage() {
                                           <div className="min-w-0">
                                             <p className="text-sm font-medium text-foreground truncate">{c.studentName || "—"}</p>
                                             <p className="text-[10px] text-muted-foreground">{c.usn || "—"}</p>
+                                            {c.registerNumber && <p className="text-[10px] font-semibold text-indigo-600">{c.registerNumber}</p>}
                                           </div>
                                         </div>
                                         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">

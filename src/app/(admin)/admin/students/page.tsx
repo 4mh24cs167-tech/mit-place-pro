@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 interface StudentRecord {
   id: string; usn: string; fullName: string; department: string;
+  registerNumber?: string | null;
   email?: string | null;
   batchName?: string | null;
   cgpa: number | null; tenthPercent: number | null;
@@ -880,6 +881,7 @@ export default function AdminStudentsPage() {
                               {student.fullName}
                             </h5>
                             <p className="text-[10px] text-muted-foreground font-mono">{student.usn}</p>
+                            {student.registerNumber && <p className="text-[10px] font-semibold text-indigo-600">{student.registerNumber}</p>}
                           </div>
                         </div>
                         <span className={cn("text-[9px] font-semibold px-2 py-0.5 rounded-full mr-8", statusCfg.bg, statusCfg.color)}>
@@ -1105,6 +1107,7 @@ export default function AdminStudentsPage() {
                                                     {student.fullName}
                                                   </h5>
                                                   <p className="text-[10px] text-muted-foreground font-mono">{student.usn}</p>
+                                                  {student.registerNumber && <p className="text-[10px] font-semibold text-indigo-600">{student.registerNumber}</p>}
                                                 </div>
                                               </div>
                                               <span className={cn("text-[9px] font-semibold px-2 py-0.5 rounded-full mr-8", statusCfg.bg, statusCfg.color)}>
