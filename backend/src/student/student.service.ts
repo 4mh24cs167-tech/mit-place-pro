@@ -1003,8 +1003,8 @@ export class StudentService {
       if (!existingTypes.includes(QualificationType.SSLC)) {
         throw new BadRequestException('UG qualification requires SSLC details. Please add SSLC first.');
       }
-      if (!existingTypes.includes(QualificationType.PUC) && !existingTypes.includes(QualificationType.DIPLOMA)) {
-        throw new BadRequestException('UG qualification requires PUC or Diploma details. Please add PUC or Diploma first.');
+      if (!existingTypes.includes(QualificationType.PUC) && !existingTypes.includes(QualificationType.DIPLOMA) && !existingTypes.includes(QualificationType.ITI)) {
+        throw new BadRequestException('UG qualification requires PUC, Diploma, or ITI details. Please add one of them first.');
       }
     }
 
@@ -1012,8 +1012,8 @@ export class StudentService {
       if (!existingTypes.includes(QualificationType.SSLC)) {
         throw new BadRequestException('PG qualification requires SSLC details. Please add SSLC first.');
       }
-      if (!existingTypes.includes(QualificationType.PUC) && !existingTypes.includes(QualificationType.DIPLOMA)) {
-        throw new BadRequestException('PG qualification requires PUC or Diploma details. Please add PUC or Diploma first.');
+      if (!existingTypes.includes(QualificationType.PUC) && !existingTypes.includes(QualificationType.DIPLOMA) && !existingTypes.includes(QualificationType.ITI)) {
+        throw new BadRequestException('PG qualification requires PUC, Diploma, or ITI details. Please add one of them first.');
       }
       if (!existingTypes.includes(QualificationType.UG)) {
         throw new BadRequestException('PG qualification requires UG details. Please add UG first.');
