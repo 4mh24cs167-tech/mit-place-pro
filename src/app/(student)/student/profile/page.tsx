@@ -27,6 +27,7 @@ interface StudentProfile {
   familyIncome: number | null;
   category: string | null; profileData: Record<string, unknown>;
   profileComplete: boolean; placementStatus: string;
+  registerNumber?: string | null;
   photoUrl?: string | null;
   user?: { email: string };
   departmentType?: 'UG' | 'PG' | 'DEGREE';
