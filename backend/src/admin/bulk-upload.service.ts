@@ -237,6 +237,14 @@ export class BulkUploadService {
           userParams,
         );
 
+        // Get last register number for auto-increment
+        const lastRegResult = await queryRunner.query(
+          `SELECT register_number FROM students WHERE register_number IS NOT NULL ORDER BY register_number DESC LIMIT 1`
+        );
+        let regCounter = lastRegResult.length > 0 && lastRegResult[0].register_number
+          ? parseInt(lastRegResult[0].register_number.replace('UM-', ''), 10)
+          : 0;
+
         // Build parameterized student INSERT
         const studentParams: unknown[] = [];
         const studentPlaceholders: string[] = [];
@@ -247,18 +255,20 @@ export class BulkUploadService {
           const studentId = crypto.randomUUID();
           const batchId = matchedBatch ? matchedBatch.id : null;
           const semester = matchedBatch?.currentSemester ?? null;
+          regCounter++;
+          const registerNumber = 'UM-' + String(regCounter).padStart(6, '0');
 
           studentPlaceholders.push(
             `($${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, ` +
             `$${paramIdx++}, $${paramIdx++}, $${paramIdx++}, $${paramIdx++}, ` +
             `$${paramIdx++}, $${paramIdx++}, $${paramIdx++}, ` +
-            `$${paramIdx++}, $${paramIdx++}, false, 'none', '{}')`,
+            `$${paramIdx++}, $${paramIdx++}, $${paramIdx++}, false, 'none', '{}')`,
           );
           studentParams.push(
             studentId, userId, row.usn, row.fullName, row.department,
             batchId, semester, row.phone || null, row.cgpa ?? null,
             row.tenthPercent ?? null, row.twelfthPercent ?? null, row.backlogs ?? 0,
-            row.gender || null, row.category || null,
+            row.gender || null, row.category || null, registerNumber,
           );
 
           result.credentials.push({
@@ -271,7 +281,7 @@ export class BulkUploadService {
         await queryRunner.query(
           `INSERT INTO students (id, user_id, usn, full_name, department, ` +
           `batch_id, semester, phone, cgpa, tenth_percent, twelfth_percent, backlogs, ` +
-          `gender, category, profile_complete, placement_status, profile_data) VALUES ${studentPlaceholders.join(', ')}`,
+          `gender, category, register_number, profile_complete, placement_status, profile_data) VALUES ${studentPlaceholders.join(', ')}`,
           studentParams,
         );
 
