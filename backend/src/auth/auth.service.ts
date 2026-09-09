@@ -357,6 +357,16 @@ export class AuthService {
         await manager.save(globalBatch);
       }
 
+      // Generate register number
+      const lastStudent = await manager.createQueryBuilder(Student, 's')
+        .where('s.register_number IS NOT NULL')
+        .orderBy('s.register_number', 'DESC')
+        .getOne();
+      const lastNum = lastStudent?.registerNumber
+        ? parseInt(lastStudent.registerNumber.replace('UM-', ''), 10)
+        : 0;
+      const registerNumber = 'UM-' + String(lastNum + 1).padStart(6, '0');
+
       // Create student record with batch assignment
       const student = manager.create(Student, {
         user,
@@ -365,6 +375,7 @@ export class AuthService {
         department: 'GLOBAL',
         batchId: globalBatch.id,
         semester: globalBatch.currentSemester,
+        registerNumber,
         profileComplete: false,
         profileData: {},
       });
