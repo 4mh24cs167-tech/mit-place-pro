@@ -1020,10 +1020,7 @@ export class StudentService {
       }
     }
 
-    // College name mandatory for UG/PG
-    if ((qualType === QualificationType.UG || qualType === QualificationType.PG) && !dto.collegeName) {
-      throw new BadRequestException(`College name is mandatory for ${qualType} qualification.`);
-    }
+    // College name is optional for all qualification types
 
     const record = this.educationRepo.create({
       studentId: student.id,
@@ -1041,8 +1038,15 @@ export class StudentService {
       cgpa: dto.cgpa || null,
       documentDriveUrl: dto.documentDriveUrl || null,
     });
-
-    return this.educationRepo.save(record);
+    try {
+      return await this.educationRepo.save(record);
+    } catch (err: unknown) {
+      // Catch unique constraint violation (duplicate qualification type)
+      if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === '23505') {
+        throw new ConflictException(`You have already added a ${qualType} qualification. You can only have one ${qualType} record.`);
+      }
+      throw err;
+    }
   }
 
   async updateEducation(userId: string, eduId: string, dto: UpdateEducationDto) {
@@ -1052,12 +1056,7 @@ export class StudentService {
     });
     if (!record) throw new NotFoundException('Education record not found');
 
-    // College name mandatory for UG/PG
-    if ((record.qualificationType === QualificationType.UG || record.qualificationType === QualificationType.PG)) {
-      if (dto.collegeName !== undefined && !dto.collegeName) {
-        throw new BadRequestException(`College name is mandatory for ${record.qualificationType} qualification.`);
-      }
-    }
+    // College name is optional for all qualification types
 
     Object.assign(record, {
       ...(dto.courseName !== undefined && { courseName: dto.courseName || null }),

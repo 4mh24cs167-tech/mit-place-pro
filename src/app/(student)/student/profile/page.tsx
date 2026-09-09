@@ -472,6 +472,12 @@ export default function StudentProfilePage() {
                 <h1 className="text-xl sm:text-2xl font-extrabold text-foreground tracking-tight">{profile.fullName}</h1>
                 <p className="text-sm text-muted-foreground mt-1 flex items-center gap-2 flex-wrap">
                   <span className="font-medium">{profile.usn}</span>
+                  {profile.registerNumber && (
+                    <>
+                      <span className="text-border">·</span>
+                      <span className="font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full text-xs">{profile.registerNumber}</span>
+                    </>
+                  )}
                   <span className="text-border">·</span>
                   <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5" />{profile.department}</span>
                   {profile.semester && (

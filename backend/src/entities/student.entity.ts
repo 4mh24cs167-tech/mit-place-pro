@@ -104,6 +104,9 @@ export class Student {
   @Column({ type: 'jsonb', default: {}, name: 'profile_data' })
   profileData: Record<string, unknown>;
 
+  @Column({ type: 'varchar', length: 20, nullable: true, unique: true, name: 'register_number' })
+  registerNumber: string | null;
+
   @Column({ type: 'boolean', default: false, name: 'profile_complete' })
   profileComplete: boolean;
 

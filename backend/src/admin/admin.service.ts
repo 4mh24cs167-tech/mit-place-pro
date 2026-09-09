@@ -164,7 +164,7 @@ export class AdminService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(student.full_name ILIKE :search OR student.usn ILIKE :search OR user.email ILIKE :search)',
+        '(student.full_name ILIKE :search OR student.usn ILIKE :search OR user.email ILIKE :search OR student.register_number ILIKE :search)',
         { search: `%${search}%` },
       );
     }
@@ -215,7 +215,7 @@ export class AdminService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(student.full_name ILIKE :search OR student.usn ILIKE :search OR user.email ILIKE :search)',
+        '(student.full_name ILIKE :search OR student.usn ILIKE :search OR user.email ILIKE :search OR student.register_number ILIKE :search)',
         { search: `%${search}%` },
       );
     }
@@ -384,6 +384,16 @@ export class AdminService {
         isActive: true,
       });
 
+      // Generate register number
+      const lastStudent = await manager.createQueryBuilder(Student, 's')
+        .where('s.register_number IS NOT NULL')
+        .orderBy('s.register_number', 'DESC')
+        .getOne();
+      const lastNum = lastStudent?.registerNumber
+        ? parseInt(lastStudent.registerNumber.replace('UM-', ''), 10)
+        : 0;
+      const registerNumber = 'UM-' + String(lastNum + 1).padStart(6, '0');
+
       // Create student
       const student = await manager.save(Student, {
         userId: user.id,
@@ -399,6 +409,7 @@ export class AdminService {
         tenthPercent: dto.tenthPercent ?? null,
         twelfthPercent: dto.twelfthPercent ?? null,
         backlogs: dto.backlogs ?? 0,
+        registerNumber,
         profileComplete: false,
         placementStatus: 'none',
         profileData: {},

@@ -385,7 +385,7 @@ export default function AdminStudentsPage() {
         <div className="space-y-3">
           <div className="flex items-center bg-white rounded-xl border border-border px-3 w-full">
             <Search className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <input type="text" placeholder="Search by name, USN..." value={searchQuery}
+            <input type="text" placeholder="Search by name, USN, Register No..." value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none text-foreground placeholder:text-muted-foreground min-w-0" />
           </div>

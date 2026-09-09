@@ -289,6 +289,7 @@ export class CompanyService {
         studentId: app.studentId,
         studentName: student?.fullName,
         usn: student?.usn,
+        registerNumber: student?.registerNumber || null,
         department: student?.department,
         batchName: student?.batch?.name || null,
         semester: student?.semester,

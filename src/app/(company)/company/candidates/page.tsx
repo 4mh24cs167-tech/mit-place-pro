@@ -17,6 +17,7 @@ interface Candidate {
   studentId: string;
   studentName: string;
   usn: string;
+  registerNumber?: string | null;
   department: string;
   batchName?: string | null;
   semester?: number;
@@ -277,7 +278,8 @@ export default function CompanyCandidatesPage() {
     .filter((c) => {
       const matchSearch =
         (c.studentName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (c.usn || "").toLowerCase().includes(searchQuery.toLowerCase());
+        (c.usn || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.registerNumber || "").toLowerCase().includes(searchQuery.toLowerCase());
       const matchStatus = statusFilter === "all" || c.finalResult === statusFilter;
 
       // Round filter: only show candidates who are in the active round or beyond
