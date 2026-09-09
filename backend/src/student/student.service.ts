@@ -496,26 +496,8 @@ export class StudentService {
     const jobIds = drive.jobIds && drive.jobIds.length > 0 ? drive.jobIds : (drive.jobId ? [drive.jobId] : []);
     const jobs = jobIds.length > 0 ? await this.jobRepo.find({ where: { id: In(jobIds) }, relations: ['company'] }) : [];
 
-    // Check eligibility
-    const eligibleDepts = drive.departments && drive.departments.length > 0 
-      ? drive.departments 
-      : [...new Set(jobs.flatMap(j => j.allowedDepartments || []))];
-
-    if (eligibleDepts.length > 0 && !eligibleDepts.includes(student.department)) {
-      throw new BadRequestException('Your department is not eligible for this drive');
-    }
-
-    if (drive.batchIds && drive.batchIds.length > 0 && (!student.batchId || !drive.batchIds.includes(student.batchId))) {
-      throw new BadRequestException('Your batch is not eligible for this drive');
-    }
-
-    const minCgpas = jobs.map(j => j.minCgpa).filter(c => c != null && c > 0);
-    if (minCgpas.length > 0) {
-      const minCgpa = Math.min(...minCgpas);
-      if ((student.cgpa ?? 0) < minCgpa) {
-        throw new BadRequestException(`You do not meet the minimum CGPA requirement of ${minCgpa} for this drive`);
-      }
-    }
+    // Eligibility is checked per-job when the student clicks "Attend" inside the drive
+    // All students can join drives freely
 
     // Create pending registration (or approved if multiple)
     const status = drive.type === 'multiple' ? 'approved' : 'pending';
